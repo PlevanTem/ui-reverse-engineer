@@ -43,14 +43,31 @@
     },
     "result": {
       "type": "object",
-      "description": "The standardized E2EResultRef/v0.2 returned by grader.mjs, with the post-run binding represented by the enclosing record. New redline entries follow E2ERedlineAssessment/v1; older entries remain readable as historical records.",
+      "description": "The current five-dimension E2EResultRef/v0.2 returned by grader.mjs, with the post-run binding represented by the enclosing record. Historical reports are not migrated through this schema.",
       "additionalProperties": false,
       "required": ["schema_version", "status", "dimensions", "redlines", "evidence", "total_100", "provisional"],
       "properties": {
         "schema_version": { "const": "E2EResultRef/v0.2" },
         "binding": { "type": "object" },
         "status": { "enum": ["pass", "fail", "incomplete"] },
-        "dimensions": { "type": "array", "items": { "type": "object" } },
+        "dimensions": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "required": ["id", "status", "score", "reason", "evidence", "weight"],
+            "properties": {
+              "id": { "enum": ["layout", "style", "content", "interaction", "robustness"] },
+              "status": { "enum": ["scored", "unknown", "not_applicable"] },
+              "score": { "type": ["integer", "null"], "minimum": 0, "maximum": 4 },
+              "reason": { "type": "string", "minLength": 1 },
+              "evidence": { "type": "array", "items": { "type": "string" } },
+              "weight": { "const": 20 }
+            },
+            "additionalProperties": true
+          }
+        },
         "redlines": { "type": "array", "items": { "type": "object" } },
         "evidence": { "type": "array", "items": { "type": "object" } },
         "total_100": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },

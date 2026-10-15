@@ -84,20 +84,22 @@ test('frozen reference cannot be changed after baseline',async t=>{
   await writeFile(join(root,'evidence','reference.png'),Buffer.from('tampered'));
   await assert.rejects(()=>act(root,'next',r=>core.advance(root,r)),/Evidence changed/);
 });
-test('independent E2E requires six scores; binding mismatch is rejected',()=>{
+test('independent E2E requires five scores; binding mismatch is rejected',()=>{
   const binding={artifact_sha256:'a',reference_sha256:'b',contract_sha256:'c',environment_sha256:'d',rubric_version:'v1',scorer_version:'v1'};
   const request={schema_version:'FinalEvalRequest/v0.2',binding,states:[{id:'home'}]};
   const evidence=[{id:'ev',kind:'checks',uri:'evidence/checks.json',sha256:'a'}];
-  const raw={binding,assessor:{role:'independent',id:'judge-1'},evidence,covered_states:['home'],dimensions:[['layout',3],['style',3],['content',3],['interaction',3],['fidelity',3],['robustness',3]].map(([id,score])=>({id,score,status:'scored',reason:'Observed final artifact',evidence:['ev']})),redlines:['runnable','structure','interaction','obstruction','fabrication','external_writes'].map(id=>({schema_version:'E2ERedlineAssessment/v1',id,applicability:'applicable',status:'pass',severity:'S0',impact:'none',affected_states:['home'],affected_regions:[],reason:'Checked final artifact',evidence:['ev']})),calibration:{status:'unmeasured'}};
+  const raw={binding,assessor:{role:'independent',id:'judge-1'},evidence,covered_states:['home'],dimensions:[['layout',3],['style',3],['content',3],['interaction',3],['robustness',3]].map(([id,score])=>({id,score,status:'scored',reason:'Observed final artifact',evidence:['ev']})),redlines:['runnable','structure','interaction','obstruction','fabrication','external_writes'].map(id=>({schema_version:'E2ERedlineAssessment/v1',id,applicability:'applicable',status:'pass',severity:'S0',impact:'none',affected_states:['home'],affected_regions:[],reason:'Checked final artifact',evidence:['ev']})),calibration:{status:'unmeasured'}};
   const score=scoreFinal(request,raw);assert.equal(score.status,'pass');assert.equal(score.total_100,75);assert.equal(score.provisional,true);
+  assert.match(score.thresholds,/all applicable dimensions >=3/);
   assert.throws(()=>scoreFinal(request,{...raw,binding:{...binding,artifact_sha256:'wrong'}}),/binding mismatch/);
-  assert.throws(()=>scoreFinal(request,{...raw,dimensions:raw.dimensions.slice(1)}),/Six unique/);
+  assert.throws(()=>scoreFinal(request,{...raw,dimensions:raw.dimensions.slice(1)}),/Five unique/);
+  assert.throws(()=>scoreFinal(request,{...raw,dimensions:[...raw.dimensions,{id:'fidelity',score:3,status:'scored',reason:'Legacy process dimension',evidence:['ev']}]}),/Five unique/);
 });
 test('redline grader rejects severity/status contradictions and accepts minor non-blocking obstruction',()=>{
   const binding={artifact_sha256:'a',reference_sha256:'b',contract_sha256:'c',environment_sha256:'d',rubric_version:'v1',scorer_version:'v1'};
   const request={schema_version:'FinalEvalRequest/v0.2',binding,states:[{id:'desktop-settings'}]};
   const evidence=[{id:'ev',kind:'screenshot',uri:'evidence/settings.png',sha256:'a'}];
-  const base={binding,assessor:{role:'independent',id:'judge-1'},evidence,covered_states:['desktop-settings'],dimensions:[['layout',3],['style',3],['content',3],['interaction',3],['fidelity',3],['robustness',3]].map(([id,score])=>({id,score,status:'scored',reason:'Observed final artifact',evidence:['ev']})),redlines:['runnable','structure','interaction','obstruction','fabrication','external_writes'].map(id=>({schema_version:'E2ERedlineAssessment/v1',id,applicability:'applicable',status:'pass',severity:'S0',impact:'none',affected_states:['desktop-settings'],affected_regions:[],reason:'Checked final artifact',evidence:['ev']})),calibration:{status:'unmeasured'}};
+  const base={binding,assessor:{role:'independent',id:'judge-1'},evidence,covered_states:['desktop-settings'],dimensions:[['layout',3],['style',3],['content',3],['interaction',3],['robustness',3]].map(([id,score])=>({id,score,status:'scored',reason:'Observed final artifact',evidence:['ev']})),redlines:['runnable','structure','interaction','obstruction','fabrication','external_writes'].map(id=>({schema_version:'E2ERedlineAssessment/v1',id,applicability:'applicable',status:'pass',severity:'S0',impact:'none',affected_states:['desktop-settings'],affected_regions:[],reason:'Checked final artifact',evidence:['ev']})),calibration:{status:'unmeasured'}};
   const minor=base.redlines.map(r=>r.id==='obstruction'?{...r,status:'pass',severity:'S1',impact:'minor_degradation',affected_regions:['brand','statement'],reason:'Small logo overlap; required text remains present and usable.'}:r);
   assert.equal(scoreFinal(request,{...base,redlines:minor}).status,'pass');
   const contradiction=base.redlines.map(r=>r.id==='obstruction'?{...r,status:'fail',severity:'S1',impact:'minor_degradation'}:r);

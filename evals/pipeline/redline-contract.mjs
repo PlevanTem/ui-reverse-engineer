@@ -14,7 +14,7 @@ export const IMPACT_SEVERITIES={
 function check(ok,message){if(!ok)throw new Error(message);}
 export function validateRedlineProfile(request){
   const profile=request.redline_profile;
-  if(!profile){check(request.binding.rubric_version!=='site-restore-v1.1-draft','RedlineProfile/v1 is required for rubric v1.1');return null;}
+  if(!profile){check(!['site-restore-v1.1-draft','site-restore-v1.2-draft'].includes(request.binding.rubric_version),'RedlineProfile/v1 is required for rubric v1.1+');return null;}
   check(profile.schema_version==='RedlineProfile/v1'&&typeof profile.case_id==='string'&&profile.case_id.trim()&&profile.case_id===request.case_id&&profile.rubric_version===request.binding.rubric_version,'Redline profile identity/version mismatch');
   check(Array.isArray(profile.redlines)&&profile.redlines.length===REDLINES.length&&new Set(profile.redlines.map(x=>x.id)).size===REDLINES.length,'Redline profile must define six unique IDs');
   const stateIds=new Set((request.states??[]).map(x=>x.id));

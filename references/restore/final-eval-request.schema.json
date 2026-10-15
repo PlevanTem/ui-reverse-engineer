@@ -25,14 +25,14 @@
     "states": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 } }, "additionalProperties": true } },
     "resources": { "type": "array", "items": { "type": "object", "required": ["kind", "url"], "properties": { "kind": { "type": "string" }, "url": { "type": "string", "format": "uri" } }, "additionalProperties": true } },
     "obligations": { "type": "array", "items": { "type": "object", "required": ["id", "state_id", "region_id", "expected"], "properties": { "id": { "type": "string" }, "state_id": { "type": "string" }, "region_id": { "type": "string" }, "expected": { "type": "string" }, "reference_evidence": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false } },
-    "redline_profile": { "type": ["object", "null"], "description": "When present, validate as RedlineProfile/v1. Required by grader for rubric site-restore-v1.1-draft." },
+    "redline_profile": { "type": ["object", "null"], "description": "When present, validate as RedlineProfile/v1. Required by grader for rubric site-restore-v1.1-draft and later." },
     "start_command": { "type": "string" },
     "project_path": { "type": "string", "minLength": 1 },
     "deadline": { "type": "string", "format": "date-time" }
   },
   "allOf": [
     {
-      "if": { "properties": { "binding": { "properties": { "rubric_version": { "const": "site-restore-v1.1-draft" } }, "required": ["rubric_version"] } }, "required": ["binding"] },
+      "if": { "properties": { "binding": { "properties": { "rubric_version": { "enum": ["site-restore-v1.1-draft", "site-restore-v1.2-draft"] } }, "required": ["rubric_version"] } }, "required": ["binding"] },
       "then": { "required": ["case_id", "redline_profile"], "properties": { "redline_profile": { "type": "object" } } }
     }
   ],

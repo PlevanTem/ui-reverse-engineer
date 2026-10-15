@@ -372,9 +372,9 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 - 交付可运行项目，包含必要的页面、代码、资源、依赖与启动方式；简单页面可使用单个 HTML 文件
 - 在浏览器中按目标视口与状态对照参考，修正主要差异并说明剩余限制
 
-具体取证、实现及完成检查见[逆向还原指南](references/restore-guide.md)。
+具体取证、实现及完成检查见 [Restore 执行流程](references/restore.md)。
 
-还原时按 [Restore v0.2](references/restore-v0.2.md) 有界迭代：按页面复杂度分档并冻结参考与视觉 QA，生成基线，再围绕构图、外观、动态三类 [0–4 Criteria](references/restore/criteria.md)修复高影响偏差。每轮保留证据、假设及 keep/revert/inconclusive；有效执行时间、轮次或停滞触发退出，交付最佳版本。额度限制等外部暂停须有宿主起止证据才可扣除，并同时报告墙钟与有效耗时。若宿主或模型 API 提供可归属的 token 用量，按来源、Agent、阶段及覆盖状态登记，报告展示已观察总量；缺失时标未知，部分来源不得冒充完整成本。运行接口与可复用脚本见 [Restore 接口](references/restore/interfaces.md)。最终六维 E2E 使用独立评分器；Loop 停止原因、E2E 结果和人工审批分别记录。缺少可用浏览器或独立评委时，继续完成可观察部分，并将未完成评分标为 `incomplete`，不得填造通过结果。
+还原时按 [Restore 执行流程](references/restore.md) 有界迭代：按页面复杂度分档并冻结参考与视觉 QA，生成基线，再围绕构图、外观、动态三类 [0–4 Criteria](references/restore/criteria.md)修复高影响偏差。每轮保留证据、假设及 keep/revert/inconclusive；有效执行时间、轮次或停滞触发退出，交付最佳版本。额度限制等外部暂停须有宿主起止证据才可扣除，并同时报告墙钟与有效耗时。若宿主或模型 API 提供可归属的 token 用量，按来源、Agent、阶段及覆盖状态登记，报告展示已观察总量；缺失时标未知，部分来源不得冒充完整成本。运行接口与可复用脚本见 [Restore 接口](references/restore/interfaces.md)。最终五维 E2E 按 [Restore 评测方案](evals/restore.md)由独立评分器执行；Loop 停止原因、E2E 结果和人工审批分别记录。缺少可用浏览器或独立评委时，继续完成可观察部分，并将未完成评分标为 `incomplete`，不得填造通过结果。
 
 ### design_brief 模板
 
@@ -491,7 +491,7 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
    - 生成 DESIGN.md，保存至 `design_assets/{brand_name}/`
    - 更新 `design_assets/index.csv`
 5. **`--restore`**：
-   - 读取 `references/restore-guide.md`，完成参考取证、资源与状态清单
+   - 读取 `references/restore.md`，完成参考取证、资源与状态清单
    - 按 `references/restore-brief-template.md` 生成 `design_brief.md`，实现、运行、对照验证 `restored/` 项目；用户明确要求先审 brief 时按其要求暂停实现
 6. **`--transfer`**：
    - 读取 `references/transfer-guide.md`

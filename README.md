@@ -111,11 +111,9 @@ ui-reverse-engineer/
 │   ├── design-md-template.md # DESIGN.md 设计资产模板
 │   ├── transfer-guide.md     # 风格迁移指南
 │   ├── technology-stack-analysis.md # 网站技术栈分析 SOP
-│   ├── restore-guide.md      # 网站逆向还原流程
+│   ├── restore.md            # Restore 唯一执行 SOP
 │   ├── restore-brief-template.md # 还原 brief 模板
-│   ├── restore-iteration-prd.md # v0.1 历史提案
-│   ├── restore-v0.2.md    # 当前还原执行规范
-│   └── restore/            # 按需读取的视觉 Criteria 与接口
+│   └── restore/              # 精确接口、Schema 与局部视觉 Criteria
 ├── scripts/restore/          # v0.2 运行控制、采集适配器、报告和审批
 ├── assets/restore/           # v0.2 HTML 报告模板
 └── evals/                    # --restore 页面 E2E 还原质量评测
@@ -123,16 +121,14 @@ ui-reverse-engineer/
     ├── cases.yaml            # 7 个页面还原草稿案例；冻结素材后可用于评测
     ├── case-schema.json      # Schema v1.2；区分 UI 类型和任务类型，难度保留三档
     ├── case-manager/         # 本地样本库；自动载入 cases.yaml，技术栈按高层模块拆分
-    ├── specs/                # 版本化评测方案
-    │   └── restore-loop-report-v0.1.md # v0.1 历史报告归档说明
-    ├── rubrics/              # 评分锚点与错误分类
-    ├── templates/             # 跨 case 版本评测报告模板
+    ├── restore.md            # Restore 唯一最终 E2E 评测方案
+    ├── templates/            # 跨 case 版本评测报告模板
     ├── fixtures/              # 授权、冻结的输入素材
-    ├── pipeline/              # 独立六维 E2E grader；跨方案统计待实现
+    ├── pipeline/              # 独立五维 E2E grader
     └── results/               # 按 run_id 保存结果摘要
 ```
 
-当前评测方案、Rubrics 和报告模板见 [`evals/README.md`](evals/README.md)。案例输出与用户私人素材不作为仓库模板；只提交授权明确、去除个人信息且体量可控的 fixture。
+当前评测入口、唯一方案和报告模板见 [`evals/README.md`](evals/README.md)。案例输出与用户私人素材不作为仓库模板；只提交授权明确、去除个人信息且体量可控的 fixture。
 
 ## 常见问题
 
@@ -144,17 +140,14 @@ Ctrl+S 保存的是浏览器当前加载的网页快照，具体包含哪些 HTM
 
 - [技能完整说明](SKILL.md)
 - [网站技术栈分析 SOP](references/technology-stack-analysis.md)：源码与视觉证据交叉核验，含 Three.js 官网案例复盘和防复发清单
-- [逆向还原指南](references/restore-guide.md)：页面范围、资源、交互与浏览器对照
+- [Restore 执行流程](references/restore.md)：冻结参考、建立基线、有界修复、停止与最终验收
 - [还原 brief 模板](references/restore-brief-template.md)
-- [Restore v0.2 执行规范](references/restore-v0.2.md)：30/60/120 分钟有效执行时间内有界视觉迭代；有证据的额度或宿主暂停可登记排除，报告同时显示墙钟与有效耗时。可归属的 token 用量按来源和覆盖范围登记，缺失部分显示未知。独立最终 E2E 与统一 HTML 审批；证据表按页面状态和版本并排，采集清单用于补全截图状态关联，继承证据按 ID 去重。失败红线可附 `VisualAnnotationSet/v1`，绑定原截图哈希、状态、视口和 bbox，并在报告中展示标注图。三维 0–4 [视觉 Criteria](references/restore/criteria.md)及[脚本接口](references/restore/interfaces.md)按需阅读。控制器、快照、结构化记录和报告器已实现；浏览器与独立评委 adapter 依赖宿主接入。
+- Restore 按 30/60/120 分钟三档做有界视觉迭代。三维 0–4 [Loop Criteria](references/restore/criteria.md)只负责修复导航；命令、字段和报告流见[接口](references/restore/interfaces.md)。
 - E2E 只评价最终交付产物，报告与审批只使用一份最终结果。`PostRunE2EReview/v1` 通过哈希绑定最终产物和冻结契约；存在时，它是最终质量视图的权威结果。报告记录 Judge 提供方/模型、评测时间、Rubric/Scorer 版本、环境及限制，不记录评委角色或标识。字段定义见[接口与 Schema](references/restore/interfaces.md#冻结与输出)。
-- 每个 case 使用相同六个红线 ID，按冻结的页面状态、关键区域、交互和事实判定。`E2ERedlineAssessment/v1` 分开记录适用性、状态、S0–S3 严重度、影响、状态/区域范围与证据；轻微偏差（S1）通过红线并记入质量残差，S2/S3 才能失败。`grader.mjs` 校验字段与逻辑一致性，不自动替代视觉判断。人工争议通过 `HumanAdjudicationSet/v1` 单独记录；历史结果保持原 Rubric 版本，不静默重评分。见[评测方案](evals/specs/site-restore-v1.md)与[接口](references/restore/interfaces.md#冻结与输出)。
-- Rubric v1.1-draft 的新 case 必须在冻结契约中提供 `RedlineProfile/v1`：将固定六类 ID 绑定到适用状态、区域、obligation、正反例和证据要求；grader 检查结果是否超出该范围。历史 UIR-0007 按原 v1.0 结果保留，不回填、不重评分。见[评测方案](evals/specs/site-restore-v1.md)与[profile Schema](references/restore/redline-profile.schema.json)。
-- 报告中的六个维度保留英文 Schema ID：`layout`、`style`、`content`、`interaction`、`fidelity`、`robustness`；中英文名称对照见 [E2E 评分细则](evals/rubrics/site-restore-v1.md) 和[评测方案](evals/specs/site-restore-v1.md)。
+- 每个 case 使用六个稳定红线 ID，并按冻结状态、区域、交互和事实边界判定。Rubric v1.2-draft 的新 case 必须提供 `RedlineProfile/v1`；grader 只校验契约和判断的一致性，不替代视觉判断。见 [Restore 最终 E2E](evals/restore.md)。
+- 最终 E2E 使用五个等权维度：`layout`、`style`、`content`、`interaction`、`robustness`。`fidelity` 不再计分；事实越界由 `fabrication` 红线处理。单 case 通过要求所有适用维度 ≥3 且红线无失败，不再重复设置 75 分门槛。
 - `interaction` 与 `robustness` 评测允许 evaluator 在浏览器中使用 browse control 操作交互控件、观察可见反馈并检查不同视口；未检查的控制台或资源状态必须保留为未检查。
 - 若有维度未知，完整总分保持空值；报告另显示已评分维度折算分和权重覆盖率，不将折算分冒充完整 E2E 总分。
-- [Restore v0.2 合入清单](references/restore-release-20261015.md)：文件范围、验证结果、已知限制与下一阶段任务。
-- [v0.1 历史报告](evals/specs/restore-loop-report-v0.1.md)：旧试点归档说明；当前单次报告由 Restore v0.2 运行器生成。
 - [DESIGN.md 资产模板](references/design-md-template.md)
 - [风格迁移指南](references/transfer-guide.md)
 

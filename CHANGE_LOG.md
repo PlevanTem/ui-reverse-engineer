@@ -1,5 +1,11 @@
 # 变更日志
 
+### 2026-10-15 — 收敛 Restore 文档并改为五维 E2E
+
+- **原因：** 该项目服务于个人 Skill 优化，不需要生产级评测观测平台。既有 Restore PRD、执行说明、评测 spec 和 rubric 职责重叠，增加维护成本。
+- **范围：** 以 `references/restore.md`、`references/restore/interfaces.md`、`references/restore/criteria.md`、`evals/restore.md` 分别作为执行 SOP、接口、局部 Loop 准则和最终评测的唯一控制文件；删除被替代的 v0.1/v0.2 规划、历史报告说明、分离 spec/rubric 和重复 release inventory。最终 E2E 改为 `layout/style/content/interaction/robustness` 五维等权；`fidelity` 移出总分，事实越界继续由 `fabrication` 红线处理。移除与“各适用维度 ≥3”数学重复的 75 分通过门槛，历史报告不重算。
+- **验证：** `node scripts/restore/tests/restore.test.mjs` 6/6 通过；Case Manager build、站点数据测试、链接与格式检查见本次工作记录。未校准 Judge，不把当前阈值称为经验有效结论。
+
 ### 2026-10-15 — 结构化 UI 红线 criteria 与 grader
 
 - **范围：** 将六条最终 E2E 红线写成 UI 触发/不触发条件、证据要求、影响类别和 S0–S3 严重度映射；新增 `RedlineProfile/v1`（case 范围）和 `E2ERedlineAssessment/v1`（单条结果）Schema 与模板。grader 检查状态/严重度/影响一致、case state/region 范围和外部写入必须为 S3。将 `score-final.mjs` 迁移为 `grader.mjs`，更新 CLI、核心版本默认、报告、README、接口与测试引用。Loop finding 的严重度与最终 E2E 红线明确分开。UIR-0007 按历史 v1.0 保留，不回填 profile、不重评分；人工裁决新增 S1 和影响范围。
