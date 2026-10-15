@@ -1,0 +1,272 @@
+# Case data schema: evals/case-schema.json (v1.2)
+schema_version: "1.2"
+ui_types:
+  - id: dashboard
+    name: 数据仪表盘
+    description: 数据概览、分析与监控界面
+    archived: false
+  - id: commerce
+    name: 电商
+    description: 商品、购物与交易流程
+    archived: false
+  - id: content
+    name: 内容 / 媒体
+    description: 文章、资讯、媒体浏览界面
+    archived: false
+  - id: saas-admin
+    name: SaaS 工作台
+    description: 管理型应用与业务控制台
+    archived: false
+  - id: landing-page
+    name: 营销 / 落地页
+    description: 品牌展示、推广与转化页面
+    archived: false
+  - id: portfolio
+    name: 作品集
+    description: 个人或团队作品展示
+    archived: false
+  - id: other
+    name: 其他
+    description: 暂无法归入其他页面类型
+    archived: false
+  - id: interactive-experience
+    name: 互动体验 / 3D 演示
+    description: 沉浸式场景、WebGL / Canvas 演示或可操控的 3D 页面
+    archived: false
+  - id: developer-resource
+    name: 开发者资源 / 文档站
+    description: 技术库主页、文档、示例与开发工具入口
+    archived: false
+task_types:
+  - id: restore
+    name: 页面还原
+    description: 依据界面参考生成可运行页面
+    archived: false
+  - id: transfer
+    name: 风格迁移
+    description: 保留目标内容和功能并迁移视觉风格
+    archived: false
+  - id: design-system
+    name: 设计系统提取
+    description: 提取可复用的视觉规范与设计资产
+    archived: false
+  - id: requirements
+    name: 需求反推
+    description: 从成品界面推断需求与功能
+    archived: false
+  - id: multi-mode
+    name: 多模式组合
+    description: 一个任务组合多个逆向工作流
+    archived: false
+cases:
+  - id: UIR-0001
+    title: Amano Nature Aquarium — 水草缸 3D 场景
+    ui_type_id: interactive-experience
+    task_type_id: restore
+    description: Claude Artifact 展示一个置于暗色空间中的长方形水草缸场景，顶部有两盏悬吊灯，缸体包含水草、岩石与浅色砂石路径，底座和地面带有阴影与反射；画面仅见简短的 “PLANTING THE TANK…” 字样。
+    keywords:
+      - 3D 场景还原
+      - 水草造景
+      - Three.js
+      - WebGL
+      - HTML Canvas
+      - 原生 DOM
+      - GLSL Shader
+      - 实例化渲染
+      - 后处理管线
+      - 程序化场景生成
+      - 相机轨道控制
+      - 自适应画质
+      - 动态分辨率
+    url: https://claude.ai/artifact/N1cRTZqiUZyxDVP7dJGTau
+    technology_stack:
+      - HTML
+      - JavaScript ES Modules
+      - DOM
+      - HTML Canvas
+      - Three.js
+      - WebGL
+      - GLSL Shader
+      - Three.js Postprocessing
+      - OrbitControls
+    technology_stack_source: source_analysis
+    technology_stack_evidence:
+      - 来源：用户提供的 Claude Code Artifact 源码分析
+    difficulty: hard
+    input_kinds:
+      - url
+    status: draft
+    notes: 页面为用户生成的 Claude Artifact；评测视口截图和 3D 素材待冻结。
+    created_at: "2026-10-11T16:38:14+08:00"
+    updated_at: "2026-10-11T23:49:55+08:00"
+
+  - id: UIR-0002
+    title: Formula — Kit / Drive / Studio 交互演示
+    ui_type_id: interactive-experience
+    task_type_id: restore
+    description: Patrick Heintzmann Lab 的 [03] Formula 演示，以俯视工作台呈现蓝色切割垫、工具与车体零件；页面提供 Kit、Drive、Studio 三种模式，并提示可用 WASD 或方向键驾驶。
+    keywords:
+      - WebGL
+      - 3D 产品场景
+      - Kit Drive Studio
+      - 键盘交互
+      - 模式切换
+    url: https://lab.patrickheintzmann.com/demo/demoFormula
+    technology_stack:
+      - Astro
+      - HTML Canvas
+      - WebGL
+      - Three.js
+      - GLSL Shader
+      - Rapier
+      - OrbitControls
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - 运行时资源路径与控制台：Astro
+      - 运行时 WebGL 着色器编译日志：Three.js、GLSL Shader
+      - 运行时资源路径：Rapier、OrbitControls
+    difficulty: hard
+    input_kinds:
+      - url
+    status: draft
+    notes: 当前仅有 URL；尚未冻结不同模式的目标截图、交互步骤和视口。页面含可操作状态，正式评测需规定默认模式与按键流程。
+    created_at: "2026-10-11T16:38:14+08:00"
+    updated_at: "2026-10-13T17:40:00+08:00"
+
+  - id: UIR-0003
+    title: 28K Studio — 创意工作室主页
+    ui_type_id: portfolio
+    task_type_id: restore
+    description: 斯堪的纳维亚数字设计工作室主页，以黑底、超大 28K 字样和动态纹理构成首屏；页面包含 Work / Studio 导航、服务、关于、奖项、原则和联系区块，并显示日期、天数与城市时钟。
+    keywords:
+      - 创意工作室
+      - 黑白极简
+      - 超大字体
+      - 动态滚动
+      - Canvas
+      - 工作室介绍
+    url: https://28k.studio/
+    technology_stack:
+      - HTML Canvas
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - 页面 DOM 中存在两个 Canvas 元素
+    difficulty: hard
+    input_kinds:
+      - url
+    status: draft
+    notes: 页面依赖滚动动效和动态视觉；当前只有 URL，未保存可复现的首屏与滚动关键帧，也未核实响应式断点。
+    created_at: "2026-10-11T16:38:14+08:00"
+    updated_at: "2026-10-12T00:07:50+08:00"
+
+  - id: UIR-0004
+    title: Build in Amsterdam — Awwwards 工作室资料页
+    ui_type_id: portfolio
+    task_type_id: restore
+    description: Awwwards 平台上的 Build in Amsterdam 机构资料页，包含工作室名称与地点、作品与奖项计数、语言/预算/合作方式、项目作品网格、精选项目和作品集入口；此 URL 指向 Awwwards 档案页，不是工作室官网。
+    keywords:
+      - Awwwards 资料页
+      - 机构作品集
+      - 项目网格
+      - 奖项统计
+      - 工作室档案
+    url: https://www.awwwards.com/buildinamsterdam/
+    technology_stack:
+      - Video.js
+      - Google reCAPTCHA
+      - Google Fonts
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - 运行时控制台：Video.js qualityLevels 插件
+      - 运行时资源：Google reCAPTCHA、Roboto 字体
+    difficulty: medium
+    input_kinds:
+      - url
+    status: draft
+    notes: 页面由 Awwwards 平台提供。此前浏览记录已确认 Build in Amsterdam 标题、Amsterdam 地点及资料页主体内容；reCAPTCHA 资源已加载但没有替代主体内容，因此当次不是停留在验证页。当前标签是运行时资源线索，是否对应可见模块仍需按 SOP 映射。正式评测需冻结是否包含平台导航、Cookie 提示及首屏状态。
+    created_at: "2026-10-11T16:38:14+08:00"
+    updated_at: "2026-10-13T17:40:00+08:00"
+
+  - id: UIR-0005
+    title: Mosby’s Files — American Modernism 档案首页
+    ui_type_id: content
+    task_type_id: restore
+    description: 关于美国现代主义建筑师与作品的编辑型档案首页，按 Organic & Early Modernism、Expressive、Monumental Modernism、Contextual & Transitional Architecture 等主题组织介绍和人物/作品入口，配有建筑图像与长篇叙述。
+    keywords:
+      - 建筑档案
+      - 编辑型内容站
+      - 人物分类
+      - 建筑图像
+      - 长篇叙述
+    url: https://www.mosbyfiles.com/
+    technology_stack:
+      - Nuxt
+      - Vue.js
+      - Storyblok
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - 运行时 Nuxt hydration 日志
+      - 页面图片资源域名 a.storyblok.com
+    difficulty: medium
+    input_kinds:
+      - url
+    status: draft
+    notes: 已保存首页可视状态；运行时出现 Nuxt hydration mismatch，不影响页面主体呈现。正式评测仍需冻结目标截图与视口。
+    created_at: "2026-10-11T16:38:14+08:00"
+    updated_at: "2026-10-13T17:40:00+08:00"
+
+  - id: UIR-0006
+    title: Three.js — 3D JavaScript 库主页
+    ui_type_id: developer-resource
+    task_type_id: restore
+    description: Three.js 官方主页，左侧纵向分组呈现 Learn、Tools、Community、Code、Resources、Merch 等入口，右侧以大量项目缩略图组成可浏览的展示墙，顶部标注 three.js r186。
+    keywords:
+      - 开发者资源
+      - JavaScript 3D 库
+      - 项目展示墙
+      - 侧边导航
+      - 图片网格
+    url: https://threejs.org/
+    technology_stack: []
+    technology_stack_source: unknown
+    technology_stack_evidence: []
+    difficulty: medium
+    input_kinds:
+      - url
+    status: draft
+    notes: Three.js 是页面介绍的库名，不据此推断官网自身使用该库。此前只记录到栏目导航和项目缩略图展示墙，未核实其由普通图片、Canvas/WebGL 还是 Three.js 场景实现；空技术栈表示分析未完成，不代表确认未使用。目标素材与视口仍待冻结。
+    created_at: "2026-10-11T16:38:14+08:00"
+    updated_at: "2026-10-11T16:38:14+08:00"
+
+  - id: UIR-0007
+    title: General Intuition — 动态研究实验室主页
+    ui_type_id: landing-page
+    task_type_id: restore
+    description: General Intuition 的研究实验室营销主页，以大幅自定义字体现实验室使命和 MIRA 研究为主线；页面将循环视频与 ASCII Canvas 叠合，并提供 ASCII Settings 面板，可调整 CELL SIZE、TEXT OPACITY 与 TILE OPACITY。
+    keywords:
+      - 研究实验室官网
+      - 营销落地页
+      - 非典型排版
+      - 自定义字体
+      - ASCII Canvas
+      - 循环视频
+      - 动态视觉
+      - 参数控制面板
+    url: https://www.generalintuition.com/
+    technology_stack:
+      - Webflow
+      - HTML Canvas
+      - HTML Video
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - 页面 DOM 包含 6 个 canvas.ascii-canvas 元素，分别与 racing、mira、bee、desert、quadruped、warehouse 区域对应。
+      - 页面 DOM 包含 6 个同名配对 video 元素；均为可见、静音、自动播放、循环的视频。
+      - 页面 DOM 的 w-node / w-mod 类名与已加载的 Webflow CSS 资源共同支持 Webflow 页面实现的判断。
+      - 页面计算样式显示标题使用 alphalyrae，正文使用 Geist Wght；字体名称保留为视觉证据，不作为技术栈标签。
+    difficulty: hard
+    input_kinds:
+      - url
+    status: draft
+    notes: 2026-10-14 可访问首页已确认标题、首屏、MIRA 研究区和 ASCII Settings 控件。该 case 用于检验动态媒体、Canvas 叠层、定制字体和非典型排版的还原；尚未冻结目标截图、视口、滚动关键帧、设置面板数值和媒体素材，不能直接作为可复现评测输入。
+    created_at: "2026-10-14T22:00:00+08:00"
+    updated_at: "2026-10-14T22:00:00+08:00"
