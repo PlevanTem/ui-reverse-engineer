@@ -6,7 +6,7 @@
 - **范围：** 增加 `references/restore-release-20261015.md`，列明代码、规范、案例、报告和已知限制；把另一工作目录已核查的 UIR-0007 草稿案例同步到当前 worktree，并更新中英文 README、评测入口和 Case Manager 的案例数量。
 - **原因：** 当前 worktree 的案例仍停留在六个，与 UIR-0007 Restore 试运行不一致；合入前需要可审阅的文件和验证清单。
 - **验证：** Skill 快速校验通过；Restore 现有测试 5/5、Case Manager 生产构建和 Sites 测试 4/4 通过；七个案例按 Schema v1.2 验证，ID 唯一；TokenUsage 实例通过 Schema；`git diff --check` 通过。UIR-0007 仍为 `draft`，两个试运行的正式 E2E 均为 `incomplete`。
-- **推送：** 未推送
+- **推送：** 已推送 `feat/restore-v02-self-inspect`；PR #1 已创建，待合入 `main`。
 
 ### 2026-10-15 — Restore 报告增加 Token 用量
 
