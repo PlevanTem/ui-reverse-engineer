@@ -1,7 +1,7 @@
 {
   "schema_version": "RedlineProfile/v1",
   "case_id": "<case-id>",
-  "rubric_version": "site-restore-v1.1-draft",
+  "rubric_version": "site-restore-v1.2-draft",
   "redlines": [
     {
       "id": "runnable",

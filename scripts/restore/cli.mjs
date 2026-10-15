@@ -32,7 +32,7 @@ try {
         case 'eval': {
           core.assert(args[0],'Explicit independent evaluator script required');const request=await core.finalInput(root,run); let output;
           try { output=await invoke(args[0],request,Math.max(0,core.budget(run).remaining_ms-2000),args.slice(1).map(p=>resolve(p))); }
-          catch(error){output={schema_version:'E2EResultRef/v0.2',binding:request.binding??null,status:'incomplete',reason:error.message,dimensions:[],redlines:[],evidence:[],total_100:null,provisional:true,scoring_provenance:request.binding?.scorer_version?`independent_evaluator/${request.binding.scorer_version}`:'independent_evaluator/e2e/v0.3'};}
+          catch(error){output={schema_version:'E2EResultRef/v0.2',binding:request.binding??null,status:'incomplete',reason:error.message,dimensions:[],redlines:[],evidence:[],total_100:null,provisional:true,scoring_provenance:request.binding?.scorer_version?`independent_evaluator/${request.binding.scorer_version}`:'independent_evaluator/e2e/v0.4'};}
           return core.recordE2E(root,run,output);
         }
         case 'eval-record': return core.recordE2E(root,run,await input(args[0]));

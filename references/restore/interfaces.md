@@ -1,8 +1,8 @@
 # Restore v0.2 接口与命令
 
-适用于实现者和工具接入者；日常用户先看 [还原指南](../restore-guide.md)。运行工具位于 `scripts/restore/`，最终 E2E grader 位于 `evals/pipeline/grader.mjs`。Node 20+，仅浏览器采集需要宿主提供 Playwright。CLI 不自行安装依赖、不猜测模型 API。
+适用于实现者和工具接入者；日常执行先看 [Restore 执行流程](../restore.md)。运行工具位于 `scripts/restore/`，最终 E2E grader 位于 `evals/pipeline/grader.mjs`。Node 20+，仅浏览器采集需要宿主提供 Playwright。CLI 不自行安装依赖、不猜测模型 API。
 
-## 五模块
+## 职责边界
 
 | 模块 | 契约 | 决策 |
 | --- | --- | --- |
@@ -46,22 +46,21 @@ flowchart LR
 
 E2E 的评测对象始终是最终交付产物。原始运行过程可能在 `run.json.e2e` 留下评测尝试；运行后对最终产物完成的独立评测保存为 `PostRunE2EReview/v1`，由 `run.json.post_run_e2e_review` 以 URI、SHA-256、状态和评测完成时间引用。该记录绑定同一 `run_id`、冻结契约哈希和最终产物哈希。若该记录存在，报告和审批使用它作为唯一最终 E2E 结果；原始 `run.json.e2e` 保留作运行审计，不作为并列质量模块，也不改写停止原因或预算归属。评测元数据记录 Judge provider/model、评测起止时间和时区、Rubric/Scorer 版本、校准状态、产物哈希及局限，不记录评委角色或标识。未暴露的模型名写 `null`，同时将 `judge_model_status` 设为 `not_exposed`；不从宿主型号推断判官型号。
 
-如人工评审裁决某条红线，使用 `evidence/human-adjudications.json`（[`HumanAdjudicationSet/v1`](human-adjudication.schema.json)）追加记录。报告保留 `e2e_judge_result` 原始 Judge 结论，并将裁决后的状态作为本次报告的 `e2e` 最终口径；页面并列展示原始状态、裁决状态、原因、范围、时间和证据。可选 `dimension_notes` 只澄清对应维度的理由，不改变评分。该 sidecar 不改写哈希绑定的 `PostRunE2EReview/v1`。任何从 fail 改为 pass 的裁决，都必须满足其余红线通过、适用维度均达到 3/4、总分至少 75 的既定门槛；裁决不得调整分数。
+如人工评审裁决某条红线，使用 `evidence/human-adjudications.json`（[`HumanAdjudicationSet/v1`](human-adjudication.schema.json)）追加记录。报告保留 `e2e_judge_result` 原始 Judge 结论，并将裁决后的状态作为本次报告的 `e2e` 最终口径；页面并列展示原始状态、裁决状态、原因、范围、时间和证据。可选 `dimension_notes` 只澄清对应维度的理由，不改变评分。该 sidecar 不改写哈希绑定的 `PostRunE2EReview/v1`。任何从 fail 改为 pass 的裁决，都必须满足其余红线通过且所有适用维度均达到 3/4；裁决不得调整分数。
 
-报告在完整六维评分可用时显示完整加权总分。若存在未知维度，`report.json.e2e.total_100` 保持 `null`；报告另计算 `e2e_scoring_summary`，按已评分维度权重归一化显示暂分，并同时显示覆盖权重和未评分维度。该暂分不代替完整总分，也不改变 E2E 状态、红线或审批门禁。
+报告在完整五维评分可用时显示完整加权总分。若存在未知维度，`report.json.e2e.total_100` 保持 `null`；报告另计算 `e2e_scoring_summary`，按已评分维度权重归一化显示暂分，并同时显示覆盖权重和未评分维度。该暂分不代替完整总分，也不改变 E2E 状态、红线或审批门禁。
 
 E2E 维度 ID 采用英文并与 `evals/pipeline/grader.mjs` 保持一致；文档用中文描述维度时按以下映射理解：
 
 | 文档名称 | `dimensions[].id` | 权重 |
 | --- | --- | ---: |
-| 视觉结构与布局 | `layout` | 25 |
+| 视觉结构与布局 | `layout` | 20 |
 | 视觉样式与细节 | `style` | 20 |
-| 内容与组件完整性 | `content` | 15 |
+| 内容与组件完整性 | `content` | 20 |
 | 交互与状态 | `interaction` | 20 |
-| 证据忠实度 | `fidelity` | 10 |
-| 响应式与运行稳健性 | `robustness` | 10 |
+| 响应式与运行稳健性 | `robustness` | 20 |
 
-[`FinalEvalRequest/v0.2`](final-eval-request.schema.json) 绑定 case、冻结契约、参考输入、状态、obligations 和最终产物。冻结契约使用 [`RedlineProfile/v1`](redline-profile.schema.json) 将六个共享红线绑定到本 case 的适用性、必测状态、关键区域、obligation、触发/不触发示例及证据要求。Rubric v1.1-draft 的新评测必须提供完整 profile；旧版冻结合同可以保持原样。E2E 结果的每条红线按 [`E2ERedlineAssessment/v1`](e2e-redline.schema.json) 保存适用性、状态、严重度、主要影响、受影响状态/区域及证据。grader 同时核对这些字段与冻结 profile 的范围，不会从视觉证据自动推断缺陷严重度。
+[`FinalEvalRequest/v0.2`](final-eval-request.schema.json) 绑定 case、冻结契约、参考输入、状态、obligations 和最终产物。冻结契约使用 [`RedlineProfile/v1`](redline-profile.schema.json) 将六个共享红线绑定到本 case 的适用性、必测状态、关键区域、obligation、触发/不触发示例及证据要求。Rubric v1.2-draft 的新评测必须提供完整 profile；旧版冻结合同可以保持原样。E2E 结果的每条红线按 [`E2ERedlineAssessment/v1`](e2e-redline.schema.json) 保存适用性、状态、严重度、主要影响、受影响状态/区域及证据。grader 同时核对这些字段与冻结 profile 的范围，不会从视觉证据自动推断缺陷严重度。最终判定与评分锚点以 [Restore 最终 E2E](../../evals/restore.md) 为准。
 
 当前 `report.json` 使用 `schema_version: RestoreReport/v0.2`，结构由 renderer 组装和基础断言约束；**仓库尚无独立的 v0.2 Report JSON Schema**。这不是第二套报告数据，而是一个可维护性缺口：后续若要让外部工具消费或做跨版本迁移，应先抽出正式 Schema 和兼容策略，再接入验证。
 
@@ -105,7 +104,7 @@ Codex 宿主可用 `node scripts/restore/extract-codex-usage.mjs manifest.json t
 - `hypothesis.json`：`{issue_id,hypothesis,strategy,scope:'local'|'global',affected_states:[id],expected_change,preserve}`。每轮只处理一个偏差簇；复用同一失败假设触发停滞保护。
 - `IterationDecision/v0.2`：`{schema_version,issue_id,binding,verifier:{role:'independent',id},evidence:[id],forward,reverse,visible_improvement,reason}`。前后两次比较均把结果归一为 `candidate / best / same / uncertain`；`forward=reverse=candidate` 且无关键回归才可 keep。
 
-适配器协议：本地 Node 脚本从 stdin 读一份 JSON，从 stdout 只输出一份 JSON；诊断日志写 stderr。`measure RUN adapter.mjs output.json` 传 `LoopAssessmentRequest/v0.2`；`verify RUN assessment.json adapter.mjs` 对同一问题做 A/B 与 B/A 两次独立调用，返回的 `PairwiseVerdict/v0.2` 含 `binding/issue_id/choice:'A'|'B'|'same'|'uncertain'/assessor:{role:'independent',id}/reason/visible_improvement`，并生成交给 `record` 的两个文件；`eval RUN evals/pipeline/grader.mjs judge.mjs` 传 `FinalEvalRequest/v0.2`。最终红线字段按 [`E2ERedlineAssessment/v1`](e2e-redline.schema.json) 表示，包含适用性、状态、S0–S3 严重度、影响类型、受影响状态/区域和证据；具体 criteria 与级别映射见 [最终 E2E 红线规范](../../evals/specs/site-restore-v1.md#红线严重度与判定算法)。采集优先用已安装的 Python Playwright：`python scripts/restore/capture.py RUN reference|candidate BASE_URL output.json`；Node 环境已安装 Playwright 时也可用同目录 `capture.mjs`（若不在模块解析路径，设置 `RESTORE_PLAYWRIGHT_MODULE` 为其入口文件）。采集文件是证据，不能自动当作评分。原有 `compare-screens.py` 是局部诊断工具。
+适配器协议：本地 Node 脚本从 stdin 读一份 JSON，从 stdout 只输出一份 JSON；诊断日志写 stderr。`measure RUN adapter.mjs output.json` 传 `LoopAssessmentRequest/v0.2`；`verify RUN assessment.json adapter.mjs` 对同一问题做 A/B 与 B/A 两次独立调用，返回的 `PairwiseVerdict/v0.2` 含 `binding/issue_id/choice:'A'|'B'|'same'|'uncertain'/assessor:{role:'independent',id}/reason/visible_improvement`，并生成交给 `record` 的两个文件；`eval RUN evals/pipeline/grader.mjs judge.mjs` 传 `FinalEvalRequest/v0.2`。最终红线字段按 [`E2ERedlineAssessment/v1`](e2e-redline.schema.json) 表示，包含适用性、状态、S0–S3 严重度、影响类型、受影响状态/区域和证据；具体 criteria 与级别映射见 [Restore 最终 E2E](../../evals/restore.md#3-红线)。采集优先用已安装的 Python Playwright：`python scripts/restore/capture.py RUN reference|candidate BASE_URL output.json`；Node 环境已安装 Playwright 时也可用同目录 `capture.mjs`（若不在模块解析路径，设置 `RESTORE_PLAYWRIGHT_MODULE` 为其入口文件）。采集文件是证据，不能自动当作评分。原有 `compare-screens.py` 是局部诊断工具。
 
 受限宿主若拒绝启动 Node 子进程，adapter 可改为导出 `async function evaluate(input,args)`，调用器自动转为同进程执行；此模式只能协作式限时，运行报告保留 `enforcement: cooperative`。适配器没有接通可用的视觉模型时必须返回未测或终止，不可生成占位分数。
 

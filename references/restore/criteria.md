@@ -22,7 +22,7 @@
 
 Loop 达标：独立评估者覆盖每个必需单元；适用单元均 ≥3，不适用单元有事先冻结的理由；运行门禁全部通过；没有阻断或明显残差。缺失参考的 `unknown` 不算通过。
 
-最终六维评分及版本 Go/No-Go 不在本文件定义，见 [E2E Rubric](../../evals/rubrics/site-restore-v1.md)。
+最终五维评分及版本比较不在本文件定义，见 [Restore 最终 E2E](../../evals/restore.md)。
 # Loop 视觉义务与最终 E2E 红线是两套判定
 
-本文件定义 Restore 迭代期间的局部视觉义务和 finding 记录方式，用于决定是否修复候选页面。这里的 `blocking`、`obvious`、`minor` 是 Loop 诊断严重度，不是最终 E2E 红线严重度。最终交付验收的六类红线、S0–S3 影响锚点、证据要求和 grader 规则见 [页面还原 E2E 规格](../../evals/specs/site-restore-v1.md#红线严重度与判定算法)。不得直接把 Loop finding 的严重度复制为最终红线 verdict。
+本文件定义 Restore 迭代期间的局部视觉义务和 finding 记录方式，用于决定是否修复候选页面。这里的 `blocking`、`obvious`、`minor` 是 Loop 诊断严重度，不是最终 E2E 红线严重度。最终交付验收的六类红线、S0–S3 影响锚点、证据要求和 grader 规则见 [Restore 最终 E2E](../../evals/restore.md#3-红线)。不得直接把 Loop finding 的严重度复制为最终红线 verdict。

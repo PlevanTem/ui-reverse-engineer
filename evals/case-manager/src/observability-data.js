@@ -1,6 +1,6 @@
 const DIMENSIONS = [
   ["layout", "结构布局"], ["style", "视觉细节"], ["content", "内容完整"],
-  ["interaction", "交互状态"], ["fidelity", "证据忠实"], ["robustness", "响应稳健"],
+  ["interaction", "交互状态"], ["robustness", "响应稳健"],
 ];
 
 export const EVAL_DIMENSIONS = DIMENSIONS;
@@ -59,7 +59,7 @@ export function loadImportedRuns() {
 }
 
 function demoRun(id, caseId, variant, date, scores, stop, decisions, approved = null) {
-  const total = Math.round(scores.reduce((sum, score, index) => sum + score * [25, 20, 15, 20, 10, 10][index] / 4, 0));
+  const total = Math.round(scores.reduce((sum, score) => sum + score * 20 / 4, 0));
   return {
     id, caseId, variant, importedAt: date, startedAt: date, source: "synthetic-demo", demo: true,
     tier: caseId === "UIR-0001" ? "complex" : "refined", referenceUrl: null, stateCount: caseId === "UIR-0001" ? 4 : 3,
@@ -71,12 +71,12 @@ function demoRun(id, caseId, variant, date, scores, stop, decisions, approved = 
 }
 
 export const DEMO_RUNS = [
-  demoRun("RUN-2401", "UIR-0001", "Luna · 基线", "2026-10-12T09:15:00+08:00", [2, 2, 1, 2, 3, 3], "budget_exhausted", ["keep", "revert", "inconclusive"]),
-  demoRun("RUN-2402", "UIR-0001", "Luna · Product Design", "2026-10-12T10:40:00+08:00", [3, 3, 2, 3, 3, 3], "plateau", ["keep", "keep", "inconclusive"]),
-  demoRun("RUN-2403", "UIR-0001", "Luna · Restore Skill", "2026-10-12T14:05:00+08:00", [3, 4, 3, 3, 3, 3], "target_reached", ["keep", "keep", "keep"], "conditional_go"),
-  demoRun("RUN-2404", "UIR-0002", "Luna · 基线", "2026-10-13T09:25:00+08:00", [2, 2, 2, 2, 3, 3], "budget_exhausted", ["keep", "revert"]),
-  demoRun("RUN-2405", "UIR-0002", "Luna · Product Design", "2026-10-13T11:05:00+08:00", [3, 3, 3, 3, 3, 3], "target_reached", ["keep", "keep"], "go"),
-  demoRun("RUN-2406", "UIR-0002", "Luna · Restore Skill", "2026-10-13T15:20:00+08:00", [4, 3, 3, 3, 3, 3], "target_reached", ["keep", "keep", "keep"], "go"),
+  demoRun("RUN-2401", "UIR-0001", "Luna · 基线", "2026-10-12T09:15:00+08:00", [2, 2, 1, 2, 3], "budget_exhausted", ["keep", "revert", "inconclusive"]),
+  demoRun("RUN-2402", "UIR-0001", "Luna · Product Design", "2026-10-12T10:40:00+08:00", [3, 3, 2, 3, 3], "plateau", ["keep", "keep", "inconclusive"]),
+  demoRun("RUN-2403", "UIR-0001", "Luna · Restore Skill", "2026-10-12T14:05:00+08:00", [3, 4, 3, 3, 3], "target_reached", ["keep", "keep", "keep"], "conditional_go"),
+  demoRun("RUN-2404", "UIR-0002", "Luna · 基线", "2026-10-13T09:25:00+08:00", [2, 2, 2, 2, 3], "budget_exhausted", ["keep", "revert"]),
+  demoRun("RUN-2405", "UIR-0002", "Luna · Product Design", "2026-10-13T11:05:00+08:00", [3, 3, 3, 3, 3], "target_reached", ["keep", "keep"], "go"),
+  demoRun("RUN-2406", "UIR-0002", "Luna · Restore Skill", "2026-10-13T15:20:00+08:00", [4, 3, 3, 3, 3], "target_reached", ["keep", "keep", "keep"], "go"),
 ];
 
 export function auditEvents(runs) {
