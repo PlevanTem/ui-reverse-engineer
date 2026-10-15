@@ -13,7 +13,7 @@
 | 运行控制 | `scripts/restore/core.mjs`、`cli.mjs`、`pairwise.mjs`、`adapter.mjs` | 契约冻结、快照、三类评估、双顺序比较、回退及有界退出 |
 | 取证与资源 | `scripts/restore/capture.py`、`capture.mjs`、`collect-assets.mjs`、`compare-screens.py` | 状态截图、资源映射及比较辅助 |
 | 报告与用量 | `scripts/restore/report.mjs`、`extract-codex-usage.mjs`、`assets/restore/report.html`、`references/restore/token-usage.schema.json` | HTML 审批报告、时间暂停校正、可归属 token 用量与覆盖状态 |
-| 独立 Eval | `evals/pipeline/score-final.mjs`、`evals/specs/`、`evals/rubrics/`、`evals/templates/` | 六维最终验收接口和历史 v0.1 兼容资料；不复用 Loop 分数 |
+| 独立 Eval | `evals/pipeline/grader.mjs`、`evals/specs/`、`evals/rubrics/`、`evals/templates/` | 六维最终验收与 UI 红线严重度契约；不复用 Loop 分数 |
 | 案例与工作台基线 | `evals/cases.yaml`、`evals/case-schema.json`、`evals/case-manager/` | 七个草稿案例、录入/筛选/统计和本地报告预览 |
 | 治理与历史 | `AGENTS.md`、`.gitignore`、`CHANGE_LOG.md`、`references/restore-iteration-prd.md`、`references/restore-brief-template.md`、`references/technology-stack-analysis.md` | 项目约束、生成物隔离、历史设计与技术栈取证 SOP |
 

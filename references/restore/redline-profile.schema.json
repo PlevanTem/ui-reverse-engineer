@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:RedlineProfile/v1",
+  "title": "Case-specific UI redline profile",
+  "description": "Binds shared UI redline criteria to the required states, regions, obligations, and evidence for one case. It does not change shared severity thresholds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "case_id", "rubric_version", "redlines"],
+  "properties": {
+    "schema_version": { "const": "RedlineProfile/v1" },
+    "case_id": { "type": "string", "minLength": 1 },
+    "rubric_version": { "type": "string", "minLength": 1 },
+    "redlines": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/profileEntry" }
+    }
+  },
+  "$defs": {
+    "profileEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "applicability", "scope", "obligation_ids", "trigger_examples", "non_trigger_examples", "evidence_requirements", "rationale"],
+      "properties": {
+        "id": { "enum": ["runnable", "structure", "interaction", "obstruction", "fabrication", "external_writes"] },
+        "applicability": { "enum": ["applicable", "not_applicable"] },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state_ids", "region_ids"],
+          "properties": {
+            "state_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+            "region_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+          }
+        },
+        "obligation_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "trigger_examples": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "non_trigger_examples": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "evidence_requirements": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["screenshot", "interaction_trace", "runtime_diagnostic", "reference_fact", "network_or_state_change"] } },
+        "rationale": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "applicability": { "const": "applicable" } }, "required": ["applicability"] },
+          "then": { "properties": { "scope": { "properties": { "state_ids": { "minItems": 1 } } } } }
+        },
+        {
+          "if": { "properties": { "applicability": { "const": "not_applicable" } }, "required": ["applicability"] },
+          "then": { "properties": { "scope": { "properties": { "state_ids": { "maxItems": 0 }, "region_ids": { "maxItems": 0 } }, "required": ["state_ids", "region_ids"] }, "obligation_ids": { "maxItems": 0 } } }
+        }
+      ]
+    }
+  }
+}

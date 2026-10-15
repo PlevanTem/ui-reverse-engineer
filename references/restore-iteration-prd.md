@@ -4,7 +4,7 @@
 
 状态：**方案草案；单 case 人工编排试点已执行，自动控制器尚未启用**。版本：0.1（2026-10-13）。适用范围：`--restore` 的网站逆向复现；默认组合模式中的还原部分同样适用。本文规定拟实现的能力与顺序，不改变当前 [还原指南](restore-guide.md) 的运行要求。
 
-按需阅读：[运行契约与测量细则](../evals/specs/restore-loop-contract-v0.1.md)定义数据结构、评分和控制器；现有 [E2E 评测方案](../evals/specs/site-restore-v1.md)及 [Rubric](../evals/rubrics/site-restore-v1.md)负责跨方案版本决策。实施时，Skill 入口只保留短指令，详细协议按任务需要加载。
+当前实现接口见 [Restore v0.2](restore-v0.2.md) 和 [运行接口](restore/interfaces.md)；本提案及 [`v0.1 运行契约`](../evals/specs/restore-loop-contract-v0.1.md)仅用于追溯设计来源。跨方案版本决策仍由 [E2E 评测方案](../evals/specs/site-restore-v1.md)及 [Rubric](../evals/rubrics/site-restore-v1.md)负责。
 
 ## 1. 决策与问题
 
@@ -60,7 +60,7 @@
 
 ## 5. 任务规范与设计约束
 
-**任务契约**由 case 元数据引用独立、版本化的 fixture，不把大截图或隐私数据塞进 `cases.yaml`。最少定义：目标和实际 URL、页面/视口、浏览器和显示环境、滚动/时间点、存储及语言初态、动作步骤及就绪条件、参考截图/录屏/结构证据、关键区域与行为、资源清单、允许遮罩项、未知项、各项证据来源与哈希。字段和示例见[运行契约](../evals/specs/restore-loop-contract-v0.1.md)。
+**任务契约**由 case 元数据引用独立、版本化的 fixture，不把大截图或隐私数据塞进 `cases.yaml`。最少定义：目标和实际 URL、页面/视口、浏览器和显示环境、滚动/时间点、存储及语言初态、动作步骤及就绪条件、参考截图/录屏/结构证据、关键区域与行为、资源清单、允许遮罩项、未知项、各项证据来源与哈希。当前字段见[运行接口](restore/interfaces.md)；v0.1 草案不是活动 Schema。
 
 **约束**
 
@@ -73,7 +73,7 @@
 
 ## 6. 质量门禁与停止规则
 
-沿用[现有 E2E Rubric](../evals/rubrics/site-restore-v1.md)做**最终质量与版本比较**；新增逐区域/逐状态诊断账本做**修复导航**，两者不可混为一个实时可调分数。诊断层采用确定性检查、图像差异、校准后的 LLM 评委和人工复核；适用条件见[测量细则](../evals/specs/restore-loop-contract-v0.1.md)。
+沿用[现有 E2E Rubric](../evals/rubrics/site-restore-v1.md)做**最终质量与版本比较**；逐区域/逐状态 Loop 诊断只用于**修复导航**，不与 E2E 分数合并。当前模块边界与适配器协议见[运行接口](restore/interfaces.md)。
 
 一轮修改仅在以下条件同时满足时保留：硬门槛无新增失败；目标偏差有重复可见的改善；其他已通过的关键状态无实质回归；比较证据完整。证据不完整时标记 `inconclusive`，不得伪装成改善。对相近分数的候选，优先选择更稳定且更简单的实现。
 
@@ -86,13 +86,14 @@ references/
   restore-guide.md                  # 现行流程；未来只加短入口
   restore-iteration-prd.md          # 本文：目标、范围、要求、实施决策
 evals/
-  specs/restore-loop-contract-v0.1.md # 按需加载：任务/运行契约、指标、门禁
-  fixtures/<case_id>/<version>/     # 未来：经授权冻结的场景与参考证据
-  pipeline/                          # 未来：采集、执行、评分和循环适配器
-  results/<run_id>/                  # 未来：逐轮报告、差异、保留/回退记录
+  scripts/restore/                  # v0.2 控制器、采集/诊断工具、报告生成器
+  assets/restore/                   # 唯一单次 HTML 报告模板
+  references/restore/               # 活动字段、命令、模块边界和数据流
+  evals/pipeline/                   # 独立六维 E2E 评分器
+  evals/results/<run_id>/           # 本地 run 数据；默认由 Git 忽略
 ```
 
-单 case 交付至少有 `design_brief.md`、可运行的 `restored/`、参考/本地对照、逐轮决策记录和残差清单。单 case 的统一审阅与审批采用[Restore Loop HTML 报告契约](../evals/specs/restore-loop-report-v0.1.md)：它索引 T0–T5 过程记录，审批 JSON 绑定报告数据与模板哈希。当前已有单次运行的初始化、截图诊断、文档汇编和 HTML 渲染脚本，UIR-0006 取证与修复仍由执行者编排；自动采集、跨 case 评分及修复控制器未上线。跨 case 版本报告继续使用现有 `evals/templates/report.md`。证据大文件、用户生成素材和敏感浏览器会话只存许可允许的本地位置；仓库保存可复现说明或脱敏摘要。
+单 case 交付至少有 `design_brief.md`、可运行的 `restored/`、参考/本地对照、逐轮决策记录和残差清单。当前单次报告由 [`scripts/restore/report.mjs`](../scripts/restore/report.mjs) 从结构化 run 数据生成 T0–T4、brief、JSON 和 HTML；模板唯一保存在 `assets/restore/report.html`，审批 JSON 绑定报告与模板哈希。v0.1 的并行 HTML、Schema 和重渲染器已退役，历史 HTML 保持静态可读。跨 case 版本报告继续使用 `evals/templates/report.md`。证据大文件、用户生成素材和敏感浏览器会话只存许可允许的本地位置；仓库保存可复现说明或脱敏摘要。
 
 ## 8. 分阶段执行计划
 

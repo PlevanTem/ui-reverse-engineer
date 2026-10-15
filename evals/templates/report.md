@@ -1,6 +1,6 @@
 # Site Restore E2E 版本评测报告
 
-本模板用于**跨 case、跨方案的版本评测决策**。单个 `--restore` run 的输入、输出、逐轮修复与审批记录见 [Restore Loop HTML 报告契约](../specs/restore-loop-report-v0.1.md)。单次还原的 Go 不代表 Skill 版本 Go。
+本模板用于**跨 case、跨方案的版本评测决策**。单次 `--restore` run 的最终 E2E、修复过程和审批见 [Restore v0.2 报告与数据流](../../references/restore/interfaces.md#冻结与输出)。单次还原的 Go 不代表 Skill 版本 Go。
 
 ## 基本信息
 
@@ -64,11 +64,20 @@
 
 - 本次 LLM Judge 与人工的 quadratic weighted Cohen’s κ：
 - 原始一致率 / 相差超过 1 级比例 / 有效判断数：
-- 评分器版本、judge 模型和评分输入版本：
 - 位置/顺序偏差测试结果：
 - 组间系统偏差（Judge - 人工，按维度）：
 - 未通过的偏差检查与影响：
 - 校准结论：通过 / 不通过 / 样本不足；若未校准，报告仅作为探索性结果。
+
+## 最终产物 E2E 记录元数据
+
+每条 case 只记录一份面向最终交付产物的 E2E 结果。不可核验的模型名写 `null` 并标注 `not_exposed`；不要根据宿主型号推测 Judge 模型。保留原始运行尝试供审计，但不在报告中与最终结果并列，也不作为审批口径。
+
+| Case / Run | 最终状态 | Judge provider | Judge model | 模型状态 | 开始时间 | 完成时间 | 时区 | 请求 Schema | Rubric / scorer 版本 | 校准状态 | 最终产物 SHA-256 | 契约 / 参考哈希 | 评测环境 | 结果文件 / SHA-256 | 局限 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| | pass / fail / incomplete | | 可核验模型名或 `null` | verified / not_exposed / not_recorded | ISO-8601 | ISO-8601 | UTC 或明确偏移 | | | | | | 浏览器、系统、视口 | | |
+
+结果必须绑定最终产物与冻结契约。`evaluated_at` 是评测完成时间；存在评测起止时间时同时记录两者。
 
 ## 下版目标
 

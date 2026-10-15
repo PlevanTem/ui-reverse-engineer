@@ -1,0 +1,67 @@
+{
+  "schema_version": "RedlineProfile/v1",
+  "case_id": "<case-id>",
+  "rubric_version": "site-restore-v1.1-draft",
+  "redlines": [
+    {
+      "id": "runnable",
+      "applicability": "applicable",
+      "scope": { "state_ids": ["<required-state>"], "region_ids": [] },
+      "obligation_ids": [],
+      "trigger_examples": ["<observable failure that blocks the documented entry path>"],
+      "non_trigger_examples": ["<nearby runtime issue that does not block the required page>"],
+      "evidence_requirements": ["runtime_diagnostic", "screenshot"],
+      "rationale": "<why this runtime condition matters for this case>"
+    },
+    {
+      "id": "structure",
+      "applicability": "applicable",
+      "scope": { "state_ids": ["<required-state>"], "region_ids": ["<critical-region>"] },
+      "obligation_ids": ["<required-obligation>"],
+      "trigger_examples": ["<missing or reordered critical region that hides the page purpose>"],
+      "non_trigger_examples": ["<local spacing or proportion difference with all critical regions present>"],
+      "evidence_requirements": ["screenshot"],
+      "rationale": "<why this region is critical to the case>"
+    },
+    {
+      "id": "interaction",
+      "applicability": "applicable",
+      "scope": { "state_ids": ["<required-interaction-state>"], "region_ids": ["<control-region>"] },
+      "obligation_ids": ["<interaction-obligation>"],
+      "trigger_examples": ["<required action fails or expected visible feedback is absent>"],
+      "non_trigger_examples": ["<unfrozen or unobservable behavior>"],
+      "evidence_requirements": ["interaction_trace", "screenshot"],
+      "rationale": "<why this action is core to the case>"
+    },
+    {
+      "id": "obstruction",
+      "applicability": "applicable",
+      "scope": { "state_ids": ["<required-state>"], "region_ids": ["<critical-region>"] },
+      "obligation_ids": ["<content-or-action-obligation>"],
+      "trigger_examples": ["<required content cannot be understood or required control cannot be used due to overlap/clipping/overflow>"],
+      "non_trigger_examples": ["bbox overlap alone; minor logo drift while required content and actions remain usable"],
+      "evidence_requirements": ["screenshot", "interaction_trace"],
+      "rationale": "<why obstruction of this content or action would block the task>"
+    },
+    {
+      "id": "fabrication",
+      "applicability": "applicable",
+      "scope": { "state_ids": ["<required-content-state>"], "region_ids": ["<content-region>"] },
+      "obligation_ids": ["<fact-or-content-obligation>"],
+      "trigger_examples": ["<unsupported factual claim materially changes page meaning>"],
+      "non_trigger_examples": ["<reasonable visual inference or decorative detail without factual meaning>"],
+      "evidence_requirements": ["reference_fact"],
+      "rationale": "<why accuracy of this fact matters to the case>"
+    },
+    {
+      "id": "external_writes",
+      "applicability": "applicable",
+      "scope": { "state_ids": ["<state-with-action>"], "region_ids": ["<action-region>"] },
+      "obligation_ids": [],
+      "trigger_examples": ["<user action submits or mutates disallowed external state>"],
+      "non_trigger_examples": ["<read-only asset request with no external state change>"],
+      "evidence_requirements": ["network_or_state_change"],
+      "rationale": "<why external side effects are disallowed for this case>"
+    }
+  ]
+}
