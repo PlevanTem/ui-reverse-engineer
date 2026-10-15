@@ -1,0 +1,303 @@
+{
+  "schema_version": "restore-loop-report/v0.1",
+  "report_id": "DEMO-RESTORE-001",
+  "demo": true,
+  "run": {
+    "run_id": "DEMO-RUN-001",
+    "case_id": "CASE-EXAMPLE",
+    "fixture_version": "demo-0.1",
+    "fixture_sha256": "DEMO-NOT-A-REAL-HASH",
+    "manifest_sha256": "DEMO-NOT-A-REAL-HASH",
+    "skill_version": "draft",
+    "scorer_version": "draft",
+    "model": "example-model",
+    "effort": "example",
+    "environment": "Chromium · 1440×900 · DPR 1 · zh-CN",
+    "started_at": "2026-10-13T09:00:00+08:00",
+    "completed_at": "2026-10-13T09:30:00+08:00",
+    "stop_reason": "demo_only"
+  },
+  "input": {
+    "task": "演示：根据参考网站还原首页及菜单展开状态",
+    "requested_url": "https://example.org/",
+    "observed_url": "https://example.org/",
+    "pages": [
+      "/"
+    ],
+    "states": [
+      "首页初始态",
+      "菜单展开态"
+    ],
+    "viewports": [
+      "1440×900",
+      "390×844"
+    ],
+    "design_constraints": [
+      "保留主视觉构图",
+      "菜单状态需可操作"
+    ],
+    "acceptance_criteria": [
+      "首页和菜单状态均可复现",
+      "关键资源加载成功"
+    ],
+    "out_of_scope": [
+      "登录后的页面"
+    ],
+    "technology_stack": [
+      "HTML",
+      "CSS",
+      "JavaScript"
+    ],
+    "reference_evidence": [
+      {
+        "id": "REF-01",
+        "kind": "screenshot",
+        "label": "首页参考图",
+        "uri": "evidence/home.png",
+        "sha256": "DEMO-NOT-A-REAL-HASH",
+        "coverage": "完整"
+      },
+      {
+        "id": "REF-02",
+        "kind": "scenario",
+        "label": "菜单操作记录",
+        "uri": "evidence/menu.json",
+        "sha256": "DEMO-NOT-A-REAL-HASH",
+        "coverage": "完整"
+      }
+    ],
+    "resources": [
+      {
+        "name": "主视觉图片",
+        "source": "参考页面资源",
+        "status": "可用",
+        "used_as": "首页 Hero"
+      }
+    ],
+    "unknowns": [
+      "演示数据没有真实网页取证；所有差值均为占位展示。"
+    ]
+  },
+  "output": {
+    "project_path": "results/DEMO-RUN-001/CASE-EXAMPLE/restored/",
+    "start_command": "npm run dev",
+    "candidate_ref": "demo-snapshot-2",
+    "artifact_sha256": "DEMO-NOT-A-REAL-HASH",
+    "implemented_pages": [
+      "/"
+    ],
+    "implemented_states": [
+      "首页初始态",
+      "菜单展开态"
+    ],
+    "technology_choices": [
+      "原生 DOM",
+      "CSS"
+    ],
+    "deviations": [
+      "示例：窄屏首屏留白尚未复核。"
+    ]
+  },
+  "quality": {
+    "redlines": [
+      {
+        "id": "RL-RUN",
+        "label": "页面可运行",
+        "status": "pass",
+        "evidence": "CAP-02"
+      },
+      {
+        "id": "RL-INTERACTION",
+        "label": "关键交互可用",
+        "status": "unknown",
+        "evidence": "CAP-03"
+      }
+    ],
+    "metrics": [
+      {
+        "id": "state_coverage",
+        "label": "状态覆盖率",
+        "category": "dynamic",
+        "baseline": 0.5,
+        "final": 1,
+        "delta": 0.5,
+        "unit": "比例",
+        "method": "已采集状态 / 应采集状态",
+        "coverage": "2/2 状态",
+        "confidence": "demo",
+        "evidence": "CAP-02"
+      },
+      {
+        "id": "layout_delta",
+        "label": "布局偏差",
+        "category": "static",
+        "baseline": 0.19,
+        "final": 0.11,
+        "delta": -0.08,
+        "unit": "归一化距离",
+        "method": "关键区域边界框差",
+        "coverage": "3/3 区域",
+        "confidence": "demo",
+        "evidence": "CAP-02"
+      },
+      {
+        "id": "mobile_coverage",
+        "label": "窄屏覆盖率",
+        "category": "personalized",
+        "baseline": null,
+        "final": null,
+        "delta": null,
+        "unit": "比例",
+        "method": "冻结视口复测",
+        "coverage": "待采集",
+        "confidence": "unmeasured",
+        "evidence": ""
+      }
+    ],
+    "judge": {
+      "status": "unmeasured",
+      "kappa": null,
+      "sample_size": 0,
+      "bias_result": "未校准，不能用于版本结论"
+    },
+    "findings": [
+      {
+        "severity": "major",
+        "title": "窄屏首屏状态未确认",
+        "state": "390×844",
+        "evidence": "CAP-03",
+        "next_action": "补充同环境参考和本地截图"
+      }
+    ]
+  },
+  "iterations": [
+    {
+      "round": 0,
+      "at": "2026-10-13T09:00:00+08:00",
+      "hypothesis": "首次基线",
+      "target": "首页初始态",
+      "change_ref": "demo-snapshot-0",
+      "before": "—",
+      "after": "记录初始缺口",
+      "regressions": [],
+      "decision": "baseline",
+      "evidence": [
+        "CAP-00"
+      ]
+    },
+    {
+      "round": 1,
+      "at": "2026-10-13T09:15:00+08:00",
+      "hypothesis": "主视觉区域的留白和尺寸不符",
+      "target": "首页 Hero",
+      "change_ref": "demo-snapshot-1",
+      "before": "布局偏差 0.19",
+      "after": "布局偏差 0.11",
+      "regressions": [],
+      "decision": "keep",
+      "evidence": [
+        "CAP-01",
+        "CAP-02"
+      ]
+    },
+    {
+      "round": 2,
+      "at": "2026-10-13T09:25:00+08:00",
+      "hypothesis": "菜单状态可通过覆盖层复现",
+      "target": "菜单展开态",
+      "change_ref": "demo-snapshot-2",
+      "before": "未覆盖",
+      "after": "已采集，反馈仍待确认",
+      "regressions": [],
+      "decision": "inconclusive",
+      "evidence": [
+        "CAP-03"
+      ]
+    }
+  ],
+  "process_docs": [
+    {
+      "stage": "T0",
+      "title": "任务边界与冻结",
+      "uri": "docs/T0-input.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "status": "complete",
+      "summary": "演示任务范围"
+    },
+    {
+      "stage": "T1",
+      "title": "参考取证",
+      "uri": "docs/T1-evidence.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "status": "complete",
+      "summary": "演示参考证据"
+    },
+    {
+      "stage": "T2",
+      "title": "基线记录",
+      "uri": "docs/T2-baseline.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "status": "complete",
+      "summary": "演示基线"
+    },
+    {
+      "stage": "T3",
+      "title": "逐轮迭代记录",
+      "uri": "docs/T3-iterations.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "status": "partial",
+      "summary": "第二轮待判"
+    },
+    {
+      "stage": "T4",
+      "title": "最终交付与残差",
+      "uri": "docs/T4-final.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "status": "partial",
+      "summary": "窄屏未复核"
+    }
+  ],
+  "residuals": [
+    {
+      "id": "RES-01",
+      "severity": "major",
+      "status": "unknown",
+      "description": "菜单反馈缺少完整参考证据",
+      "next_action": "补充动作录像后复测"
+    }
+  ],
+  "evidence_index": [
+    {
+      "id": "CAP-00",
+      "kind": "capture",
+      "label": "基线采集",
+      "uri": "evidence/baseline/",
+      "sha256": "DEMO-NOT-A-REAL-HASH",
+      "coverage": "演示"
+    },
+    {
+      "id": "CAP-01",
+      "kind": "capture",
+      "label": "第一轮候选",
+      "uri": "evidence/round-1/",
+      "sha256": "DEMO-NOT-A-REAL-HASH",
+      "coverage": "演示"
+    },
+    {
+      "id": "CAP-02",
+      "kind": "capture",
+      "label": "第一轮复测",
+      "uri": "evidence/round-1-verify/",
+      "sha256": "DEMO-NOT-A-REAL-HASH",
+      "coverage": "演示"
+    },
+    {
+      "id": "CAP-03",
+      "kind": "capture",
+      "label": "第二轮复测",
+      "uri": "evidence/round-2-verify/",
+      "sha256": "DEMO-NOT-A-REAL-HASH",
+      "coverage": "演示"
+    }
+  ]
+}

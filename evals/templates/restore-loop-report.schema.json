@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:restore-loop-report:v0.1",
+  "title": "Restore Loop report input v0.1",
+  "type": "object",
+  "required": ["schema_version", "report_id", "run", "input", "output", "quality", "iterations", "process_docs"],
+  "properties": {
+    "schema_version": { "const": "restore-loop-report/v0.1" },
+    "report_id": { "$ref": "#/$defs/nonempty" },
+    "demo": { "type": "boolean" },
+    "run": {
+      "type": "object",
+      "required": ["run_id", "case_id", "fixture_version", "manifest_sha256", "stop_reason"],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/nonempty" },
+        "case_id": { "$ref": "#/$defs/nonempty" },
+        "fixture_version": { "$ref": "#/$defs/nonempty" },
+        "fixture_sha256": { "type": "string" },
+        "manifest_sha256": { "$ref": "#/$defs/nonempty" },
+        "skill_version": { "type": "string" },
+        "scorer_version": { "type": "string" },
+        "model": { "type": "string" },
+        "effort": { "type": "string" },
+        "environment": { "type": "string" },
+        "started_at": { "type": "string" },
+        "completed_at": { "type": "string" },
+        "stop_reason": { "$ref": "#/$defs/nonempty" }
+      }
+    },
+    "input": {
+      "type": "object",
+      "required": ["task", "requested_url", "observed_url", "pages", "states", "viewports", "reference_evidence"],
+      "properties": {
+        "task": { "$ref": "#/$defs/nonempty" },
+        "requested_url": { "$ref": "#/$defs/nonempty" },
+        "observed_url": { "$ref": "#/$defs/nonempty" },
+        "pages": { "$ref": "#/$defs/strings" },
+        "states": { "$ref": "#/$defs/strings" },
+        "viewports": { "$ref": "#/$defs/strings" },
+        "design_constraints": { "$ref": "#/$defs/strings" },
+        "acceptance_criteria": { "$ref": "#/$defs/strings" },
+        "out_of_scope": { "$ref": "#/$defs/strings" },
+        "technology_stack": { "$ref": "#/$defs/strings" },
+        "reference_evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "resources": { "type": "array", "items": { "type": "object" } },
+        "unknowns": { "$ref": "#/$defs/strings" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["project_path", "start_command", "candidate_ref", "implemented_pages", "implemented_states"],
+      "properties": {
+        "project_path": { "$ref": "#/$defs/nonempty" },
+        "start_command": { "$ref": "#/$defs/nonempty" },
+        "candidate_ref": { "$ref": "#/$defs/nonempty" },
+        "artifact_sha256": { "type": "string" },
+        "implemented_pages": { "$ref": "#/$defs/strings" },
+        "implemented_states": { "$ref": "#/$defs/strings" },
+        "technology_choices": { "$ref": "#/$defs/strings" },
+        "deviations": { "$ref": "#/$defs/strings" }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": ["redlines", "metrics", "judge"],
+      "properties": {
+        "redlines": { "type": "array", "items": { "$ref": "#/$defs/redline" } },
+        "metrics": { "type": "array", "items": { "$ref": "#/$defs/metric" } },
+        "rubric_scores": { "type": "array", "items": { "$ref": "#/$defs/rubric_score" } },
+        "rubric_total_100": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "comparisons": { "type": "array", "items": { "$ref": "#/$defs/comparison" } },
+        "judge": { "type": "object", "required": ["status"], "properties": { "status": { "enum": ["unmeasured", "calibrated", "manual_reviewed", "failed_calibration"] }, "kappa": { "type": ["number", "null"] }, "sample_size": { "type": "integer", "minimum": 0 }, "bias_result": { "type": "string" } } },
+        "findings": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "iterations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/iteration" } },
+    "process_docs": { "type": "array", "minItems": 5, "items": { "$ref": "#/$defs/process_doc" } },
+    "residuals": { "type": "array", "items": { "type": "object" } },
+    "evidence_index": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+  },
+  "$defs": {
+    "nonempty": { "type": "string", "minLength": 1 },
+    "strings": { "type": "array", "items": { "type": "string" } },
+    "evidence": { "type": "object", "required": ["id", "kind", "uri"], "properties": { "id": { "$ref": "#/$defs/nonempty" }, "kind": { "$ref": "#/$defs/nonempty" }, "label": { "type": "string" }, "uri": { "type": "string" }, "sha256": { "type": "string" }, "coverage": { "type": "string" } } },
+    "redline": { "type": "object", "required": ["id", "label", "status"], "properties": { "id": { "$ref": "#/$defs/nonempty" }, "label": { "$ref": "#/$defs/nonempty" }, "status": { "enum": ["pass", "fail", "unknown", "not_applicable"] }, "evidence": { "type": "string" } } },
+    "metric": { "type": "object", "required": ["id", "label", "category", "baseline", "final", "delta"], "properties": { "id": { "$ref": "#/$defs/nonempty" }, "label": { "$ref": "#/$defs/nonempty" }, "category": { "enum": ["static", "dynamic", "personalized", "runtime", "e2e"] }, "baseline": { "type": ["number", "null"] }, "final": { "type": ["number", "null"] }, "delta": { "type": ["number", "null"] }, "unit": { "type": "string" }, "method": { "type": "string" }, "coverage": { "type": "string" }, "confidence": { "type": "string" }, "evidence": { "type": "string" }, "applicability": { "enum": ["applicable", "not_applicable"] } } },
+    "rubric_score": { "type": "object", "required": ["id", "label", "weight", "score", "evaluator", "confidence", "reason", "evidence"], "properties": { "id": { "$ref": "#/$defs/nonempty" }, "label": { "$ref": "#/$defs/nonempty" }, "weight": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 }, "score": { "type": "integer", "minimum": 0, "maximum": 4 }, "evaluator": { "$ref": "#/$defs/nonempty" }, "confidence": { "enum": ["high", "medium", "low"] }, "reason": { "$ref": "#/$defs/nonempty" }, "evidence": { "$ref": "#/$defs/strings" } } },
+    "comparison": { "type": "object", "required": ["state_id", "viewport", "reference_evidence", "candidate_evidence"], "properties": { "state_id": { "$ref": "#/$defs/nonempty" }, "viewport": { "$ref": "#/$defs/nonempty" }, "reference_evidence": { "$ref": "#/$defs/nonempty" }, "candidate_evidence": { "$ref": "#/$defs/nonempty" }, "diff_evidence": { "type": "string" }, "mae_0_255": { "type": ["number", "null"] }, "note": { "type": "string" } } },
+    "iteration": { "type": "object", "required": ["round", "decision", "hypothesis"], "properties": { "round": { "type": "integer", "minimum": 0 }, "at": { "type": "string" }, "hypothesis": { "$ref": "#/$defs/nonempty" }, "target": { "type": "string" }, "change_ref": { "type": "string" }, "before": { "type": "string" }, "after": { "type": "string" }, "regressions": { "$ref": "#/$defs/strings" }, "decision": { "enum": ["baseline", "keep", "revert", "inconclusive"] }, "evidence": { "$ref": "#/$defs/strings" } } },
+    "process_doc": { "type": "object", "required": ["stage", "title", "uri", "sha256", "status"], "properties": { "stage": { "enum": ["T0", "T1", "T2", "T3", "T4"] }, "title": { "$ref": "#/$defs/nonempty" }, "uri": { "$ref": "#/$defs/nonempty" }, "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "status": { "enum": ["complete", "partial", "blocked"] }, "summary": { "type": "string" }, "updated_at": { "type": "string" } } }
+  }
+}
