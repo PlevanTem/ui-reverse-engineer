@@ -25,7 +25,7 @@ description: >-
 | `--query`           | 反推风格     | 反推用户原始需求与风格描述          | `query_instruction.json`            |
 | `--design-md`       | 资产化       | 将设计分析转为 DESIGN.md 并入库    | `DESIGN.md` + CSV 索引更新           |
 | `--transfer`        | 风格迁移     | 基于参考风格迁移刷新已有的网站代码    | 更新后的目标 HTML                    |
-| `--restore`         | 反向还原     | 根据参考资源反向生成网站代码         | `restored.html`                     |
+| `--restore`         | 反向还原     | 逆向复现参考页面的资源、视觉和交互     | 可运行的 `restored/` 项目             |
 
 ### 组合规则
 
@@ -33,13 +33,13 @@ description: >-
 | --------------------------------- | ------------------------------------------- | ----------------------------------------------- |
 | `--query`                         | 只要训练数据对                                 | 分析 → query_instruction.json                    |
 | `--design-md`                     | 只要风格资产                                   | 分析 → design_brief(内部) → DESIGN.md + CSV     |
-| `--restore`                       | 只要克隆代码                                   | 分析 → design_brief(内部) → restored.html        |
+| `--restore`                       | 还原参考网站                                   | 取证 → design_brief → restored/ 项目              |
 | `--transfer`                      | 已有代码 + 参考风格 → 刷新代码                   | 分析参考 → 分析目标 → 风格迁移 → 输出             |
 | `--query --design-md`             | 反推需求 + 沉淀风格资产                          | 分析 → JSON + DESIGN.md + CSV                   |
-| `--query --restore`               | 完整逆向（原有默认模式）                          | 分析 → JSON + design_brief → restored.html       |
-| `--query --design-md --restore`   | 全流程                                        | 分析 → JSON + DESIGN.md + CSV + restored.html    |
+| `--query --restore`               | 完整逆向（原有默认模式）                          | 取证 → JSON + design_brief → restored/ 项目       |
+| `--query --design-md --restore`   | 全流程                                        | 取证 → JSON + DESIGN.md + CSV + restored/ 项目    |
 | `--design-md --transfer`          | 提取参考风格 + 迁移到目标                        | 分析参考 → DESIGN.md + CSV → 迁移目标代码          |
-| 无参数（默认）                      | 等同 `--query --restore`                      | 分析 → JSON + design_brief → restored.html       |
+| 无参数（默认）                      | 等同 `--query --restore`                      | 取证 → JSON + design_brief → restored/ 项目       |
 
 ### 触发方式
 
@@ -64,7 +64,7 @@ description: >-
 
 **识别条件**：用户提供网站链接，且目标为可浏览的网页。
 
-**分析策略**：使用 `cursor-ide-browser` MCP 工具进行实时视觉审查。
+**分析策略**：同时进行实时视觉审查和主动源码发现。普通网站 URL 已足以启动源码追踪；不要求用户另提供 Git 仓库、代码托管页或源码文件。先确认页面身份与主要视觉区域，再从该页面实际加载的 HTML、脚本、样式和运行时资源中寻找实现证据。
 
 **执行步骤**：
 
@@ -73,7 +73,9 @@ description: >-
 3. 滚动页面（`browser_scroll`）捕捉完整页面，包括折叠区域
 4. 对关键交互元素（导航、下拉、弹窗、Tab）执行 `browser_click` 触发状态变化
 5. 调用 `browser_snapshot` 记录交互后的视觉状态变化
-6. 提取：布局结构、色彩系统、字体体系、间距规律、组件库风格、交互模式
+6. 检查当前页面可读取的 HTML/DOM、脚本与样式引用、模块预加载和资源加载记录；区分目标站资源与第三方公共资源
+7. 对第一方脚本/样式进一步查看可读源码、公开 source map 或资源内容；结合框架标记、运行时对象和页面区域使用情况确认技术候选
+8. 将源码/运行时发现映射回截图中的区域和交互，再提取布局结构、色彩系统、字体体系、间距规律、组件风格及实现技术
 
 **重点捕捉**：
 
@@ -107,15 +109,15 @@ description: >-
 
 ---
 
-### 类型 C — 源码 URL（结构与逻辑理解）
+### 类型 C — 用户直接提供的源码（结构与逻辑理解）
 
-**识别条件**：用户提供 GitHub、GitLab、CodePen、StackBlitz 等代码托管链接，或指向 `.html`/`.css`/`.js` 的直接文件链接。
+**识别条件**：用户明确给出 GitHub、GitLab、CodePen、StackBlitz 等代码托管链接，或 `.html`/`.css`/`.js` 直接文件链接。
 
-**分析策略**：通过读取源码，从实现层反推设计意图与需求逻辑。
+**分析策略**：从用户指定的源码入口分析实现逻辑。这是额外提供的源码输入类型，不是分析普通网站 URL 的前置条件；普通网站 URL 应按类型 A 主动检查页面公开加载的源码和运行时资源。
 
 **执行步骤**：
 
-1. 使用 `WebFetch` 获取页面源码或代码文件内容
+1. 读取用户提供的源码页面或代码文件；若为代码托管页面，识别目标分支、文件和页面范围
 2. 解析 HTML 结构：提取语义化标签层级、组件划分、数据绑定
 3. 解析 CSS/Tailwind：还原色彩变量、间距系统、响应式断点
 4. 解析 JavaScript/框架逻辑：识别状态管理、事件绑定、API 调用模式
@@ -165,9 +167,15 @@ description: >-
 
 当用户同时提供多种类型的参考资料时：
 
-1. **优先级**：源码 URL > 网站 URL（实时） > 视频 > 截图
+1. **并行分析**：网站 URL 的视觉与源码/运行时发现并行推进；用户提供的项目源码用于补充或核对，而非替代实时页面检查
 2. **交叉验证**：用多种来源互相印证，标注冲突之处
 3. **信息融合**：将各来源的洞察合并进后续流程
+
+### 网站技术栈分析（URL 任务）
+
+分析网站技术栈时，源码/运行时证据与视觉检查必须结合：视觉用于确认目标页面、区域和行为；源码、资源与运行时用于确认实现。普通 URL 到手后主动从页面 HTML/DOM、脚本和样式引用、模块预加载、公开资源映射及浏览器实际加载记录发现源码入口；优先核查第一方资源，并对可访问的 bundle/source map 做有针对性的检查。按最终落地页核实主体是否加载，检查动态区域的 DOM/媒体/Canvas/渲染上下文，再将每个技术候选映射到目标区域及其作用。不要从品牌、页面主题、视觉效果、单个弱资源线索直接推断技术；第三方资源已加载也不等于页面被拦截。
+
+未检查的技术项应标成未确认，未完成页面不能用空技术栈表示“确认不存在”。输出技术栈时只保留核实过的技术名词；证据来源、实现范围、角色和推断留在备注中。完整步骤、收尾门槛及 Three.js 案例复盘见[网站技术栈分析 SOP](references/technology-stack-analysis.md)。
 
 ---
 
@@ -350,37 +358,39 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 ### 目标
 
-使用 **HTML5 + Tailwind CSS + 原生 JavaScript** 完整还原输入所呈现的界面设计与交互逻辑。
+以逆向工程方式尽可能复现参考中的页面、资源、风格、细节、响应式表现、动效与交互。技术选型和文件结构由目标复杂度与证据决定，不固定为单文件 HTML 或特定框架。
 
 ### 执行前置
 
-本模式依赖完整的设计分析。执行时会自动生成内部 `design_brief` 作为实现规范（若同时指定了 `--query`，会先完成 query 输出）。
+先检查参考的可见页面与状态，并按需追查公开源码、资源和运行时。执行时生成 `design_brief.md` 记录还原范围、实现决策及证据缺口（若同时指定了 `--query`，会先完成 query 输出）。
 
 ### 实现要求
 
-- 输出一个完整可运行的 `.html` 文件（单文件，内联 Tailwind via CDN）
-- 严格依据设计分析结果中的设计系统规范实现
-- 还原整体布局、色彩、排版、间距、组件样式
-- 对于图片，用合理的占位符（`bg-gray-200` 色块 + 描述文字）代替真实资源
-- 对视频或动效，用静态近似方案或 CSS 动画模拟关键效果
-- 实现可感知的交互：悬浮态、点击态、下拉菜单、Tab 切换、侧边栏等
-- 代码结构清晰
+- 盘点目标页面、视口、滚动关键帧和可观察交互状态，记录对应证据
+- 尽可能取得并正确使用参考所需的图片、字体、图标、视频、音频、3D 模型、纹理、文案等资源；不可取得时说明替代与偏差
+- 复现布局、色彩、排版、间距、组件细节、响应式行为、动效和核心交互；对关键动态区域使用足以还原行为的实现
+- 交付可运行项目，包含必要的页面、代码、资源、依赖与启动方式；简单页面可使用单个 HTML 文件
+- 在浏览器中按目标视口与状态对照参考，修正主要差异并说明剩余限制
 
-### design_brief 内部模板
+具体取证、实现及完成检查见[逆向还原指南](references/restore-guide.md)。
 
-当执行 `--restore` 时，内部生成的 design_brief 使用完整模板（含 Direction Decision、页面交互清单等实施细节），因为这些信息对代码还原是必要的。模板结构沿用 `design_brief.md` 的全部章节。
+还原时按 [Restore v0.2](references/restore-v0.2.md) 有界迭代：按页面复杂度分档并冻结参考与视觉 QA，生成基线，再围绕构图、外观、动态三类 [0–4 Criteria](references/restore/criteria.md)修复高影响偏差。每轮保留证据、假设及 keep/revert/inconclusive；有效执行时间、轮次或停滞触发退出，交付最佳版本。额度限制等外部暂停须有宿主起止证据才可扣除，并同时报告墙钟与有效耗时。若宿主或模型 API 提供可归属的 token 用量，按来源、Agent、阶段及覆盖状态登记，报告展示已观察总量；缺失时标未知，部分来源不得冒充完整成本。运行接口与可复用脚本见 [Restore 接口](references/restore/interfaces.md)。最终六维 E2E 使用独立评分器；Loop 停止原因、E2E 结果和人工审批分别记录。缺少可用浏览器或独立评委时，继续完成可观察部分，并将未完成评分标为 `incomplete`，不得填造通过结果。
+
+### design_brief 模板
+
+当执行 `--restore` 时，按 [Restore brief 模板](references/restore-brief-template.md) 记录参考事实、资源、页面状态、实现方式和对照结果，作为项目实现与验收依据。
 
 保存路径：`reverse_output/{case_name}_{YYYYMMDD}/design_brief.md`
 
 ### 输出路径
 
-`reverse_output/{case_name}_{YYYYMMDD}/restored.html`
+`reverse_output/{case_name}_{YYYYMMDD}/restored/`（内含可运行入口及所需资源）
 
 ---
 
 ## 分析思维框架
 
-分析时请主动运用以下思路，而不仅仅依赖表面元素：
+分析时请主动运用以下思路，并标明观察与推断。`--restore` 的实现以可观察证据及用户明确要求为准；以下推断不能直接变成确定的页面功能。
 
 **视觉线索捕捉**
 
@@ -396,11 +406,11 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 - 圆角一致 → 提取 border_radius_scale
 - 阴影分层 → 建立 depth_elevation 层级表
 
-**行为脑补**
+**行为验证与推断**
 
-- 问自己："如果我点击这里，用户期望发生什么？"
-- 通过控件类型（输入框、筛选器、排序）推断背后的数据结构
-- 通过列表/表格反推分页、排序、搜索等隐含功能
+- 对 URL 可操作的控件，实际点击并记录状态；对截图中的控件，说明哪些行为未能验证
+- 通过控件类型（输入框、筛选器、排序）形成待查的数据结构假设
+- 列表/表格可能涉及分页、排序或搜索；只有可观察或任务明确要求时才列为还原目标
 
 **由表及里**
 
@@ -433,13 +443,14 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 ### `--restore` 模式
 
-- **design_brief 完整**：每个章节必须输出，若信息不足，在对应位置注明"推测："前缀
-- **方向一致**：若同时执行 `--query`，JSON `design_preference` 与 brief 的设计方案必须逻辑吻合
+- **证据与覆盖范围明确**：brief 记录目标页面/状态、资源、视觉细节、交互、实现方案与剩余差异；无法核实的内容标记“未确认”
+- **可运行项目**：`restored/` 包含运行入口及必要资源；核心页面与交互按参考可观察状态复现
+- **参考优先**：若同时执行 `--query`，其中对需求或偏好的推断不能覆盖 `--restore` 中已观察到的页面事实
 
 ### 跨模式一致性
 
-- 当 `--query` 和 `--design-md` 同时执行时，query 中的 `design_preference` 与 DESIGN.md 的 Visual Theme 必须吻合
-- 当 `--design-md` 和 `--restore` 同时执行时，restored.html 的视觉表现必须与 DESIGN.md 的 token 一致
+- 当 `--query` 和 `--design-md` 同时执行时，query 中的 `design_preference` 可解释 DESIGN.md 的 Visual Theme，但推断不能改写参考中已观察到的设计事实
+- 当 `--design-md` 和 `--restore` 同时执行时，还原项目的视觉表现必须与 DESIGN.md 的 token 一致
 - 当 `--design-md` 和 `--transfer` 同时执行时，DESIGN.md 来自参考风格，迁移结果基于该 DESIGN.md
 
 ---
@@ -480,8 +491,8 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
    - 生成 DESIGN.md，保存至 `design_assets/{brand_name}/`
    - 更新 `design_assets/index.csv`
 5. **`--restore`**：
-   - 生成 `design_brief.md`（内部实施规范）
-   - 询问用户是否需要生成 HTML，确认后生成 `restored.html`
+   - 读取 `references/restore-guide.md`，完成参考取证、资源与状态清单
+   - 按 `references/restore-brief-template.md` 生成 `design_brief.md`，实现、运行、对照验证 `restored/` 项目；用户明确要求先审 brief 时按其要求暂停实现
 6. **`--transfer`**：
    - 读取 `references/transfer-guide.md`
    - 分析目标代码
@@ -491,135 +502,6 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 ---
 
-## design_brief 内部模板（供 `--restore` 使用）
+## design_brief 模板（供 `--restore` 使用）
 
-当需要生成 design_brief 时（`--restore` 模式或默认模式），使用以下完整模板：
-
-```markdown
-# Design System Inspiration of [品牌名称 / 项目名]
-
-## 设计问题陈述
-[基于 query 字段展开，一段话描述：谁、在什么场景下、需要解决什么问题、期望达到什么效果]
-
-## 1. Visual Theme & Atmosphere (视觉主题与氛围)
-[描述品牌整体的设计感觉、核心设计理念、信息密度、视觉重量、基础色调和排版基调]
-
-**Key Characteristics (核心特征):**
-- [特征 1]
-- [特征 2]
-- [特征 3]
-
-### Direction Decision (方向决策)
-- **主方向**: [主方向名称] — [3-5 个关键词]
-- **选择理由**: [为什么这个方向最适合本案]
-- **Trend Signals**: [来自 WebSearch 的具体趋势证据]
-- **Alternative Rejected 1**: [备选方向] — [为什么不选]
-- **Alternative Rejected 2**: [备选方向] — [为什么不选]
-- **Anti-Homogenization**: [为避免同质化，刻意规避了哪些套路]
-
-## 2. Color Palette & Roles (色彩调色板与角色)
-### Primary Brand (主品牌色)
-- **[颜色名称]** (`[Hex值]`): [Token 名 / 用途说明]
-### Premium Tiers / Secondary (高级 / 次要品牌色 - 可选)
-- **[颜色名称]** (`[Hex值]`): [Token 名 / 用途说明]
-### Text Scale (文本色阶)
-- **[颜色名称]** (`[Hex值]`): [Token 名 / 用途说明]
-### Interactive (交互色彩)
-- **[颜色名称]** (`[Hex值]`): [Token 名 / 用途说明]
-### Surface & Shadows (表面与阴影色彩)
-- **[颜色名称]** (`[Hex值]`): [Token 名 / 用途说明]
-
-## 3. Typography Rules (排版规则)
-### Font Family (字体家族)
-- **Primary**: `[主字体]`, fallbacks: `[备用字体]`
-- **Secondary / Display**: `[展示字体]`, fallbacks: `[备用字体]`
-- **CDN**: `[Google Fonts URL 或其他字体 CDN]`
-
-### Hierarchy (层级结构)
-| Role (角色) | Font (字体) | Size (字号) | Weight (字重) | Line Height (行高) | Letter Spacing (字间距) | Notes (备注) |
-|------|------|------|--------|-------------|----------------|-------|
-| [Hero Display] | [字体名] | [尺寸] | [字重] | [行高] | [间距] | [说明] |
-
-### Principles (排版原则)
-- [原则 1]
-- [原则 2]
-
-## 4. Component Stylings (组件样式)
-### Buttons (按钮)
-- [描述各按钮类型及状态]
-### Cards & Containers (卡片与容器)
-- [描述]
-### Inputs (输入框)
-- [描述]
-### Navigation (导航)
-- [描述]
-### Image Treatment (图像处理)
-- [描述]
-
-### Core Components (核心组件逐项约束)
-#### [组件名]
-- **Role**: [作用]
-- **Mood**: [外观气质]
-- **States**: `default / hover / active / loading / empty / error`
-- **Interaction Linkage**: [联动关系]
-
-## 5. Layout Principles (布局原则)
-### Spacing System (间距系统)
-- Base unit: [基础单位]
-- Scale: [间距比例尺]
-### Grid & Container (网格与容器)
-- [描述]
-### Whitespace Philosophy (留白哲学)
-- [描述]
-### Border Radius Scale (圆角比例尺)
-- [列出标准圆角大小]
-
-## 6. Depth & Elevation (深度与层级)
-| Level (层级) | Treatment (处理方式 / 阴影值) | Use (使用场景) |
-|-------|-----------|-----|
-| [层级名] | [阴影或边框策略] | [场景说明] |
-
-**Shadow Philosophy (阴影哲学)**: [描述]
-
-## 7. Do's and Don'ts (设计宜忌)
-### Do (推荐做法)
-- [推荐 1]
-### Don't (避免做法)
-- [避免 1]
-
-## 8. Responsive Behavior (响应式行为)
-### Breakpoints (断点)
-| Name (名称) | Width (宽度) | Key Changes (关键变化) |
-|------|-------|-------------|
-| [名称] | [尺寸范围] | [布局变化] |
-
-### Touch Targets (触控目标)
-- [描述]
-### Collapsing Strategy (折叠策略)
-- [描述]
-### Image Behavior (图像行为)
-- [描述]
-
-## 页面交互清单（Frontend 必须完整实现）
-- [ ] [交互项 1]
-- [ ] [交互项 2]
-
-## 视觉特效方案
-### 生成式视觉层（如适用）
-- 技术：[Canvas 2D / p5.js / Three.js 等]
-- 算法：[具体算法]
-- 区域：[页面区块]
-- 参数范围：[关键值]
-- CDN：`[具体 CDN URL]`
-
-### Motion Rhythm (动效节奏)
-- 快速 (100-150ms): 微交互 hover/focus
-- 正常 (250-350ms): 状态切换、展开/收起
-- 慢速 (500-800ms): 页面入场、场景转场
-- 缓动：[具体 cubic-bezier 或关键词]
-
-### Motion Implementation (动效方案)
-- 入场动画：[方式]
-- 交互动效：[方式]
-- 滚动联动：[方式]
-```
+执行 `--restore` 时，按 [Restore brief 模板](references/restore-brief-template.md) 记录目标范围、证据、资源、页面细节、交互状态、实现与对照结果。brief 随实现更新；不以设计灵感、趋势或无证据的替代方向覆盖参考页面。
