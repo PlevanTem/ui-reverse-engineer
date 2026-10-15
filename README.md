@@ -118,7 +118,7 @@ ui-reverse-engineer/
 ├── assets/restore/           # v0.2 HTML 报告模板
 └── evals/                    # --restore 页面 E2E 还原质量评测
     ├── README.md             # 评测目录、流程和自动化边界
-    ├── cases.yaml            # 7 个页面还原草稿案例；冻结素材后可用于评测
+    ├── cases.yaml            # 11 个页面还原草稿案例；冻结素材后可用于评测
     ├── case-schema.json      # Schema v1.2；区分 UI 类型和任务类型，难度保留三档
     ├── case-manager/         # 本地样本库；自动载入 cases.yaml，技术栈按高层模块拆分
     ├── restore.md            # Restore 唯一最终 E2E 评测方案
@@ -139,7 +139,8 @@ Ctrl+S 保存的是浏览器当前加载的网页快照，具体包含哪些 HTM
 ## 进一步阅读
 
 - [技能完整说明](SKILL.md)
-- [网站技术栈分析 SOP](references/technology-stack-analysis.md)：源码与视觉证据交叉核验，含 Three.js 官网案例复盘和防复发清单
+- [网站技术栈分析 SOP](references/technology-stack-analysis.md)：源码与视觉证据交叉核验；Canvas/3D 页面必须通过 API、renderer、模型资源与页面映射门禁，含 Three.js 归因和版本漂移复盘
+- [技术栈审计脚本](scripts/stack-audit/README.md)：本地采集、第一方源码候选扫描和人工证据门禁，不自动确认技术栈
 - [Restore 执行流程](references/restore.md)：冻结参考、建立基线、有界修复、停止与最终验收
 - [还原 brief 模板](references/restore-brief-template.md)
 - Restore 按 30/60/120 分钟三档做有界视觉迭代。三维 0–4 [Loop Criteria](references/restore/criteria.md)只负责修复导航；命令、字段和报告流见[接口](references/restore/interfaces.md)。

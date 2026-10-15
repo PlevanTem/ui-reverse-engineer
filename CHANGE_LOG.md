@@ -1,5 +1,33 @@
 # 变更日志
 
+### 2026-10-15 — 新增独立 Stack Audit 证据采集脚本
+
+- **范围：** 新增 `scripts/stack-audit/`，包含 Playwright 页面/资源/Canvas 采集、已加载同主机 JS/CSS 的候选扫描、目标页地标确认、人工裁决与证据引用验证，以及独立用法说明。同步技术栈 SOP、SKILL 入口、中英文 README 和评测目录说明。
+- **原因：** 把重复的浏览器证据采集和“不能只停在 Canvas”的完成门禁做成可复用、可检查的小工具，同时保留人工对技术归属的判断。
+- **验证：** 三个脚本均通过 `node --check`；CLI 帮助输出正常；`git diff --check` 通过。未运行测试套件，也未执行真实网页采集；Playwright 运行环境需由调用方提供。
+- **推送：** 本次按用户请求推送至 `main`
+
+### 2026-10-15 — 为 Canvas/3D 技术识别增加强制证据门禁
+
+- **范围：** 复核技术栈分析 SOP，增加 Canvas/WebGL/3D 页面必须完成的活动状态、渲染 API、第一方入口/bundle、模型资源、公开源码及线上页面映射核验步骤；明确只识别 Canvas 不能作为已完成分析的结论，并新增 Mermaid 流程图。同步中英文 README 与评测说明。修订 UIR-0008–0011：补入 Tiny Skies 的 Three.js/WebGL/TypeScript/Vite/Socket.IO Client、Henry Heffernan 的 Three.js/WebGL/CSS3DRenderer/GLSL/React、Firewood 的 Three.js；POLA 确认 Canvas/JavaScript/CSS，同时将图形 API 和动画库标为未知。
+- **原因：** 前一轮对 3D 页面只登记 Canvas、对 POLA 留空，跳过了已可获得的第一方源码、作者技术说明和页面实际加载资源。SOP 虽然要求主动找源码，但缺少针对 Canvas/3D 场景的强制收尾门禁。
+- **验证：** PyYAML 解析成功；11 条 case ID 唯一；新增 4 条均为 `restore` / `draft`；`git diff --check` 通过。未运行测试套件。
+- **推送：** 本次按用户请求推送至 `main`
+
+### 2026-10-15 — 新增四个 Restore 评测草稿案例
+
+- **范围：** 新增 UIR-0008 Tiny Skies、UIR-0009 POLA 母亲节故事页、UIR-0010 Henry Heffernan 和 UIR-0011 Firewood Splitting Simulator。四条均为 `restore` / `draft`；同步 Case Manager 案例数及中英文 README。
+- **原因：** 扩展 Restore 样本，覆盖 3D 游戏、素材与文字同步动画、复古 3D 桌面多页面交互，以及单场景点击/拖动玩法。
+- **证据与限制：** 2026-10-15 通过浏览器观察页面主体、Canvas 和可见交互；确认 Tiny Skies 的开始页与星球场景、POLA 滚动时插画和文案状态变化、Henry 的启动流程与作品集桌面、Firewood 的旋转提示及劈柴反馈。对尚未确认的引擎/图形 API 不作推断。未冻结视口、截图、交互序列及素材，所有新增 case 保持 `draft`。
+- **验证：** 浏览器逐页核对四个 URL 的主体状态与可见交互；元数据检查确认 case 总数 11、ID 唯一、类型引用有效、新增项均为 `restore` / `draft`；`git diff --check` 通过。未冻结 fixture，因此未运行正式评测。
+- **推送：** 本次按用户请求推送至 `main`
+
+### 2026-10-15 — 复核 UIR-0003 与 UIR-0006 技术栈并隔离历史证据
+
+- **范围：** 以当前浏览器 DOM、运行时资源、28K 开发者历史陈述和 Three.js 官方仓库为证据，更新 UIR-0003 与 UIR-0006。28K 当前栈记录为 Nuxt、Vue.js、Storyblok 和 HTML Video；2023 年 Vanilla WebGL/GLSL 证据保留为历史版本，不归入现站。Three.js 首页记录为 Vanilla JavaScript 与 HTML Image；r186、WebGL/WebGPU、TSL、ES Modules 和 SVG/CSS3D addons 明确归类为产品能力/仓库证据，不冒充首页实现。同步技术栈 SOP、中英文 README 与评测说明。
+- **原因：** 用户提供的深挖结果混合了旧站证据、当前页面事实和被介绍产品的能力。若直接复制到 `technology_stack`，会把已改版的 28K 旧实现当成现状，并把 Three.js 的产品能力误判成官网首页实现。
+- **验证：** YAML/Schema 契约检查通过，共 7 个 case，ID 与类型引用有效；Case Manager 生产构建通过，Sites 测试 4/4 通过；本地 UI 已确认 UIR-0003 显示 Nuxt/Vue.js/Storyblok/HTML Video，UIR-0006 显示 Vanilla JavaScript/HTML Image，详情中的证据与限制可见。`git diff --check` 通过。`skills-ref` 当前环境不可用；两个 case 继续保持 `draft`，未冻结 fixture。
+
 ### 2026-10-15 — 收敛 Restore 文档并改为五维 E2E
 
 - **类型：** 行为变化 / 大量迭代 / 推送

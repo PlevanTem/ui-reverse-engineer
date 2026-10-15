@@ -43,6 +43,8 @@ evals/
 - `ui_types` 与 `task_types` 使用稳定 ID；改名不改变 ID，被引用类型先归档再删除。
 - `description` 只写事实描述，`keywords` 单独保存检索词。
 - 未知 URL 为 `null`；未核实技术栈为空列表，不能解释为确认不存在。
+- URL 技术分析必须区分当前实现、页面介绍的产品能力和历史版本证据；Canvas/3D 页面须完成 API、renderer、模型资源与页面映射的强制核验。证据分层与版本漂移处理见 [`../references/technology-stack-analysis.md`](../references/technology-stack-analysis.md)。
+- 可用本地 [`stack-audit`](../scripts/stack-audit/README.md) 脚本采集页面证据和执行人工裁决门禁；脚本输出不自动写回案例，正式案例仍以 `cases.yaml` 的人工审核记录为准。
 - `difficulty` 使用 `easy / medium / hard`；`status` 使用草稿、可评测和退役状态。
 - 完整约束见 [`case-schema.json`](case-schema.json)，图形维护入口见 [`case-manager/`](case-manager/README.md)。
 

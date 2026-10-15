@@ -147,17 +147,25 @@ cases:
       - 工作室介绍
     url: https://28k.studio/
     technology_stack:
-      - HTML Canvas
+      - Nuxt
+      - Vue.js
+      - Storyblok
+      - HTML Video
     technology_stack_source: url_analysis
     technology_stack_evidence:
-      - 页面 DOM 中存在两个 Canvas 元素
+      - "[当前页面运行时，2026-10-15] 规范域名 https://www.28k.studio/ 的首页与 /work 均加载 /_nuxt/ 模块，页面包含 #__nuxt 根节点及 window.__NUXT__ 配置。"
+      - "[当前页面运行时，2026-10-15] Nuxt payload/config 含 Storyblok 数据键，页面 Open Graph 图片来自 a.storyblok.com；Nuxt 属于 Vue 框架。"
+      - "[当前页面运行时，2026-10-15] 首页和 /work 使用原生 video 元素播放 Vimeo progressive_redirect 媒体；两页均未发现 Canvas 元素。"
+      - "[当前页面资源，2026-10-15] 首页预加载 PPNeueMontreal-Medium.woff2 与 PPNeueMontreal-Regular.woff2；字体作为视觉证据，不作为技术栈标签。"
+      - "[历史第三方陈述] 开发者 Aristide Benoist 对 2023 年新 28K 网站的图片转场使用 #webgl、#vanillaWebgl、#javascript、#shader；该证据只支持旧版本，不能归入当前页面技术栈。"
+      - "[限制] 当前站点已改版，Claude Code 提供的预加载文案、原生 WebGL/GLSL 与旧路由 HTML 证据对应 2023 年上线版本；本次未发现可把这些历史技术归因到现站的运行时证据。"
     difficulty: hard
     input_kinds:
       - url
     status: draft
-    notes: 页面依赖滚动动效和动态视觉；当前只有 URL，未保存可复现的首屏与滚动关键帧，也未核实响应式断点。
+    notes: 2026-10-15 复核发现 URL 已从 2023 年版本改版为 Nuxt/Storyblok 页面；现站首页与 /work 使用 HTML Video，未发现 Canvas。现有标题、描述和关键词仍带有旧版视觉记录，正式评测前必须重新冻结当前首屏、滚动关键帧、路由状态和响应式断点；若要评测 2023 版，需另存可授权的历史 fixture，不能只依赖当前 URL。
     created_at: "2026-10-11T16:38:14+08:00"
-    updated_at: "2026-10-12T00:07:50+08:00"
+    updated_at: "2026-10-15T20:24:16+08:00"
 
   - id: UIR-0004
     title: Build in Amsterdam — Awwwards 工作室资料页
@@ -227,16 +235,23 @@ cases:
       - 侧边导航
       - 图片网格
     url: https://threejs.org/
-    technology_stack: []
-    technology_stack_source: unknown
-    technology_stack_evidence: []
+    technology_stack:
+      - Vanilla JavaScript
+      - HTML Image
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - "[当前页面运行时，2026-10-15] 项目展示墙由指向外部项目的 a 元素和 /files/projects/*.jpg 懒加载 img 元素组成；首页未发现 Canvas。"
+      - "[当前页面源码，2026-10-15] 首页可见交互脚本为原生 JavaScript，通过 click 事件切换侧栏的 open 类；未加载 Three.js 模块。"
+      - "[页面内容] 首页标题显示 three.js r186，并链接到官方 r186 release；Learn 区提供 TSL guide 入口。版本与链接说明页面主题和产品版本，不证明首页自身使用 Three.js。"
+      - "[官方仓库] 仓库根目录包含 docs、editor、examples、files、manual、tsl；README 说明当前构建包含 WebGL/WebGPU renderer，SVG/CSS3D renderer 作为 addons，并用 ES Modules 演示 API。以上是 Three.js 产品能力与仓库结构，不是首页实现栈。"
+      - "[限制] 托管方式未确认；本次运行时没有发现把 Three.js、WebGL、WebGPU、TSL、SVG 或 CSS3D 归因到首页展示墙实现的证据。"
     difficulty: medium
     input_kinds:
       - url
     status: draft
-    notes: Three.js 是页面介绍的库名，不据此推断官网自身使用该库。此前只记录到栏目导航和项目缩略图展示墙，未核实其由普通图片、Canvas/WebGL 还是 Three.js 场景实现；空技术栈表示分析未完成，不代表确认未使用。目标素材与视口仍待冻结。
+    notes: 2026-10-15 已核实当前首页展示墙为普通 HTML 图片链接，侧栏交互为少量原生 JavaScript；页面没有 Canvas，也未加载 Three.js 模块。Three.js r186、WebGL、WebGPU、TSL、ES Modules 与 SVG/CSS3D addons 属于页面介绍的产品/仓库能力，未写入首页实现栈。目标素材、视口和交互状态仍待冻结。
     created_at: "2026-10-11T16:38:14+08:00"
-    updated_at: "2026-10-11T16:38:14+08:00"
+    updated_at: "2026-10-15T20:24:16+08:00"
 
   - id: UIR-0007
     title: General Intuition — 动态研究实验室主页
@@ -270,3 +285,128 @@ cases:
     notes: 2026-10-14 可访问首页已确认标题、首屏、MIRA 研究区和 ASCII Settings 控件。该 case 用于检验动态媒体、Canvas 叠层、定制字体和非典型排版的还原；尚未冻结目标截图、视口、滚动关键帧、设置面板数值和媒体素材，不能直接作为可复现评测输入。
     created_at: "2026-10-14T22:00:00+08:00"
     updated_at: "2026-10-14T22:00:00+08:00"
+
+  - id: UIR-0008
+    title: Tiny Skies — 星球飞行探索游戏
+    ui_type_id: interactive-experience
+    task_type_id: restore
+    description: 浏览器探索游戏以夜空中的球形星球为主场景。开始页显示 Biplane Level 1、两个锁定载具和 GO 按钮，并列出近期玩家保存的区域；进入后可见环绕星球的飞行场景、星空和极光效果。
+    keywords:
+      - 3D 游戏场景
+      - 星球飞行
+      - 探索玩法
+      - 载具选择
+      - HTML Canvas
+      - Three.js
+      - WebGL
+    url: https://tinyskies.vercel.app/
+    technology_stack:
+      - HTML Canvas
+      - Three.js
+      - WebGL
+      - TypeScript
+      - Vite
+      - Socket.IO Client
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - "[当前页面运行时，2026-10-15] 页面包含覆盖主场景的 Canvas；进入后显示球形地貌、飞行场景，网络资源包含场景 GLB 模型；菜单为 DOM 控件。"
+      - "[部署对应的公开源码，2026-10-15] https://github.com/dannylimanseta/tinyskies 的 README 将部署地址列为 https://tinyskies.vercel.app/，并标为 Multiplayer Three.js game；client/package.json 标明 Vite、TypeScript、Three.js、Socket.io，src/game/Game.ts 导入 Three.js WebGLRenderer 并创建 renderer。"
+      - "[归因边界] 当前页面运行时资源与项目部署 URL、交互场景相对应，支持将 Three.js/WebGL 归到当前体验；Socket.IO Client 是项目客户端依赖。未把服务端框架和数据库写入网页栈。"
+    difficulty: hard
+    input_kinds:
+      - url
+    status: draft
+    notes: "2026-10-15 已核对开始页和 GO 后的星球场景。DOM 可确认 Biplane Level 1、锁定载具与存档动态消息；本次未确认游戏内规则、完整控制方式或通关条件。未冻结目标视口、截图、游戏状态和操作序列，继续保持 draft。"
+    created_at: "2026-10-15T20:47:16+08:00"
+    updated_at: "2026-10-15T21:47:16+08:00"
+
+  - id: UIR-0009
+    title: POLA — 母亲节故事长页
+    ui_type_id: landing-page
+    task_type_id: restore
+    description: POLA 母亲节品牌故事页以浅色背景、彩色花朵插画和日文段落呈现。向下滚动时，插画构图移动，文案逐段变换明暗与强调状态，素材动画和文字变化同时发生。
+    keywords:
+      - 品牌故事页
+      - 滚动叙事
+      - 插画动画
+      - 文案状态变化
+      - 母亲节专题
+      - 日文网页
+    url: https://www.pola.co.jp/special/o/wecaremore/mothersday/
+    technology_stack:
+      - HTML Canvas
+      - JavaScript
+      - CSS
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - "[当前页面运行时，2026-10-15] 主叙事区挂载一个 Canvas，页面同时加载第一方 main.js、app.css 与 pc.json、flowers.json，以及逐段文案/花朵图像资源。资源观察来自 https://www.pola.co.jp/special/o/wecaremore/mothersday/ 。"
+      - "[当前页面视觉与样式，2026-10-15] .js_stage 的 Canvas 承载随滚动变化的插画场景；HTML 文案覆盖在画布上，CSS 控制文案和素材的布局/状态。滚动时插画构图及文案明暗、强调状态同步变化。"
+      - "[未确认] 当前浏览器接口不暴露 Canvas context，未能读取第一方 main.js 的可读源码；因此 Canvas 2D/WebGL、动效库和具体动画 API 均未确认。不得据 Canvas 单独推断 Three.js。"
+    difficulty: medium
+    input_kinds:
+      - url
+    status: draft
+    notes: "2026-10-15 已核对首屏花束插画及滚动后的花朵构图、文案状态变化，并确认页面有 Canvas、第一方 JS 与 CSS；Canvas context/API 和动效库未确认。未冻结滚动关键帧、目标视口、截图和素材，继续保持 draft。"
+    created_at: "2026-10-15T20:47:16+08:00"
+    updated_at: "2026-10-15T21:47:16+08:00"
+
+  - id: UIR-0010
+    title: Henry Heffernan — 3D 复古桌面作品集
+    ui_type_id: interactive-experience
+    task_type_id: restore
+    description: 个人作品集先显示复古电脑启动序列，再过渡到带有桌面快捷方式的 3D 工作台。内嵌作品集系统提供 ABOUT、EXPERIENCE、PROJECTS、CONTACT 页面，并列出 Oregon Trail、Doom、Scrabble、Henordle 等快捷入口。
+    keywords:
+      - 3D 作品集
+      - 复古电脑启动
+      - 桌面交互
+      - 子页面导航
+      - 场景转场
+      - 多种交互
+    url: https://henryheffernan.com/
+    technology_stack:
+      - HTML Canvas
+      - React
+      - Three.js
+      - WebGL
+      - CSS3DRenderer
+      - GLSL
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - "[当前页面运行时，2026-10-15] 页面以单个 Canvas 显示 3D 工作台场景；桌面系统可访问 About、Experience、Projects、Contact 路由。已加载的两个 video 元素未确认与当前可见主场景的映射，因此不作为技术栈标签。"
+      - "[作品公开源码，2026-10-15] https://github.com/henryjeff/portfolio-website 的 Renderer.ts 显式创建 THREE.WebGLRenderer、第二个 WebGL overlay renderer 和 three/examples 的 CSS3DRenderer，并分别 render 场景；CameraKeyframes.ts 使用 Three.js Vector3 实现视角关键帧/鼠标跟随。Application.ts 使用 Three.js Scene 与 renderer。"
+      - "[作品源码与当前页面映射] 当前页面加载的 3D 工作台/模型与该仓库的 3D portfolio 页面对应；renderer 源码直接导入 screen shader GLSL，确认 Three.js、WebGL、CSS3DRenderer 和 GLSL shader 渲染。React 是仓库应用依赖；嵌入系统有独立仓库 https://github.com/henryjeff/portfolio-inner-site 与 iframe，子应用路由和游戏运行时尚未逐项核查。"
+    difficulty: hard
+    input_kinds:
+      - url
+    status: draft
+    notes: "2026-10-15 已等待主场景资源加载完成，并观察到开机序列、3D 桌面和内嵌作品集系统。子页面和游戏快捷入口在 DOM 中可见；本次未逐一完成全部路由与指针/键盘交互核验，也未冻结各转场状态、视口和素材，继续保持 draft。"
+    created_at: "2026-10-15T20:47:16+08:00"
+    updated_at: "2026-10-15T21:47:16+08:00"
+
+  - id: UIR-0011
+    title: Firewood Splitting Simulator — 劈柴场景
+    ui_type_id: interactive-experience
+    task_type_id: restore
+    description: 单场景劈柴小游戏以木桩、木段、斧头和林地地面构成写实 3D 画面。界面提示可拖动旋转视角、点击劈柴；点击后斧头挥下并将木段劈开。
+    keywords:
+      - 3D 场景
+      - 劈柴游戏
+      - 拖动旋转
+      - 点击交互
+      - 写实素材
+      - 简单玩法
+    url: https://screen.toys/firewood/
+    technology_stack:
+      - HTML Canvas
+      - Three.js
+    technology_stack_source: url_analysis
+    technology_stack_evidence:
+      - "[当前页面运行时，2026-10-15] 页面加载 GLB 模型、纹理与单个场景 Canvas；提示可拖动旋转和点击劈柴；点击后观察到斧头动作与木段劈开状态。"
+      - "[作品作者公开说明，2026-10-15] https://www.reddit.com/r/vibecoding/comments/1u2yuus/vibecoded_a_firewood_splitting_simulator_using_my/ 中的作者明确称此 3D 劈柴体验使用 Three.js 构建，后续制作说明链接 https://screen.toys/firewood/；此一手技术说明与当前页面模型资源及交互场景相互印证。WebGL 是 Three.js 场景的渲染 API。"
+    difficulty: easy
+    input_kinds:
+      - url
+    status: draft
+    notes: "2026-10-15 已观察到场景与 Drag to rotate / Click to split 提示，并通过点击确认木段劈开反馈。本次未冻结目标视口、初始和动作后截图、拖动角度与素材，继续保持 draft。"
+    created_at: "2026-10-15T20:47:16+08:00"
+    updated_at: "2026-10-15T21:47:16+08:00"

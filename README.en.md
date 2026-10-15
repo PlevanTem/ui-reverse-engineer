@@ -118,7 +118,7 @@ ui-reverse-engineer/
 ├── assets/restore/           # v0.2 HTML report template
 └── evals/                    # --restore page E2E reconstruction quality evaluation
     ├── README.md             # Evaluation layout, workflow, and automation boundary
-    ├── cases.yaml            # Seven draft page-reconstruction cases; freeze fixtures before evaluation
+    ├── cases.yaml            # Eleven draft page-reconstruction cases; freeze fixtures before evaluation
     ├── case-schema.json      # Schema v1.2; separate UI/task types and three difficulty levels
     ├── case-manager/         # Local case library; auto-loads cases.yaml and uses high-level stack modules
     ├── restore.md            # Single Restore final E2E evaluation plan
@@ -139,7 +139,8 @@ Ctrl+S saves a snapshot of the page currently loaded in the browser. The exact H
 ## Further reading
 
 - [Full Skill specification](SKILL.md)
-- [Website technology stack analysis SOP](references/technology-stack-analysis.md): cross-check source/runtime and visual evidence, with the Three.js homepage review and a recurrence checklist
+- [Website technology stack analysis SOP](references/technology-stack-analysis.md): cross-check source/runtime and visual evidence; Canvas/3D pages must pass the API, renderer, model-resource, and page-mapping gate, with Three.js attribution and version-drift reviews
+- [Stack audit scripts](scripts/stack-audit/README.md): local collection, first-party source candidate scanning, and a human evidence gate; no automatic stack confirmation
 - [Restore execution flow](references/restore.md): freeze references, build a baseline, run bounded repairs, stop, and evaluate
 - [Reconstruction brief template](references/restore-brief-template.md)
 - Restore uses bounded 30/60/120-minute tiers. The three [Loop criteria](references/restore/criteria.md) guide repairs only; commands, fields, and the report flow are defined in the [interfaces](references/restore/interfaces.md).
