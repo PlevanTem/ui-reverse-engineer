@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename, readdir, lstat, cp, open, unlink } from 'node:fs/promises';
 import { resolve, relative, sep, join, isAbsolute } from 'node:path';
+import { validateRedlineProfile, validateRedlineAssessments } from '../../evals/pipeline/redline-contract.mjs';
 
 export const VERSION = 'restore/v0.2';
 export const TIERS = Object.freeze({ ordinary: { minutes:30, rounds:2, reserve:3 }, refined: { minutes:60, rounds:3, reserve:6 }, complex: { minutes:120, rounds:4, reserve:12 } });
@@ -92,7 +93,7 @@ export async function init(root,url,tier='ordinary') {
   for(const path of ['restored','snapshots','discarded','observations','evidence','docs']) await mkdir(local(root,path),{recursive:true});
   const run={schema_version:VERSION,run_id:randomUUID(),started_at:new Date().toISOString(),tier,phase:'prepare',rounds:[],best:null,baseline:null,pending:null,stop:null,e2e:null,approval:null,enforcement:'cooperative',profile_changes:0};
   await writeJSON(join(root,'run.json'),run);
-  await writeJSON(join(root,'contract.json'),{schema_version:VERSION,requested_url:url,observed_url:null,start_command:null,environment:{browser:null,os:null,dpr:1,locale:'en-US'},e2e_profile:{rubric_version:'site-restore-v1.0-draft',scorer_version:'e2e/v0.2'},states:[],obligations:[],runtime_gates:[{id:'runnable',description:'主页面可加载、主体可见'},{id:'reachable',description:'关键视觉状态可到达'},{id:'unobstructed',description:'无严重遮挡或溢出'}],reference_evidence:[],resources:[],unknowns:[]});
+  await writeJSON(join(root,'contract.json'),{schema_version:VERSION,requested_url:url,observed_url:null,start_command:null,environment:{browser:null,os:null,dpr:1,locale:'en-US'},e2e_profile:{rubric_version:'site-restore-v1.1-draft',scorer_version:'e2e/v0.3'},states:[],obligations:[],runtime_gates:[{id:'runnable',description:'主页面可加载、主体可见'},{id:'reachable',description:'关键视觉状态可到达'},{id:'unobstructed',description:'无严重遮挡或溢出'}],reference_evidence:[],resources:[],unknowns:[]});
   await writeFile(join(root,'events.jsonl'),JSON.stringify({at:run.started_at,type:'init',tier})+'\n'); return run;
 }
 export async function locked(root,action,fn) {
@@ -274,7 +275,7 @@ export async function finalInput(root,run) {
   if(!run.best) return {schema_version:'FinalEvalRequest/v0.2',status:'incomplete',reason:'No runnable artifact'};
   assert(await treeHash(local(root,'restored'))===run.best,'Final artifact changed');
   const effectiveDeadline=Date.parse(run.started_at)+TIERS[run.tier].minutes*60000+(run.time_exclusions??[]).reduce((sum,x)=>sum+Date.parse(x.end_at)-Date.parse(x.start_at),0);
-  return {schema_version:'FinalEvalRequest/v0.2',binding:binding(run,c,run.best),reference_evidence:c.reference_evidence,states:c.states,resources:c.resources??[],obligations:c.obligations.map(({id,state_id,region_id,expected,reference_evidence})=>({id,state_id,region_id,expected,reference_evidence})),start_command:c.start_command,project_path:'restored/',deadline:new Date(effectiveDeadline).toISOString()};
+  return {schema_version:'FinalEvalRequest/v0.2',case_id:c.case_source?.case_id??run.run_id,binding:binding(run,c,run.best),reference_evidence:c.reference_evidence,states:c.states,resources:c.resources??[],obligations:c.obligations.map(({id,state_id,region_id,expected,reference_evidence})=>({id,state_id,region_id,expected,reference_evidence})),redline_profile:c.redline_profile??null,start_command:c.start_command,project_path:'restored/',deadline:new Date(effectiveDeadline).toISOString()};
 }
 export async function recordE2E(root,run,result) {
   assert(run.phase==='final'&&!run.e2e,'Final E2E can be recorded once after loop stop');
@@ -282,12 +283,39 @@ export async function recordE2E(root,run,result) {
   assert(result.schema_version==='E2EResultRef/v0.2'&&canonical(result.binding)===canonical(request.binding??null),'Final result binding mismatch');
   assert(['pass','fail','incomplete'].includes(result.status),'Invalid E2E result');
   if(result.status!=='incomplete') {
-    assert(result.scoring_provenance==='independent_evaluator/e2e-v0.2','Independent scorer provenance required');
+    assert(result.scoring_provenance===`independent_evaluator/${request.binding.scorer_version}`,'Independent grader provenance required');
     assert(result.assessor?.role==='independent'&&result.dimensions?.length===6&&result.redlines?.length===6,'Independent six-dimension result required');
     await verifyEvidence(root,result.evidence);
     assert(result.covered_states?.length>=request.states.length&&request.states.every(s=>result.covered_states.includes(s.id)),'Incomplete E2E coverage');
+    if(request.binding.scorer_version==='e2e/v0.3')validateRedlineAssessments(result.redlines,{evidenceIds:new Set(result.evidence.map(e=>e.id)),coveredStates:result.covered_states,profile:validateRedlineProfile(request)});
   }
   if(budget(run).remaining_ms===0) result={...result,status:'incomplete',reason:'E2E result received after deadline'};
   const path=`observations/e2e-${digest(result)}.json`;await writeJSON(local(root,path),result);
   run.e2e={uri:path,sha256:digest(result),status:result.status};run.phase='complete';return run.e2e;
+}
+export async function recordPostRunE2EReview(root,run,review) {
+  assert(run.stop&&run.phase==='complete','Post-run review requires a completed Restore run');
+  assert(review.schema_version==='PostRunE2EReview/v1'&&review.mode==='post_run'&&review.run_id===run.run_id,'Invalid post-run review identity');
+  const request=await finalInput(root,run),expected=request.binding;
+  assert(run.best&&review.binding?.artifact_sha256===run.best&&review.binding?.contract_sha256===run.contract_sha256,'Post-run review artifact/contract binding mismatch');
+  assert(review.binding?.rubric_version===request.binding.rubric_version&&review.binding?.scorer_version===request.binding.scorer_version,'Post-run review rubric/scorer mismatch');
+  assert(review.evaluation.request_schema_version==='FinalEvalRequest/v0.2','Post-run request schema version required');
+  assert(['verified','not_exposed','not_recorded'].includes(review.evaluation.judge_model_status),'Judge model availability status required');
+  if(review.evaluation.judge_model_status==='verified')assert(text(review.evaluation.judge_model),'Verified judge model ID required');
+  assert(Number.isFinite(Date.parse(review.evaluation?.evaluated_at)),'Post-run evaluation timestamp required');
+  if(review.evaluation.started_at)assert(Number.isFinite(Date.parse(review.evaluation.completed_at))&&Date.parse(review.evaluation.completed_at)>=Date.parse(review.evaluation.started_at),'Invalid post-run evaluation interval');
+  const result=review.result;
+  assert(result?.schema_version==='E2EResultRef/v0.2'&&canonical(result.binding)===canonical(expected),'Final E2E result binding mismatch');
+  assert(['pass','fail','incomplete'].includes(result.status)&&result.dimensions?.length===6&&result.redlines?.length===6&&Array.isArray(review.limitations),'Post-run six-dimension result/limitations required');
+  assert(result.scoring_provenance===`independent_evaluator/${review.binding.scorer_version}`,'Post-run grader provenance required');
+  if(result.evidence?.length)await verifyEvidence(root,result.evidence);
+  if(review.binding.scorer_version==='e2e/v0.3')validateRedlineAssessments(result.redlines,{evidenceIds:new Set((result.evidence??[]).map(e=>e.id)),coveredStates:result.covered_states??[],profile:validateRedlineProfile(request)});
+  const hash=digest(review),uri=`observations/post-run-e2e-review-${hash}.json`;
+  await writeJSON(local(root,uri),review);
+  const previous=run.post_run_e2e_review??null;
+  const history=run.post_run_e2e_reviews??(previous?[previous]:[]);
+  const pointer={uri,sha256:hash,status:result.status,evaluated_at:review.evaluation.evaluated_at,revision:history.length+1,...(previous?{supersedes:previous.uri}:{})};
+  run.post_run_e2e_reviews=[...history,pointer];
+  run.post_run_e2e_review=pointer;
+  return run.post_run_e2e_review;
 }

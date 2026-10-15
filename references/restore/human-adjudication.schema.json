@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "HumanAdjudicationSet/v1",
+  "title": "Human adjudications for final restore E2E",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "final_result_status", "adjudications"],
+  "properties": {
+    "schema_version": { "const": "HumanAdjudicationSet/v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "final_result_status": { "enum": ["pass", "fail", "incomplete"] },
+    "adjudications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "target_redline_id", "original_status", "adjudicated_status", "scope", "recorded_at", "reason", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "target_redline_id": { "enum": ["runnable", "structure", "interaction", "obstruction", "fabrication", "external_writes"] },
+          "original_status": { "enum": ["pass", "fail", "unknown", "not_applicable"] },
+          "adjudicated_status": { "enum": ["pass", "fail", "not_applicable"] },
+          "adjudicated_severity": { "enum": ["S0", "S1", "S2", "S3"] },
+          "adjudicated_impact": { "enum": ["none", "minor_degradation", "required_state_unreachable", "key_content_unavailable", "core_action_unavailable", "material_fact_misrepresented", "primary_task_unavailable", "core_meaning_misrepresented", "external_write"] },
+          "affected_states": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "affected_regions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "scope": { "type": "string", "minLength": 1 },
+          "recorded_at": { "type": "string", "format": "date-time" },
+          "reason": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "array", "items": { "type": "string" } },
+          "dimension_notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["dimension_id", "reason"],
+              "properties": {
+                "dimension_id": { "type": "string", "minLength": 1 },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

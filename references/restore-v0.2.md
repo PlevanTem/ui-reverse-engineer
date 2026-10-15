@@ -8,7 +8,7 @@
 
 ### Pipeline 泳道图
 
-每条泳道代表一个执行责任。`Measure` 产出的证据可供最终验收复用，但三类 Loop 分数和修复偏好不传给独立 E2E 评分器。
+每条泳道代表一个执行责任。`Measure` 产出的证据可供最终验收复用，但三类 Loop 分数和修复偏好不传给独立 E2E grader。
 
 ```mermaid
 sequenceDiagram
@@ -72,14 +72,15 @@ sequenceDiagram
 ## 最终结果
 
 1. `Loop stop reason` 只解释停止原因；`target_reached` 不自动代表 E2E 通过。
-2. `E2E result` 由独立评分器使用现有六维 0–4 Rubric 和红线评最终冻结项目；它不读取修复者的自评分，也不自动恢复循环。六维权重及 ≥75 提案线仍按 [现有 E2E Spec](../evals/specs/site-restore-v1.md)，当前没有校准结果。
+2. `E2E result` 由独立 grader 使用现有六维 0–4 Rubric 和红线评最终冻结项目；它不读取修复者的自评分，也不自动恢复循环。六维权重及 ≥75 提案线仍按 [现有 E2E Spec](../evals/specs/site-restore-v1.md)，当前没有校准结果。
 3. `Approval decision` 由审阅者在 HTML 中记录并导出本地 JSON；绑定最终报告和模板哈希。不认证身份或向服务器提交。
+4. 对需要定位的失败红线，可在运行目录的 `evidence/visual-annotations.json` 提供 `VisualAnnotationSet/v1`：标注记录绑定红线 ID、原截图 URI 与 SHA-256、状态、视口、bbox 和标注图 URI 与 SHA-256。报告器验证两张图的哈希后，在最终质量区显示标注图和原截图链接；缺少 sidecar 时不改变既有报告。
 
-独立评分器不可用或预算不足时输出 `incomplete`，并交付可运行产物、证据和残差。跨 case 的系统评测消费这些 run 的冻结产物、时间和结果，不向当前 run 回传封存 case 标签或其他实验组得分。
+独立 grader 不可用或预算不足时输出 `incomplete`，并交付可运行产物、证据和残差。跨 case 的系统评测消费这些 run 的冻结产物、时间和结果，不向当前 run 回传封存 case 标签或其他实验组得分。
 
 ## 实施边界与已知限制
 
 - Node 控制器能限制脚本动作和子进程；宿主模型调用若不支持 deadline/cancel，时间限制只能协作式执行，报告注明 `enforcement`。
 - browser capture 为可选 Playwright adapter；需要宿主已有相应依赖。LLM Judge adapter 为显式协议，本仓库不附未校准模型配置或假分数。
 - 运行报告与动态检查取决于实际采集证据。多帧 JSON 可以证明采样时间和状态，但真正的视觉质量仍须独立评委评估。
-- 旧 `evals/pipeline/` v0.1 命令仍可打开旧报告；v0.2 运行时入口位于 `scripts/restore/`，系统 E2E 评分器独立位于 `evals/pipeline/score-final.mjs`。
+- v0.2 运行时与单次报告入口位于 `scripts/restore/`；独立系统 E2E grader 位于 `evals/pipeline/grader.mjs`。旧 v0.1 报告作为静态历史产物保留，不再提供重渲染兼容层。

@@ -1,40 +1,17 @@
-# Pipeline implementation boundary
+# E2E Grader
 
-The v0.2 restore runtime lives in [`../../scripts/restore/`](../../scripts/restore/) and its [interface contract](../../references/restore/interfaces.md). This directory retains the v0.1 command aliases and houses the independent six-dimension `score-final.mjs` evaluator. Old v0.1 run artifacts are not converted into v0.2 assessments.
+本目录只保留跨 case / 方案评测使用的最终六维评测 grader [`grader.mjs`](grader.mjs)。单次 Restore 的运行控制、诊断、报告和审批由 [`scripts/restore/`](../../scripts/restore/) 负责；字段与流向见 [Restore v0.2 接口](../../references/restore/interfaces.md)。
 
-Status: one source-assisted `UIR-0006` pilot has completed the path from frozen fixture and baseline through one targeted repair, browser capture, deterministic checks, screenshot diagnostics, T0–T4 documents, and an HTML review packet. These collection and repair steps were orchestrated manually. The reusable scripts below initialize a run, compare paired screenshots, assemble a report with hashes, render its HTML, and serve a static project. They do not autonomously invoke a model, control the repair loop, calibrate a Judge, or make an approval decision.
+grader 通过标准输入接收 [`FinalEvalRequest/v0.2`](../../references/restore/final-eval-request.schema.json)，输出 `E2EResultRef/v0.2`。Rubric v1.1-draft 的 request 必须包含 [`RedlineProfile/v1`](../../references/restore/redline-profile.schema.json)。grader 不读取 Loop 自评分，不执行页面采集或修复，也不生成单次运行报告。红线采用 `E2ERedlineAssessment/v1` 字段；grader 校验适用性、状态、S0–S3 严重度、影响类别、状态/区域范围和证据引用的一致性。它校验评测者提交的判断是否自洽，不根据截图自动判定 UI 语义。宿主未提供独立 Judge 时，结果保持 `incomplete`。
 
-## Restore Loop report renderer
+对于 `interaction` 和 `robustness`，evaluator 可以在浏览器中使用 browse control 直接操作最终交付页面，包括点击交互控件、改变输入值、观察可见反馈，以及检查不同视口。应记录操作步骤、视口、可见结果和限制；未检查的控制台、资源或其他状态仍须标为未检查。
 
-See the [report contract](../specs/restore-loop-report-v0.1.md), [report schema](../templates/restore-loop-report.schema.json), [approval schema](../templates/restore-loop-approval.schema.json), [HTML template](../templates/restore-loop-report.html), and [demo input](../templates/examples/restore-loop-report.sample.json). From the repository root:
+评分结果本身不等同于完整评测审计记录。调用方保留 Judge 提供方、可核验模型名、评测起止时间/时区、Rubric/Scorer 版本、环境、产物及契约哈希、校准状态和局限；不记录评委角色或标识。最终产物的 E2E 结果是报告和审批的唯一 E2E 口径；哈希绑定的 [`PostRunE2EReview/v1`](../../references/restore/post-run-e2e-review.schema.json) 存在时，它覆盖 `run.json.e2e` 在最终结果视图中的展示，但不改写原始运行记录。
 
 ```powershell
-node evals/pipeline/init-restore-run.mjs evals/results/<run_id>/<case_id> <UIR-0000> <url>
-python evals/pipeline/compare-screens.py <reference.png> <candidate.png> --json <score.json> --diff <diff.png>
-node evals/pipeline/build-restore-report.mjs evals/results/<run_id>/<case_id>
-node evals/pipeline/render-restore-report.mjs <report.json> <report.html>
-node evals/pipeline/render-restore-report.mjs <report.json> <approved.html> --approval <approval.json>
+node scripts/restore/cli.mjs eval <run-directory> evals/pipeline/grader.mjs <judge-adapter.mjs>
 ```
 
-`init-restore-run` creates a run directory with a fixture, manifest, editable report source, and T0–T4 document skeleton. Freeze the fixture and reference evidence before the baseline, then fill the documents and `report-source.json` from the actual observations. `build-restore-report` hashes those documents, fixture, manifest, evidence files, and restored project, then writes `report.json` and `report.html`. The offline HTML shows paired reference/candidate/diff images and exports a local approval JSON. It does not submit to a server or authenticate the reviewer. An uncalibrated Judge requires the reviewer to attest to manual visual review before a positive decision. Archive the JSON through the intended process and re-render with `--approval` to show the decision. The renderer refuses an approval bound to a different report or template hash. The bundled sample is DEMO and cannot receive a positive decision.
+具体红线触发条件、影响类别、严重度映射和 status 决策见 [UI 红线评测规格](../specs/site-restore-v1.md#红线严重度与判定算法)及 [`E2ERedlineAssessment/v1`](../../references/restore/e2e-redline.schema.json)。旧评测记录未带严重度字段，保留为历史结果；不得由新 grader 静默推断或改分。
 
-The real pilot packet is at `evals/results/RESTORE-VALIDATION-20261013/UIR-0006/report.html` on this machine. It is intentionally ignored by Git with other generated case data. Its `assemble-run.mjs` is a case-specific ledger builder, not a generic scoring adapter. The pilot reused the observed site's CSS, fonts, images, and DOM mapping; do not use it as evidence that the Skill can produce the same result without source assistance.
-
-## Planned stages
-
-1. `ingest`: validate run manifest, case IDs, arm IDs, project directories, startup entries, and SHA-256 hashes.
-2. `render`: start each site project in an isolated environment (or open its static entry), capture fixed-viewport browser screenshots, and collect resource/console/runtime signals.
-3. `check`: enforce file/load gates and run only the frozen interactions listed in each case.
-4. `score`: prepare blinded judge payloads from the reference, evidence annotations, rendered screenshot, and rubric; store raw judge outputs and human adjudications separately.
-5. `aggregate`: compute weighted scores, red-line rates, per-case paired differences, stratified bootstrap intervals, and the report template.
-
-Model invocation for the experimental arms is an adapter boundary. It must not assume an API, credential, or client capability that has not been verified. An artifact-ingest run remains useful if arm generation must be performed manually.
-
-## Expected interfaces (provisional)
-
-- Input: `cases.yaml`, versioned spec/rubric, run manifest, one runnable `restored/` project with an entry URL or startup command per `(case_id, arm_id, replicate)`.
-- Intermediate: screenshot and deterministic-check JSON keyed by the same tuple.
-- Judge output: schema-validated dimension scores with evidence references, confidence, and red-line IDs.
-- Output: `manifest.yaml`, `scores.jsonl`, checks, screenshots or local references, and `report.md` under `results/<run_id>/`.
-
-These interfaces must be converted into failing contract tests before implementation, per the project evaluation workflow.
+v0.1 单次报告渲染器、Schema、演示输入和命令别名已退役。既有 v0.1 `report.html` 是可独立阅读的历史产物，不再由当前项目重新渲染或升级。

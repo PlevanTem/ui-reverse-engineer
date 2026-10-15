@@ -7,7 +7,7 @@ import { report, approve } from './report.mjs';
 import { compare } from './pairwise.mjs';
 
 const [command,directory,...args]=process.argv.slice(2), root=directory&&resolve(directory);
-const usage=`Restore v0.2 (Node 20+)\ninit RUN URL [ordinary|refined|complex]\nprofile RUN TIER\nfreeze RUN\nassessment-input RUN [output.json]\nbaseline RUN assessment.json\nnext RUN\nbegin RUN hypothesis.json\nrecord RUN assessment.json verification.json\nverify RUN candidate-assessment.json pairwise-adapter.mjs\nabort RUN reason\nstop RUN blocked|failed reason\nmeasure RUN adapter.mjs output.json\neval-input RUN output.json\neval RUN evaluator.mjs [judge.mjs]\neval-record RUN result.json\ntime-exclude RUN interval.json\nusage-record RUN token-usage.json\nreport RUN\napprove RUN approval.json\nAll evidence paths are relative to RUN. Read references/restore/interfaces.md.`;
+const usage=`Restore v0.2 (Node 20+)\ninit RUN URL [ordinary|refined|complex]\nprofile RUN TIER\nfreeze RUN\nassessment-input RUN [output.json]\nbaseline RUN assessment.json\nnext RUN\nbegin RUN hypothesis.json\nrecord RUN assessment.json verification.json\nverify RUN candidate-assessment.json pairwise-adapter.mjs\nabort RUN reason\nstop RUN blocked|failed reason\nmeasure RUN adapter.mjs output.json\neval-input RUN output.json\neval RUN evaluator.mjs [judge.mjs]\neval-record RUN result.json\npost-run-review-record RUN review.json\ntime-exclude RUN interval.json\nusage-record RUN token-usage.json\nreport RUN\napprove RUN approval.json\nAll evidence paths are relative to RUN. Read references/restore/interfaces.md.`;
 async function input(path){core.assert(path,'Input JSON path required');return core.readJSON(resolve(path));}
 async function save(value,file){if(file)await core.writeJSON(resolve(file),value);return value;}
 try {
@@ -32,10 +32,11 @@ try {
         case 'eval': {
           core.assert(args[0],'Explicit independent evaluator script required');const request=await core.finalInput(root,run); let output;
           try { output=await invoke(args[0],request,Math.max(0,core.budget(run).remaining_ms-2000),args.slice(1).map(p=>resolve(p))); }
-          catch(error){output={schema_version:'E2EResultRef/v0.2',binding:request.binding??null,status:'incomplete',reason:error.message,dimensions:[],redlines:[],evidence:[],total_100:null,provisional:true,scoring_provenance:'independent_evaluator/e2e-v0.2'};}
+          catch(error){output={schema_version:'E2EResultRef/v0.2',binding:request.binding??null,status:'incomplete',reason:error.message,dimensions:[],redlines:[],evidence:[],total_100:null,provisional:true,scoring_provenance:request.binding?.scorer_version?`independent_evaluator/${request.binding.scorer_version}`:'independent_evaluator/e2e/v0.3'};}
           return core.recordE2E(root,run,output);
         }
         case 'eval-record': return core.recordE2E(root,run,await input(args[0]));
+        case 'post-run-review-record': return core.recordPostRunE2EReview(root,run,await input(args[0]));
         case 'time-exclude': return core.excludeTime(root,run,await input(args[0]));
         case 'usage-record': return core.recordTokenUsage(root,run,await input(args[0]));
         case 'report': return report(root,run);

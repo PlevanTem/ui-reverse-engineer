@@ -12,14 +12,17 @@
 
 同一原因影响多个维度时，记录各自的可见后果，但只生成一个修复任务。资源、框架、引擎是实现依赖和归因标签；响应式是采样轴，不增加重复的第四维。没有三维加权综合分。
 
-## 页面专属 QA
+## 页面专属 Q&A
 
 首次基线前冻结 `contract.json`。每项 obligation 写明 `criterion_id / state_id / region_id / expected / importance / reference_evidence / method / required / target=3 / applicability`。最多优先标记 5 个视觉锚点，但中段、页尾仍纳入覆盖。`importance` 为 `blocking`（主体或关键视觉状态缺失）、`obvious`（正常浏览可见且影响整体观感）、`minor`（次要局部）。在 `not_applicable` 和 `unknown` 下写明原因；C3 有分数时必须引用时间序列或视频。
 
 ## Measure → Verify
 
-程序检查负责可运行、几何、资源、字体、状态和时序；截图差异用于定位，不单独决定通过。绝对 Judge 依据参考、页面 QA 和 0–4 rubric 评价当前质量；pairwise Judge 依据参考、最佳版和候选判断相对改善。修复器的自述不得作为 Judge 输入。仅保留带有可见证据、A/B 顺序复核一致、没有关键回归的候选；其余回退或标记无法判定。2 分内部的明显改善也可以保留。
+程序检查负责可运行、几何、资源、字体、状态和时序；截图差异用于定位，不单独决定通过。绝对 Judge 依据参考、页面 Q&A 和 0–4 rubric 评价当前质量；pairwise Judge 依据参考、最佳版和候选判断相对改善。修复器的自述不得作为 Judge 输入。仅保留带有可见证据、A/B 顺序复核一致、没有关键回归的候选；其余回退或标记无法判定。2 分内部的明显改善也可以保留。
 
 Loop 达标：独立评估者覆盖每个必需单元；适用单元均 ≥3，不适用单元有事先冻结的理由；运行门禁全部通过；没有阻断或明显残差。缺失参考的 `unknown` 不算通过。
 
 最终六维评分及版本 Go/No-Go 不在本文件定义，见 [E2E Rubric](../../evals/rubrics/site-restore-v1.md)。
+# Loop 视觉义务与最终 E2E 红线是两套判定
+
+本文件定义 Restore 迭代期间的局部视觉义务和 finding 记录方式，用于决定是否修复候选页面。这里的 `blocking`、`obvious`、`minor` 是 Loop 诊断严重度，不是最终 E2E 红线严重度。最终交付验收的六类红线、S0–S3 影响锚点、证据要求和 grader 规则见 [页面还原 E2E 规格](../../evals/specs/site-restore-v1.md#红线严重度与判定算法)。不得直接把 Loop finding 的严重度复制为最终红线 verdict。

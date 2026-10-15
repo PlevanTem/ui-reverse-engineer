@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:E2ERedlineAssessment/v1",
+  "title": "UI restoration E2E redline assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "applicability", "status", "severity", "impact", "affected_states", "affected_regions", "reason", "evidence"],
+  "properties": {
+    "schema_version": { "const": "E2ERedlineAssessment/v1" },
+    "id": { "enum": ["runnable", "structure", "interaction", "obstruction", "fabrication", "external_writes"] },
+    "applicability": { "enum": ["applicable", "unknown", "not_applicable"] },
+    "status": { "enum": ["pass", "fail", "unknown", "not_applicable"] },
+    "severity": { "type": ["string", "null"], "enum": ["S0", "S1", "S2", "S3", null] },
+    "impact": { "enum": ["none", "minor_degradation", "required_state_unreachable", "key_content_unavailable", "core_action_unavailable", "material_fact_misrepresented", "primary_task_unavailable", "core_meaning_misrepresented", "external_write", "unknown", "not_applicable"] },
+    "affected_states": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "affected_regions": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "reason": { "type": "string", "minLength": 1 },
+    "evidence": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "applicability": { "const": "not_applicable" } }, "required": ["applicability"] },
+      "then": { "properties": { "status": { "const": "not_applicable" }, "severity": { "type": "null" }, "impact": { "const": "not_applicable" }, "affected_states": { "maxItems": 0 }, "affected_regions": { "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "applicability": { "const": "unknown" } }, "required": ["applicability"] },
+      "then": { "properties": { "status": { "const": "unknown" }, "severity": { "type": "null" }, "impact": { "const": "unknown" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "fail" } }, "required": ["status"] },
+      "then": { "properties": { "applicability": { "const": "applicable" }, "severity": { "enum": ["S2", "S3"] } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "pass" } }, "required": ["status"] },
+      "then": { "properties": { "applicability": { "const": "applicable" }, "severity": { "enum": ["S0", "S1"] } } }
+    }
+  ]
+}

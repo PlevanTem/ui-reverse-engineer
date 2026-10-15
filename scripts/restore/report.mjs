@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { IMPACT_SEVERITIES, REDLINE_CRITERIA } from '../../evals/pipeline/redline-contract.mjs';
 import { assert, budget, contract, readJSON, local, safeFile, treeHash, verifyEvidence, digest, sha, text, validateTokenUsage, writeJSON } from './core.mjs';
 
 const templatePath=fileURLToPath(new URL('../../assets/restore/report.html',import.meta.url));
@@ -13,6 +14,15 @@ async function model(root,run) {
   if(run.best) assert(await treeHash(local(root,'restored'))===run.best,'Delivered artifact differs from best snapshot');
   let e2e=null;
   if(run.e2e){e2e=await readJSON(local(root,run.e2e.uri));assert(digest(e2e)===run.e2e.sha256,'E2E result changed');if(e2e.evidence?.length)await verifyEvidence(root,e2e.evidence);}
+  let postRunE2EReview=null;
+  if(run.post_run_e2e_review){
+    postRunE2EReview=await readJSON(local(root,run.post_run_e2e_review.uri));
+    assert(digest(postRunE2EReview)===run.post_run_e2e_review.sha256,'Post-run E2E review changed');
+    assert(postRunE2EReview.schema_version==='PostRunE2EReview/v1'&&postRunE2EReview.run_id===run.run_id,'Invalid post-run E2E review');
+    assert(postRunE2EReview.binding?.artifact_sha256===run.best&&postRunE2EReview.binding?.contract_sha256===run.contract_sha256,'Post-run E2E review is not bound to the final artifact and contract');
+    assert(postRunE2EReview.evaluation?.request_schema_version==='FinalEvalRequest/v0.2'&&postRunE2EReview.evaluation?.evaluated_at,'Final E2E evaluation metadata missing');
+    if(postRunE2EReview.result?.evidence?.length)await verifyEvidence(root,postRunE2EReview.result.evidence);
+  }
   const base=run.baseline_assessment?await readJSON(local(root,run.baseline_assessment)):null;
   const best=run.best_assessment?await readJSON(local(root,run.best_assessment)):null;
   const rounds=[];
@@ -28,7 +38,18 @@ async function model(root,run) {
     const sum=key=>raw.records.reduce((total,record)=>total+record.usage[key],0);
     tokenUsage={schema_version:'TokenUsageSummary/v0.2',status:'observed',coverage:raw.coverage,coverage_note:raw.coverage_note,observed_total_tokens:sum('total_tokens'),input_tokens:sum('input_tokens'),cached_input_tokens:sum('cached_input_tokens'),output_tokens:sum('output_tokens'),reasoning_output_tokens:sum('reasoning_output_tokens'),response_count:raw.records.reduce((total,record)=>total+record.response_count,0),records:raw.records,source_uri:run.token_usage.uri,source_sha256:run.token_usage.sha256};
   }
-  const data={schema_version:'RestoreReport/v0.2',run_id:run.run_id,demo:c.demo===true,contract:c,contract_sha256:run.contract_sha256,tier:run.tier,started_at:run.started_at,enforcement:run.enforcement,stop:run.stop,time_accounting:timeAccounting,token_usage:tokenUsage,artifact_sha256:run.best,baseline:base,best,rounds,e2e};
+  const selectedFinalE2E=postRunE2EReview?.result??e2e;
+  const finalE2E=selectedFinalE2E?Object.fromEntries(Object.entries(selectedFinalE2E).filter(([key])=>key!=='assessor'&&key!=='evaluation_metadata')):null;
+  const applicableDimensions=(finalE2E?.dimensions??[]).filter(x=>x.status!=='not_applicable');
+  const scoredDimensions=applicableDimensions.filter(x=>x.status==='scored'&&Number.isFinite(x.score)&&Number.isFinite(x.weight)&&x.weight>0);
+  const assessedWeight=scoredDimensions.reduce((sum,x)=>sum+x.weight,0);
+  const applicableWeight=applicableDimensions.reduce((sum,x)=>sum+(Number.isFinite(x.weight)?x.weight:0),0);
+  const partialScore=assessedWeight?100*scoredDimensions.reduce((sum,x)=>sum+x.weight*x.score/4,0)/assessedWeight:null;
+  const completeScore=finalE2E?.total_100;
+  const e2eScoringSummary=partialScore==null?null:{score_100:completeScore??partialScore,score_type:completeScore==null?'partial_normalized':'complete',assessed_weight:assessedWeight,applicable_weight:applicableWeight,coverage_percent:applicableWeight?100*assessedWeight/applicableWeight:0,unscored_dimensions:applicableDimensions.filter(x=>x.status!=='scored').map(x=>x.id)};
+  const finalE2EEvaluation=postRunE2EReview?.evaluation??null;
+  const finalE2ELimitations=postRunE2EReview?.limitations??[];
+  const data={schema_version:'RestoreReport/v0.2',run_id:run.run_id,demo:c.demo===true,contract:c,contract_sha256:run.contract_sha256,tier:run.tier,started_at:run.started_at,enforcement:run.enforcement,stop:run.stop,time_accounting:timeAccounting,token_usage:tokenUsage,artifact_sha256:run.best,baseline:base,best,rounds,e2e:finalE2E,e2e_scoring_summary:e2eScoringSummary,e2e_evaluation:finalE2EEvaluation,e2e_limitations:finalE2ELimitations};
   let supplements;
   try {supplements=await readJSON(local(root,'report-supplements.json'));}
   catch(error){if(error.code!=='ENOENT')throw error;}
@@ -40,6 +61,73 @@ async function model(root,run) {
       assert(sha(await readFile(await safeFile(root,audit.json_uri)))===audit.json_sha256,'Supplemental JSON changed');
     }
     data.supplemental_audits=supplements.audits;
+  }
+  let visualAnnotations;
+  try {visualAnnotations=await readJSON(local(root,'evidence/visual-annotations.json'));}
+  catch(error){if(error.code!=='ENOENT')throw error;}
+  if(visualAnnotations){
+    assert(visualAnnotations.schema_version==='VisualAnnotationSet/v1'&&visualAnnotations.run_id===run.run_id&&Array.isArray(visualAnnotations.annotations),'Invalid visual annotation set');
+    for(const annotation of visualAnnotations.annotations){
+      assert(text(annotation.id)&&text(annotation.target_redline_id)&&text(annotation.annotation_uri)&&text(annotation.screenshot_uri),'Invalid visual annotation');
+      const annotated=await readFile(await safeFile(root,annotation.annotation_uri));
+      const screenshot=await readFile(await safeFile(root,annotation.screenshot_uri));
+      assert(sha(annotated)===annotation.annotation_sha256,'Visual annotation changed');
+      assert(sha(screenshot)===annotation.screenshot_sha256,'Visual annotation source screenshot changed');
+      assert(annotation.bbox&&[annotation.bbox.x,annotation.bbox.y,annotation.bbox.width,annotation.bbox.height].every(Number.isFinite),'Visual annotation bbox missing or invalid');
+    }
+    data.visual_annotations=visualAnnotations.annotations;
+  }
+  let humanAdjudicationSet,humanAdjudicationSource;
+  try {
+    const path=await safeFile(root,'evidence/human-adjudications.json');
+    humanAdjudicationSet=await readJSON(path);
+    humanAdjudicationSource={uri:'evidence/human-adjudications.json',sha256:sha(await readFile(path))};
+  } catch(error){if(error.code!=='ENOENT')throw error;}
+  if(humanAdjudicationSet){
+    assert(humanAdjudicationSet.schema_version==='HumanAdjudicationSet/v1'&&humanAdjudicationSet.run_id===run.run_id&&Array.isArray(humanAdjudicationSet.adjudications),'Invalid human adjudication set');
+    assert(['pass','fail','incomplete'].includes(humanAdjudicationSet.final_result_status),'Invalid adjudicated final E2E status');
+    assert(data.e2e,'Cannot adjudicate an absent E2E result');
+    const independentResult=structuredClone(data.e2e);
+    const adjudicatedResult=structuredClone(data.e2e);
+    const adjudicatedIds=new Set();
+    for(const adjudication of humanAdjudicationSet.adjudications){
+      assert(text(adjudication.id)&&text(adjudication.target_redline_id)&&text(adjudication.reason)&&text(adjudication.scope),'Invalid human adjudication entry');
+      assert(!adjudicatedIds.has(adjudication.target_redline_id),'Duplicate human adjudication for one redline');
+      adjudicatedIds.add(adjudication.target_redline_id);
+      const redline=adjudicatedResult.redlines.find(x=>x.id===adjudication.target_redline_id);
+      assert(redline&&redline.status===adjudication.original_status,'Human adjudication does not match the original redline');
+      assert(['pass','fail','not_applicable'].includes(adjudication.adjudicated_status),'Invalid adjudicated redline status');
+      assert(Number.isFinite(Date.parse(adjudication.recorded_at)),'Human adjudication timestamp missing or invalid');
+      if(adjudication.adjudicated_severity){
+        assert(['S0','S1','S2','S3'].includes(adjudication.adjudicated_severity)&&text(adjudication.adjudicated_impact),'Invalid adjudicated redline severity');
+        assert(IMPACT_SEVERITIES[adjudication.adjudicated_impact]?.includes(adjudication.adjudicated_severity),'Adjudicated redline severity conflicts with impact');
+        assert((['S0','S1'].includes(adjudication.adjudicated_severity)&&adjudication.adjudicated_status==='pass')||(['S2','S3'].includes(adjudication.adjudicated_severity)&&adjudication.adjudicated_status==='fail'),'Adjudicated redline status conflicts with severity');
+        assert((adjudication.adjudicated_status==='pass'&&['none','minor_degradation'].includes(adjudication.adjudicated_impact))||(adjudication.adjudicated_status==='fail'&&REDLINE_CRITERIA[adjudication.target_redline_id]?.allowed_impacts.includes(adjudication.adjudicated_impact)),'Adjudicated impact does not match the redline criterion');
+        redline.severity=adjudication.adjudicated_severity;
+        redline.impact=adjudication.adjudicated_impact;
+        redline.affected_states=adjudication.affected_states??[];
+        redline.affected_regions=adjudication.affected_regions??[];
+      }
+      redline.status=adjudication.adjudicated_status;
+      redline.reason=adjudication.reason;
+      redline.adjudication_id=adjudication.id;
+      for(const note of adjudication.dimension_notes??[]){
+        const dimension=adjudicatedResult.dimensions?.find(x=>x.id===note.dimension_id);
+        assert(dimension&&text(note.reason),'Human dimension note targets an absent dimension');
+        dimension.reason=note.reason;
+        dimension.adjudication_id=adjudication.id;
+      }
+    }
+    if(humanAdjudicationSet.final_result_status==='pass'){
+      assert(adjudicatedResult.redlines.every(x=>['pass','not_applicable'].includes(x.status)),'Cannot adjudicate a failing redline set to pass');
+      assert((adjudicatedResult.dimensions??[]).filter(x=>x.status==='scored').every(x=>x.score>=3),'Cannot adjudicate a below-threshold dimension to pass');
+      assert(Number.isFinite(adjudicatedResult.total_100)&&adjudicatedResult.total_100>=75,'Cannot adjudicate a below-threshold score to pass');
+    }
+    adjudicatedResult.status=humanAdjudicationSet.final_result_status;
+    data.e2e_judge_result=independentResult;
+    data.e2e=adjudicatedResult;
+    data.human_adjudications=humanAdjudicationSet.adjudications;
+    data.human_adjudication_source=humanAdjudicationSource;
   }
   return data;
 }
@@ -58,38 +146,113 @@ export async function approve(root,run,a) {
 }
 async function evidenceView(root,e) {
   await safeFile(root,e.uri); const uri=e.uri.split(/[\\/]/).map(encodeURIComponent).join('/');
-  return `<figure><figcaption>${escape(e.id)} · ${escape(e.kind)}</figcaption>${e.kind==='screenshot'?`<a href="${uri}" target="_blank" rel="noopener"><img loading="lazy" src="${uri}" alt="${escape(e.id)}"></a>`:e.kind==='video'?`<video controls preload="metadata" src="${uri}"></video>`:`<a href="${uri}" target="_blank" rel="noopener">查看证据</a>`}</figure>`;
+  return `<figure class="evidence-figure"><figcaption>${escape(e.id)} · ${escape(e.kind)}${e.source_label?` · ${escape(e.source_label)}`:''}</figcaption>${e.kind==='screenshot'?`<a href="${uri}" target="_blank" rel="noopener"><img loading="lazy" src="${uri}" alt="${escape(e.id)}"></a>`:e.kind==='video'?`<video controls preload="metadata" src="${uri}"></video>`:`<a href="${uri}" target="_blank" rel="noopener">打开证据</a>`}</figure>`;
+}
+async function renderEvidenceMatrix(root,d) {
+  const states=d.contract.states, stateIds=new Set(states.map(s=>s.id));
+  const columns=[
+    {id:'reference',label:'参考版本',items:d.contract.reference_evidence??[]},
+    {id:'baseline',label:'基线版本',items:d.baseline?.evidence??[],assessment:d.baseline,artifact_sha256:d.baseline?.binding?.artifact_sha256},
+    ...d.rounds.map(x=>({id:`round-${x.round}`,label:`第 ${x.round} 轮候选`,items:x.assessment?.evidence??[],assessment:x.assessment,artifact_sha256:x.assessment?.binding?.artifact_sha256??x.candidate,round:x}))
+  ];
+  const bestHash=d.artifact_sha256;
+  let best=columns.find(c=>bestHash&&c.artifact_sha256===bestHash);
+  if(!best&&d.best) { best={id:'best',label:'最佳版本',items:d.best.evidence??[],assessment:d.best,artifact_sha256:bestHash}; columns.push(best); }
+  if(best&&d.best) best.items=[...best.items,...(d.best.evidence??[])];
+  if(best&&d.e2e?.evidence?.length) best.items=[...best.items,...d.e2e.evidence.map(e=>({...e,source_label:'最终 E2E'}))];
+  const seenEvidence=new Set();
+  for(const c of columns) {
+    c.items=c.items.filter(e=>{if(seenEvidence.has(e.id))return false;seenEvidence.add(e.id);return true;});
+    c.isBest=c===best;
+  }
+  const captureStateByUri=new Map();
+  for(const c of columns) for(const e of c.items) if(e.kind==='sequence'&&e.uri.endsWith('.json')) {
+    const sequence=await readJSON(await safeFile(root,e.uri));
+    for(const [captureId,record] of Object.entries(sequence.states??{})) {
+      const explicit=record.state_id;
+      const matched=explicit&&stateIds.has(explicit)?explicit:states.map(s=>s.id).filter(id=>captureId===id||captureId.startsWith(`${id}-`)).sort((a,b)=>b.length-a.length)[0];
+      if(matched&&record.uri)captureStateByUri.set(record.uri,matched);
+    }
+  }
+  function statesFor(e,c) {
+    const found=new Set();
+    if(stateIds.has(e.state_id))found.add(e.state_id);
+    const capturedState=captureStateByUri.get(e.uri); if(capturedState)found.add(capturedState);
+    if(!found.size&&c.id==='reference') for(const o of d.contract.obligations) if(o.reference_evidence?.includes(e.id)) found.add(o.state_id);
+    if(!found.size) for(const u of c.assessment?.units??[]) if(u.evidence?.includes(e.id)) {
+      const o=d.contract.obligations.find(x=>x.id===u.obligation_id); if(o)found.add(o.state_id);
+    }
+    if(!found.size&&c.assessment?.covered_states?.length===1&&stateIds.has(c.assessment.covered_states[0]))found.add(c.assessment.covered_states[0]);
+    return [...found];
+  }
+  const cells=new Map(states.map(s=>[s.id,new Map(columns.map(c=>[c.id,[]]))]));
+  const unassigned=new Map(columns.map(c=>[c.id,[]]));
+  const other=new Map(columns.map(c=>[c.id,[]]));
+  for(const c of columns) for(const e of c.items) {
+    if(e.kind!=='screenshot') { other.get(c.id).push(e); continue; }
+    const matches=statesFor(e,c);
+    if(!matches.length)unassigned.get(c.id).push(e);
+    for(const id of matches)cells.get(id).get(c.id).push(e);
+  }
+  const header=columns.map(c=>`<div class="compare-head">${escape(c.label)}${c.isBest?'<span class="version-badge">当前最佳 · E2E 评审对象</span>':''}</div>`).join('');
+  async function cell(items) { return items.length?(await Promise.all(items.map(evidenceView.bind(null,root)))).join(''):'<div class="empty">无关联截图</div>'; }
+  const rows=[];
+  for(const s of states) {
+    const body=await Promise.all(columns.map(c=>cell(cells.get(s.id).get(c.id))));
+    rows.push(`<div class="compare-state"><strong>${escape(s.page_id===s.id?s.id:`${s.page_id} · ${s.id}`)}</strong><span>${s.viewport.width}×${s.viewport.height} · ${escape(s.viewport_id)}</span></div>${body.map(x=>`<div class="compare-cell">${x}</div>`).join('')}`);
+  }
+  if([...unassigned.values()].some(items=>items.length)) {
+    const body=await Promise.all(columns.map(c=>cell(unassigned.get(c.id))));
+    rows.push(`<div class="compare-state"><strong>未关联状态</strong><span>Schema 未提供可确认的 state_id</span></div>${body.map(x=>`<div class="compare-cell">${x}</div>`).join('')}`);
+  }
+  const minWidth=190+columns.length*250;
+  const matrix=`<div class="comparison-scroll"><div class="comparison-grid" style="grid-template-columns:190px repeat(${columns.length},minmax(250px,1fr));min-width:${minWidth}px"><div class="compare-head">页面状态</div>${header}${rows.join('')}</div></div>`;
+  const otherGroups=columns.filter(c=>other.get(c.id).length).map(async c=>`<details><summary>${escape(c.label)} · ${other.get(c.id).length} 项非截图证据</summary><div class="details-body">${(await Promise.all(other.get(c.id).map(evidenceView.bind(null,root)))).join('')}</div></details>`);
+  return `${matrix}${otherGroups.length?`<div class="evidence-secondary"><h3>检查与其他证据</h3>${(await Promise.all(otherGroups)).join('')}</div>`:''}`;
 }
 export async function report(root,run) {
   const m=await material(root,run),d=m.data;
   const approval=run.approval&&run.approval.report_sha256===m.report_sha256&&run.approval.template_sha256===m.template_sha256?run.approval:null;
-  const r=d.e2e, accounting=d.time_accounting;
+  const r=d.e2e, scoring=d.e2e_scoring_summary, accounting=d.time_accounting, tokens=d.token_usage;
   const stopLabels={target_reached:'视觉目标达成',plateau:'连续两轮无收益',cycle_detected:'重复或振荡',budget_exhausted:'预算或轮数耗尽',blocked:'参考或资源阻塞',failed:'未交付可运行产物'};
   const e2eLabels={pass:'通过（按当前提案）',fail:'未通过',incomplete:'未完成评分'};
   const duration=ms=>`${Math.floor(ms/3600000)?Math.floor(ms/3600000)+'h ':''}${Math.floor(ms%3600000/60000)}m ${Math.floor(ms%60000/1000)}s`;
   const elapsed=accounting?duration(accounting.active_elapsed_ms):'运行中';
   const stopLabel=accounting?.budget_exhaustion_misclassified?'外部暂停后收束（原预算误判）':stopLabels[d.stop?.reason]??d.stop?.reason??'运行中';
-  const e2eReason=accounting?.budget_exhaustion_misclassified&&r?.reason==='E2E result received after deadline'?'原控制器以墙钟误判逾期；校正后仍无正式六维评分。':r?.reason??'分数来自独立 Eval；不复制 Loop 分数。';
-  let body=`${d.demo?'<div class="demo-banner">合成演示数据 · 并非真实网站还原，不能用于正向审批</div>':''}<header><p>RESTORE / V0.2</p><h1>视觉还原交付报告</h1><p>${escape(d.contract.requested_url)}</p></header><section class="summary"><div><small>Loop 停止原因</small><strong>${escape(stopLabel)}</strong></div><div><small>独立 E2E</small><strong>${escape(e2eLabels[r?.status]??'待评')}</strong><small>${r?.provisional?'暂定结果 · 评分器未校准':'校准状态见明细'}</small></div><div><small>人工审批</small><strong>${escape(approval?.decision??'pending')}</strong></div><div><small>修复轮数 / 有效耗时</small><strong>${d.rounds.length} / ${escape(elapsed)}</strong></div></section>`;
-  if(accounting?.excluded_ms){body+=`<section><h2>时间校正</h2><p>原停止事件仍保留为 ${escape(d.stop.reason)}；扣除已证明的外部暂停后，有效耗时 ${escape(duration(accounting.active_elapsed_ms))}，墙钟跨度 ${escape(duration(accounting.wall_elapsed_ms))}，排除等待 ${escape(duration(accounting.excluded_ms))}，停止时剩余 ${escape(duration(accounting.remaining_ms))}。${accounting.budget_exhaustion_misclassified?'原“预算耗尽”判定不成立；本次运行已收束，校正不自动重启 Loop。':''}</p>${table(['暂停开始','恢复','原因','证据来源'],accounting.exclusions.map(x=>[x.start_at,x.end_at,x.reason,x.source]))}</section>`;}
-  const tokens=d.token_usage, formatTokens=value=>value==null?'未知':Number(value).toLocaleString('en-US');
-  body+=`<section><h2>Token 消耗</h2><p>${tokens.status==='observed'?`已记录 ${escape(formatTokens(tokens.observed_total_tokens))} tokens；输入 ${escape(formatTokens(tokens.input_tokens))}（其中缓存输入 ${escape(formatTokens(tokens.cached_input_tokens))}），输出 ${escape(formatTokens(tokens.output_tokens))}（其中推理输出 ${escape(formatTokens(tokens.reasoning_output_tokens))}）。`:'无可归属的用量记录。'}覆盖：${escape(tokens.coverage)}。${escape(tokens.coverage_note)}</p>${tokens.records.length?table(['阶段','Agent','输入','缓存输入','输出','总量','来源'],tokens.records.map(x=>[x.stage,x.agent,formatTokens(x.usage.input_tokens),formatTokens(x.usage.cached_input_tokens),formatTokens(x.usage.output_tokens),formatTokens(x.usage.total_tokens),x.source_ref])):''}<p>缓存输入包含在输入中；推理输出包含在输出中。仅汇总有来源的模型用量，不推算缺失部分。</p></section>`;
-  body+=`<section><h2>最终 E2E：六维验收</h2><p>${escape(e2eReason)} ${r?.total_100!=null?'加权 '+escape(r.total_100.toFixed(1))+'/100':''}</p>${r?.dimensions?.length?table(['维度','等级 / 4','权重','理由'],r.dimensions.map(x=>[x.id,x.status==='scored'?x.score:x.status,x.weight,x.reason])):'<p>六维评分尚未完成。</p>'}${r?.redlines?.length?table(['红线','状态','证据'],r.redlines.map(x=>[x.id,x.status,x.evidence.join(', ')])):''}</section>`;
-  if(d.supplemental_audits?.length){
-    body+='<section><h2>独立补充审计</h2><p>审计时间按已校正的有效耗时判断；暂评分不替代正式 E2E 状态，也不改变已冻结的 Loop 决策。</p><ul>';
-    for(const audit of d.supplemental_audits){const uri=audit.html_uri.split(/[\\/]/).map(encodeURIComponent).join('/');body+=`<li><a href="${uri}">${escape(audit.label)}</a> · ${escape(audit.status)} · ${escape(audit.summary??'')}</li>`;}
-    body+='</ul></section>';
-  }
-  body+=`<section><h2>最终交付与残差</h2><p>启动：<code>${escape(d.contract.start_command)}</code> · 项目：<code>restored/</code></p><p>最佳版本：<code>${escape(d.artifact_sha256)}</code></p>${table(['问题','程度','义务'],(d.best?.findings??[]).map(f=>[f.description,f.severity,f.obligation_id]))}<p>未知：${escape((d.contract.unknowns??[]).join('；')||'无契约未知项')}</p></section>`;
-  body+=`<details open><summary>参考 / 基线 / 最佳版本：证据</summary><div class="evidence-columns">`;
-  for(const [label,items] of [['参考',d.contract.reference_evidence],['基线',d.baseline?.evidence??[]],['最佳版本',d.best?.evidence??[]]]) {
-    body+=`<div><h3>${label}</h3>`;for(const e of items)body+=await evidenceView(root,e);body+='</div>';
-  }
-  body+='</div></details>';
-  body+=`<details><summary>Criteria：三类视觉 0–4 与页面 QA</summary>${table(['义务 / 维度','状态 / 区域','QA','基线','最佳','适用性'],d.contract.obligations.map(o=>{const b=d.baseline?.units.find(u=>u.obligation_id===o.id),f=d.best?.units.find(u=>u.obligation_id===o.id);return [o.id+' / '+o.criterion_id,o.state_id+' / '+o.region_id,o.expected,b?.score??b?.status,f?.score??f?.status,o.applicability];}))}<p>目标为 3；4 不作为继续迭代的要求。无三维加权总分。</p></details>`;
-  body+=`<details><summary>逐轮 Measure → Learn → Iterate</summary>${table(['轮次','假设 / 方法','可见改善','决定','回归','耗时秒'],d.rounds.map(x=>[x.round,x.hypothesis+' / '+x.strategy,x.verification?.reason??x.reason,x.decision,(x.regressions??[]).join(', '),Math.round((Date.parse(x.at)-Date.parse(x.started_at))/1000)]))}</details>`;
-  body+=`<details><summary>输入、环境、资源与结构化记录</summary><pre>${escape(JSON.stringify({contract:d.contract,stop:d.stop,enforcement:d.enforcement,calibration:r?.calibration},null,2))}</pre><a href="report.json">report.json</a> · <a href="events.jsonl">events.jsonl</a> · <a href="design_brief.md">design_brief.md</a></details>`;
-  body+=`<section><h2>统一审批</h2><p>本页导出本地审批记录，不验证身份或提交服务器。审批导出后用 approve 命令导入归档。</p><p>${escape(approval?approval.decision+' · '+approval.reviewer+' · '+approval.reason:'待审')}</p><form id="approval"><label>结论<select name="decision"><option value="no_go">不批准</option><option value="conditional_go" ${eligible(d,'conditional_go')?'':'disabled'}>有条件批准</option><option value="go" ${eligible(d,'go')?'':'disabled'}>批准</option></select></label><label>审阅者<input name="reviewer" required></label><label>理由<textarea name="reason" required></textarea></label><label>后续条件<textarea name="conditions"></textarea></label><label><input type="checkbox" name="manual_reviewed"> 已人工对照视觉证据</label><button>导出审批 JSON</button><output id="message"></output></form></section>`;
+  const e2eReason=r?.reason??'对最终交付产物进行独立六维 E2E 评定；Loop 自评分不计入最终结果。';
+  const statusClass=value=>String(value??'pending').toLowerCase().replace(/[^a-z0-9_-]/g,'_');
+  const statusBadge=(value,label=value)=>`<span class="badge ${escape(statusClass(value))}">${escape(label)}</span>`;
+  const kv=(key,value)=>`<div class="kv"><div class="kv-key">${escape(key)}</div><div class="kv-value">${escape(value)}</div></div>`;
+  const processStages=[['T0','任务边界','docs/T0-input.md'],['T1','参考取证','docs/T1-evidence.md'],['T2','基线评估','docs/T2-baseline.md'],['T3','迭代记录','docs/T3-iterations.md'],['T4','最终交付','docs/T4-final.md']];
+  const processCards=processStages.map(([id,label,path])=>`<div class="process-card"><strong>${id} · ${label}</strong><span>本次运行阶段记录</span><a href="${path}">打开文档</a></div>`).join('');
+  const evaluation=d.e2e_evaluation;
+  const judgeModelLabel=evaluation?.judge_model_status==='verified'?evaluation.judge_model:evaluation?.judge_model_status==='not_exposed'?'运行时未暴露具体模型':'未记录';
+  const evaluationEnvironment=evaluation?.environment?[evaluation.environment.browser,evaluation.environment.os,evaluation.environment.dpr?`DPR ${evaluation.environment.dpr}`:null,evaluation.environment.locale].filter(Boolean).join(' / '):'未知';
+  const e2eRows=(r?.dimensions??[]).map(x=>[x.id,x.status==='scored'?`${x.score}/4`:x.status,x.weight??'—',x.reason??'—',(x.evidence??[]).join(', ')||'—']);
+  const humanAdjudications=d.human_adjudications??[];
+  const adjudicationByRedline=new Map(humanAdjudications.map(a=>[a.target_redline_id,a]));
+  const redlineRows=(r?.redlines??[]).map(x=>{const a=adjudicationByRedline.get(x.id);const annotationEvidence=(d.visual_annotations??[]).filter(v=>v.target_redline_id===x.id).map(v=>v.id);const evidence=[...new Set([...(x.evidence??[]),...(a?.evidence??[]),...annotationEvidence])];return [x.id,a?`${x.status}（人工裁决）`:x.status,x.severity??'未记录',x.impact??'未记录',x.reason??'—',evidence.join(', ')||'—'];});
+  const adjudicationRows=humanAdjudications.map(a=>[a.target_redline_id,a.original_status,a.adjudicated_status,a.adjudicated_severity??'未记录',a.adjudicated_impact??'未记录',a.reason,a.scope,a.recorded_at??'未记录',(a.evidence??[]).join(', ')||'—']);
+  const visualAnnotationHtml=(d.visual_annotations??[]).map(a=>{
+    const bbox=a.bbox?`bbox x=${a.bbox.x}, y=${a.bbox.y}, w=${a.bbox.width}, h=${a.bbox.height} ${a.bbox.unit??'px'}`:'bbox 未记录';
+    const viewport=a.viewport?`${a.viewport.width}×${a.viewport.height}`:'视口未记录';
+    return `<figure class="evidence-figure"><figcaption>${escape(a.id)} · ${escape(a.title??'红线视觉证据')} · ${escape(a.state_id??'状态未记录')} · ${escape(viewport)}</figcaption><a href="${escape(a.annotation_uri)}" target="_blank" rel="noopener"><img loading="lazy" src="${escape(a.annotation_uri)}" alt="${escape(a.title??a.id)}"></a><p class="metric-detail">${escape(a.description??'')} · 来源截图：<a href="${escape(a.screenshot_uri)}" target="_blank" rel="noopener">${escape(a.screenshot_id??a.screenshot_uri)}</a> · ${escape(bbox)}</p></figure>`;
+  }).join('');
+  const obligationRows=d.contract.obligations.map(o=>{const b=d.baseline?.units.find(u=>u.obligation_id===o.id),f=d.best?.units.find(u=>u.obligation_id===o.id);return [o.id,o.criterion_id,`${o.state_id} / ${o.region_id}`,o.expected,b?.score??b?.status??'未测',f?.score??f?.status??'未测',o.applicability==='not_applicable'?`不适用：${o.reason??''}`:o.applicability];});
+  const timeRows=(accounting?.exclusions??[]).map(x=>[x.start_at,x.end_at,x.reason,x.source]);
+  const tokenRows=(tokens.records??[]).map(x=>[x.stage,x.agent,x.usage.input_tokens.toLocaleString('en-US'),x.usage.cached_input_tokens.toLocaleString('en-US'),x.usage.output_tokens.toLocaleString('en-US'),x.usage.total_tokens.toLocaleString('en-US'),x.source_ref]);
+  const roundCards=d.rounds.map(x=>`<article class="timeline-item"><div class="timeline-title">第 ${escape(x.round)} 轮 ${statusBadge(x.decision,x.decision)} <span class="mono">${escape(x.issue_id??'')}</span></div><p><b>假设：</b>${escape(x.hypothesis)}　<b>方法：</b>${escape(x.strategy)}</p><p><b>判断：</b>${escape(x.verification?.reason??x.reason??'未记录')}　<b>回归：</b>${escape((x.regressions??[]).join('、')||'无已记录回归')}</p></article>`).join('');
+  const residualRows=(d.best?.findings??[]).map(f=>[f.description,f.severity,f.obligation_id]);
+  const evidenceMatrix=await renderEvidenceMatrix(root,d);
+  let body=`${d.demo?'<div class="demo-banner">合成演示数据 · 并非真实网站还原，不能用于正向审批</div>':''}
+    <header class="hero" id="overview"><div class="hero-main"><div class="eyebrow">Restore run review · ${escape(d.run_id)}</div><h1>视觉还原交付报告</h1><p class="subtitle">${escape(d.contract.requested_url)}</p><div class="chips"><span class="chip">${escape(d.tier)} 档</span><span class="chip">${escape(d.enforcement)} 执行</span><span class="chip">${escape(d.contract.e2e_profile.rubric_version)}</span><span class="chip">${escape(d.contract.e2e_profile.scorer_version)}</span></div></div><div class="hero-status"><div><div class="status-title">Loop 停止原因</div><div class="status-value">${escape(stopLabel)}</div><div class="status-note">停止原因、最终 E2E 和审批分别记录</div></div><span class="status-pill">${escape(d.run_id)}</span></div></header>
+    <div class="metric-grid"><div class="metric"><div class="metric-label">最终 E2E</div><div class="metric-value">${escape(e2eLabels[r?.status]??'待评')}</div><div class="metric-detail">${scoring?`${scoring.score_type==='partial_normalized'?'已评分维度折算':'完整加权'} ${escape(scoring.score_100.toFixed(1))}/100 · 覆盖 ${escape(scoring.coverage_percent.toFixed(0))}% 权重${scoring.unscored_dimensions.length?` · 未评：${escape(scoring.unscored_dimensions.join(', '))}`:''}`:'尚无可计算评分'}</div></div><div class="metric"><div class="metric-label">红线通过</div><div class="metric-value">${r?.redlines?.length?`${r.redlines.filter(x=>['pass','not_applicable'].includes(x.status)).length}/${r.redlines.length}`:'待评'}</div><div class="metric-detail">${r?.provisional?'暂定评分 · Judge 未校准':'六项状态见最终质量'}</div></div><div class="metric"><div class="metric-label">修复轮次</div><div class="metric-value">${d.rounds.length}</div><div class="metric-detail">第 0 轮基线不计为修复轮</div></div><div class="metric"><div class="metric-label">有效耗时</div><div class="metric-value">${escape(elapsed)}</div><div class="metric-detail">${accounting?`墙钟 ${escape(duration(accounting.wall_elapsed_ms))} · 排除等待 ${escape(duration(accounting.excluded_ms))}`:'运行中'}</div></div></div>
+    <section class="panel" id="task"><div class="panel-head"><h2>任务与交付</h2><span>冻结输入、运行环境和最终项目</span></div><div class="kv-grid">${kv('实际页面',d.contract.observed_url)}${kv('页面状态',d.contract.states.map(s=>s.id).join('、'))}${kv('目标视口',d.contract.states.map(s=>`${s.viewport.width}×${s.viewport.height}`).join('、'))}${kv('浏览器 / 系统',`${d.contract.environment.browser} / ${d.contract.environment.os}`)}${kv('启动命令',d.contract.start_command)}${kv('最佳产物 SHA-256',d.artifact_sha256)}${kv('执行档位 / 限制',`${d.tier} / ${d.enforcement}`)}${kv('尚未确认',d.contract.unknowns?.join('；')||'无已登记未知项')}</div></section>
+    <section class="panel" id="quality"><div class="panel-head"><h2>最终质量</h2><span>独立六维 E2E 结果与人工裁决分开记录；Loop 分数只用于修复诊断</span></div><p>${escape(e2eReason)} ${r?.provisional?'当前结果为暂定，不能单独作为正向审批依据。':''}${humanAdjudications.length?' 人工裁决覆盖项见下表，原 Judge 记录保留。':''}</p>${e2eRows.length?table(['维度','得分','权重','评定依据','证据 ID'],e2eRows):'<div class="empty">最终交付产物尚无完整六维评分。</div>'}${redlineRows.length?`<h3 class="subhead">交付红线</h3>${table(['红线','状态','严重度','影响','依据','证据 ID'],redlineRows)}`:''}${adjudicationRows.length?`<h3 class="subhead">人工裁决</h3><p class="metric-detail">该记录调整本次 run 的最终报告口径，不覆盖独立 Judge 原始结果。</p>${table(['红线','Judge 原判定','人工裁决','严重度','影响','裁决理由','适用范围','时间','证据 ID'],adjudicationRows)}`:''}${visualAnnotationHtml?`<h3 class="subhead">红线视觉标注</h3>${visualAnnotationHtml}`:''}<div class="kv-grid">${kv('Judge 提供方',evaluation?.judge_provider??'未记录')}${kv('Judge 模型',judgeModelLabel)}${kv('评测开始',evaluation?.started_at??'未记录')}${kv('评测完成',evaluation?.completed_at??evaluation?.evaluated_at??'未记录')}${kv('评测时区',evaluation?.timezone??'UTC')}${kv('评测环境',evaluationEnvironment)}${kv('请求 Schema',evaluation?.request_schema_version??'未记录')}${kv('Rubric / Scorer',evaluation?`${d.contract.e2e_profile.rubric_version} / ${d.contract.e2e_profile.scorer_version}`:'—')}${kv('校准状态',r?.calibration?.status??'未知')}${kv('绑定产物 SHA-256',d.artifact_sha256??'未知')}</div>${scoring?`<p><b>${scoring.score_type==='partial_normalized'?'已评分维度折算分':'完整加权分'}：</b>${escape(scoring.score_100.toFixed(1))}/100 · 覆盖权重 ${escape(scoring.assessed_weight.toFixed(0))}/${escape(scoring.applicable_weight.toFixed(0))} (${escape(scoring.coverage_percent.toFixed(0))}%)${scoring.unscored_dimensions.length?` · 未评维度：${escape(scoring.unscored_dimensions.join(', '))}`:''}${r?.provisional?' · 暂定':''}</p>`:'<p>没有可计算的已评分维度。</p>'}${d.e2e_limitations?.length?`<p><b>限制：</b>${escape(d.e2e_limitations.join('；'))}</p>`:''}<details><summary>展开 Loop 视觉义务：基线与最佳版本</summary><div class="details-body">${table(['义务','标准','页面 / 区域','预期','基线','最佳版本','适用性'],obligationRows)}<p class="metric-detail">目标是每项达到 3；不计算三项加权总分，也不替代最终 E2E 结果。</p></div></details></section>
+    <section class="panel" id="process"><div class="panel-head"><h2>运行过程</h2><span>阶段文档与逐轮决策；按需打开详细记录</span></div><div class="process-list">${processCards}</div>${roundCards?`<h3 class="subhead">Measure → Learn → Iterate</h3><div class="timeline">${roundCards}</div>`:'<div class="empty">本次运行没有修复轮次。</div>'}<p class="metric-detail">结构化记录：<a href="report.json">report.json</a> · 操作账本：<a href="events.jsonl">events.jsonl</a> · 实施 brief：<a href="design_brief.md">design_brief.md</a></p></section>
+    <section class="panel" id="evidence"><div class="panel-head"><h2>证据与残差</h2><span>每行对应页面状态，每列对应一个版本</span></div>${residualRows.length?table(['问题','严重度','关联义务'],residualRows):'<div class="empty">没有登记的最佳版本残差。</div>'}<h3 class="subhead">截图版本对照</h3>${evidenceMatrix}</section>
+    <section class="panel" id="accounting"><div class="panel-head"><h2>时间与用量</h2><span>只汇总有来源的数据；缺失保持未知</span></div><div class="kv-grid">${kv('有效执行时间',accounting?duration(accounting.active_elapsed_ms):'运行中')}${kv('墙钟跨度',accounting?duration(accounting.wall_elapsed_ms):'运行中')}${kv('已排除外部等待',accounting?duration(accounting.excluded_ms):'无记录')}${kv('Token 覆盖状态',`${tokens.coverage} · ${tokens.coverage_note}`)}${kv('已观察 Token 总量',tokens.observed_total_tokens==null?'未知':Number(tokens.observed_total_tokens).toLocaleString('en-US'))}${kv('Token 来源响应数',tokens.response_count??'未知')}</div>${timeRows.length?`<h3 class="subhead">外部暂停区间</h3>${table(['开始','结束','原因','来源'],timeRows)}`:''}${tokenRows.length?`<h3 class="subhead">Token 来源明细</h3>${table(['阶段','Agent','输入','缓存输入','输出','总量','来源'],tokenRows)}`:''}${d.supplemental_audits?.length?`<h3 class="subhead">补充审计</h3>${table(['审计','状态','摘要','报告文件'],d.supplemental_audits.map(a=>[a.label,a.status,a.summary??'—',a.html_uri]))}`:''}</section>
+    <section class="panel" id="approval"><div class="panel-head"><h2>审批记录</h2><span>审批绑定本报告与模板哈希</span></div><div class="notice ${approval?'':'warning'}">本页面只导出本地审批 JSON，不验证身份或提交服务器。正向审批受独立 E2E、红线和人工复核门禁限制。</div><p>${approval?`${statusBadge(approval.decision,approval.decision)} ${escape(approval.reviewer)} · ${escape(approval.reason)}`:statusBadge('pending','待审批')}</p><form id="approval-form"><div class="form-grid"><label>结论<select name="decision"><option value="no_go">不批准</option><option value="conditional_go" ${eligible(d,'conditional_go')?'':'disabled'}>有条件批准</option><option value="go" ${eligible(d,'go')?'':'disabled'}>批准</option></select></label><label>审阅者<input name="reviewer" required></label><label class="full">理由<textarea name="reason" required></textarea></label><label class="full">后续条件<textarea name="conditions"></textarea></label><label class="full"><input type="checkbox" name="manual_reviewed"> 我已对照参考、还原图和交互证据完成复核</label><div class="form-foot full"><button class="primary">导出审批 JSON</button><output id="message"></output></div></div></form></section><div class="footer">Restore Report v0.2 · ${escape(d.run_id)} · SHA-256 ${escape(m.report_sha256)}</div>`;
   const context={report_sha256:m.report_sha256,template_sha256:m.template_sha256,run_id:run.run_id,provisional:r?.provisional??true};
   const html=m.template.replace('{{BODY}}',body).replace('{{CONTEXT}}',JSON.stringify(context).replaceAll('<','\\u003c'));
   await writeJSON(join(root,'report.json'),d);await writeFile(join(root,'report.html'),html);
@@ -102,9 +265,9 @@ export async function report(root,run) {
     'T1-evidence':`# T1 参考取证与资源\n\n${mdTable(['证据','类型','文件','SHA-256'],d.contract.reference_evidence.map(x=>[x.id,x.kind,x.uri,x.sha256]))}\n## 资源映射\n\n${resources}\n## 未知\n\n${(d.contract.unknowns??[]).map(x=>'- '+mdCell(x)).join('\n')||'无已登记未知项'}\n`,
     'T2-baseline':`# T2 第 0 轮基线\n\n快照：${d.baseline?.binding?.artifact_sha256??'未建立'}\n\n${mdTable(['视觉义务','状态','等级'],(d.baseline?.units??[]).map(x=>[x.obligation_id,x.status,x.score??'—']))}\n## 运行门禁\n\n${mdTable(['门禁','结果'],(d.baseline?.gates??[]).map(x=>[x.id,x.status]))}\n`,
     'T3-iterations':`# T3 逐轮修复\n\n${mdTable(['轮次','问题 / 假设','方法','判断','回归','候选快照'],d.rounds.map(x=>[x.round,`${x.issue_id}: ${x.hypothesis}`,x.strategy,x.decision,(x.regressions??[]).join(', '),x.candidate]))}\n每轮原始证据、评委与判断记录保存在 observations/，操作时序保存在 events.jsonl。\n`,
-    'T4-final':`# T4 最终产物与验收\n\n停止原因原记录：${d.stop?.reason??'运行中'}${accounting?.budget_exhaustion_misclassified?'；时间校正后预算未耗尽':''}\n\n有效耗时：${accounting?duration(accounting.active_elapsed_ms):'运行中'}；外部暂停：${accounting?duration(accounting.excluded_ms):'0m 0s'}\n\nToken 记录：${tokens.observed_total_tokens??'未知'}；覆盖：${tokens.coverage}；${tokens.coverage_note}\n\n最佳快照：${d.artifact_sha256??'无'}\n\n启动：${d.contract.start_command}\n\n独立 E2E：${r?.status??'pending'}；${r?.total_100==null?'无可信总分':r.total_100+'/100'}；${r?.provisional?'暂定':'校准状态见报告'}\n\n${mdTable(['E2E 维度','等级','权重'],(r?.dimensions??[]).map(x=>[x.id,x.score??x.status,x.weight]))}\n## 剩余明显问题与未知\n\n${findings}\n${(d.contract.unknowns??[]).map(x=>'- '+mdCell(x)).join('\n')}\n`
+    'T4-final':`# T4 最终产物与验收\n\n停止原因原记录：${d.stop?.reason??'运行中'}${accounting?.budget_exhaustion_misclassified?'；时间校正后预算未耗尽':''}\n\n有效耗时：${accounting?duration(accounting.active_elapsed_ms):'运行中'}；外部暂停：${accounting?duration(accounting.excluded_ms):'0m 0s'}\n\nToken 记录：${tokens.observed_total_tokens??'未知'}；覆盖：${tokens.coverage}；${tokens.coverage_note}\n\n最佳快照：${d.artifact_sha256??'无'}\n\n启动：${d.contract.start_command}\n\n最终 E2E：${r?.status??'pending'}；${scoring?`${scoring.score_100.toFixed(1)}/100 ${scoring.score_type==='partial_normalized'?'已评分维度折算':''}（覆盖 ${scoring.coverage_percent.toFixed(0)}%）`:'无可计算评分'}；${r?.provisional?'暂定':'校准状态见报告'}\n\nJudge 模型：${judgeModelLabel}；评测时间：${evaluation?.evaluated_at??'未记录'}；Rubric / Scorer：${d.contract.e2e_profile.rubric_version} / ${d.contract.e2e_profile.scorer_version}；产物哈希：${d.artifact_sha256??'无'}。\n\n${mdTable(['E2E 维度','等级','权重'],(r?.dimensions??[]).map(x=>[x.id,x.score??x.status,x.weight]))}\n## 剩余明显问题与未知\n\n${findings}\n${(d.contract.unknowns??[]).map(x=>'- '+mdCell(x)).join('\n')}\n`
   };
   for(const [name,content] of Object.entries(files))await writeFile(local(root,`docs/${name}.md`),content);
-  await writeFile(join(root,'design_brief.md'),`# Restore brief\n\n参考：${d.contract.requested_url}\n\n实际页面：${d.contract.observed_url}\n\n交付：restored/；启动：${d.contract.start_command}\n\n## 范围与状态\n\n${stateTable}\n## 视觉目标与可见依据\n\n${qa}\n## 资源与实现依赖\n\n${resources}\n## 最终结果与残差\n\nLoop 原记录：${d.stop?.reason??'运行中'}${accounting?.budget_exhaustion_misclassified?'（时间校正后预算未耗尽）':''}；有效耗时：${accounting?duration(accounting.active_elapsed_ms):'运行中'}；E2E：${r?.status??'pending'}；最佳快照：${d.artifact_sha256??'无'}\n\n${findings}\n详细参考见 [T1](docs/T1-evidence.md)，逐轮判断见 [T3](docs/T3-iterations.md)，最终验收见 [T4](docs/T4-final.md)。\n\n本 brief 由结构化记录生成。\n`);
+  await writeFile(join(root,'design_brief.md'),`# Restore brief\n\n参考：${d.contract.requested_url}\n\n实际页面：${d.contract.observed_url}\n\n交付：restored/；启动：${d.contract.start_command}\n\n## 范围与状态\n\n${stateTable}\n## 视觉目标与可见依据\n\n${qa}\n## 资源与实现依赖\n\n${resources}\n## 最终结果与残差\n\nLoop 原记录：${d.stop?.reason??'运行中'}${accounting?.budget_exhaustion_misclassified?'（时间校正后预算未耗尽）':''}；有效耗时：${accounting?duration(accounting.active_elapsed_ms):'运行中'}；最终 E2E：${r?.status??'pending'}；评测时间：${evaluation?.evaluated_at??'未记录'}；最佳快照：${d.artifact_sha256??'无'}\n\n${findings}\n详细参考见 [T1](docs/T1-evidence.md)，逐轮判断见 [T3](docs/T3-iterations.md)，最终验收见 [T4](docs/T4-final.md)。\n\n本 brief 由结构化记录生成。\n`);
   return {report:join(root,'report.html'),report_sha256:m.report_sha256,template_sha256:m.template_sha256,approval:approval?.decision??'pending'};
 }

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:PostRunE2EReview:v1",
+  "title": "Final artifact E2E review",
+  "description": "A quality record for the final delivered artifact. When present, this is the authoritative E2E result shown in the report.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "mode", "binding", "evaluation", "result", "limitations"],
+  "properties": {
+    "schema_version": { "const": "PostRunE2EReview/v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "mode": { "const": "post_run" },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_sha256", "contract_sha256", "rubric_version", "scorer_version"],
+      "properties": {
+        "artifact_sha256": { "$ref": "#/$defs/sha256" },
+        "contract_sha256": { "$ref": "#/$defs/sha256" },
+        "rubric_version": { "type": "string", "minLength": 1 },
+        "scorer_version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["judge_provider", "judge_model", "judge_model_status", "request_schema_version", "evaluated_at", "timezone", "environment", "method"],
+      "properties": {
+        "judge_provider": { "type": ["string", "null"] },
+        "judge_model": { "type": ["string", "null"] },
+        "judge_model_status": { "enum": ["verified", "not_exposed", "not_recorded"] },
+        "request_schema_version": { "const": "FinalEvalRequest/v0.2" },
+        "started_at": { "$ref": "#/$defs/dateTime" },
+        "completed_at": { "$ref": "#/$defs/dateTime" },
+        "evaluated_at": { "$ref": "#/$defs/dateTime" },
+        "timezone": { "type": "string", "minLength": 1 },
+        "environment": { "type": "object" },
+        "method": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        { "if": { "required": ["started_at"] }, "then": { "required": ["completed_at"] } }
+      ]
+    },
+    "result": {
+      "type": "object",
+      "description": "The standardized E2EResultRef/v0.2 returned by grader.mjs, with the post-run binding represented by the enclosing record. New redline entries follow E2ERedlineAssessment/v1; older entries remain readable as historical records.",
+      "additionalProperties": false,
+      "required": ["schema_version", "status", "dimensions", "redlines", "evidence", "total_100", "provisional"],
+      "properties": {
+        "schema_version": { "const": "E2EResultRef/v0.2" },
+        "binding": { "type": "object" },
+        "status": { "enum": ["pass", "fail", "incomplete"] },
+        "dimensions": { "type": "array", "items": { "type": "object" } },
+        "redlines": { "type": "array", "items": { "type": "object" } },
+        "evidence": { "type": "array", "items": { "type": "object" } },
+        "total_100": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "provisional": { "type": "boolean" },
+        "calibration": { "type": "object" },
+        "covered_states": { "type": "array", "items": { "type": "string" } },
+        "reason": { "type": "string" },
+        "scoring_provenance": { "type": "string" },
+        "thresholds": { "type": "string" }
+      }
+    },
+    "limitations": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time" }
+  }
+}
