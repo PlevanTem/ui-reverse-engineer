@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:restore-loop-approval:v0.1",
+  "title": "Restore Loop approval record v0.1",
+  "type": "object",
+  "required": ["schema_version", "record_id", "run_id", "case_id", "report_sha256", "template_sha256", "decision", "reviewer", "decided_at", "rationale", "conditions", "manual_reviewed"],
+  "properties": {
+    "schema_version": { "const": "restore-loop-approval/v0.1" },
+    "record_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "case_id": { "type": "string", "minLength": 1 },
+    "report_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "template_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "decision": { "enum": ["go", "conditional_go", "no_go"] },
+    "reviewer": { "type": "string", "minLength": 1 },
+    "decided_at": { "type": "string", "minLength": 1 },
+    "rationale": { "type": "string", "minLength": 1 },
+    "manual_reviewed": { "type": "boolean" },
+    "conditions": { "type": "array", "items": { "type": "string" } }
+  },
+  "allOf": [
+    { "if": { "properties": { "decision": { "const": "conditional_go" } } }, "then": { "properties": { "conditions": { "minItems": 1 } } } }
+  ]
+}
