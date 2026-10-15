@@ -2,9 +2,11 @@
 
 ### 2026-10-15 — 收敛 Restore 文档并改为五维 E2E
 
+- **类型：** 行为变化 / 大量迭代 / 推送
 - **原因：** 该项目服务于个人 Skill 优化，不需要生产级评测观测平台。既有 Restore PRD、执行说明、评测 spec 和 rubric 职责重叠，增加维护成本。
 - **范围：** 以 `references/restore.md`、`references/restore/interfaces.md`、`references/restore/criteria.md`、`evals/restore.md` 分别作为执行 SOP、接口、局部 Loop 准则和最终评测的唯一控制文件；删除被替代的 v0.1/v0.2 规划、历史报告说明、分离 spec/rubric 和重复 release inventory。最终 E2E 改为 `layout/style/content/interaction/robustness` 五维等权；`fidelity` 移出总分，事实越界继续由 `fabrication` 红线处理。移除与“各适用维度 ≥3”数学重复的 75 分通过门槛，历史报告不重算。
 - **验证：** `node scripts/restore/tests/restore.test.mjs` 6/6 通过；Case Manager build、站点数据测试、链接与格式检查见本次工作记录。未校准 Judge，不把当前阈值称为经验有效结论。
+- **推送：** PR #3 已 squash 合入 `main`，合并提交 `ca4936d`。
 
 ### 2026-10-15 — 结构化 UI 红线 criteria 与 grader
 
