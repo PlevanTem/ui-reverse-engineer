@@ -18,7 +18,7 @@
 - 可复现的启动方式和评测环境；
 - 脱敏的 run manifest。
 
-`cases.yaml` 可保存草稿 case；未冻结必要证据的 case 不能进入正式比较。样本数量由校准或比较目标决定，不以固定三个 fixture 代替代表性检查。
+`cases.yaml` 可保存草稿 case；未冻结必要证据的 case 不能进入正式比较。其中源码与技术栈证据只用于数据集分析、分层和事后归因，不得传入生成上下文；生成输入隔离是否违规属于运行完整性检查，不进入五维视觉分。样本数量由校准或比较目标决定，不以固定三个 fixture 代替代表性检查。
 
 ## 2. 五维评分
 
@@ -69,6 +69,8 @@
 
 检查契约指定的按钮、菜单、表单、标签、滚动或动画触发能否操作，并产生可观察的正确反馈。
 
+若入口进入持续交互系统，还检查冻结关键路径是否闭合：核心目标可推进和完成，失败后可按参考重试或复位，已观察的进度、奖励、持久化和解锁具有相同语义。候选自行声明的目标、计数或遥测不能替代目标/候选同状态成对证据。
+
 | 分数 | 维度锚点 |
 | ---: | --- |
 | 0 | 核心动作不可完成或状态完全错误 |
@@ -97,7 +99,7 @@
 | --- | --- |
 | `runnable` | 约定页面或必需状态无法打开，页面空白或崩溃 |
 | `structure` | 关键区域缺失，或层级错乱使核心用途无法辨认 |
-| `interaction` | 冻结的核心动作不能完成，或没有必需的可见反馈 |
+| `interaction` | 冻结的核心动作不能完成、可见目标总量不可达、关键路径无法进入成功/失败/重试状态，或没有必需的可见反馈 |
 | `obstruction` | 必需内容或操作因遮挡、裁切、溢出而不可理解或不可用 |
 | `fabrication` | 无来源内容被当作事实，并实质改变页面含义 |
 | `external_writes` | 发生契约不允许的提交、消息或其他外部状态变更 |
@@ -141,9 +143,10 @@
 一次正式评测至少保存：
 
 - 脱敏 manifest：dataset/case 版本、fixture 哈希、Skill commit、模型与 effort、环境、视口、运行设置；
-- 每个 case 的最终产物哈希、确定性检查、Judge 原始结果和人工裁决；
+- 每个 case 的最终产物哈希、`v0 → vN` 完整版本轨迹、ArtifactDiff、规范化静态检查、Judge 原始结果和人工裁决；
 - 五维分数、六类红线、证据引用、限制和校准状态；
 - 使用 [`templates/report.md`](templates/report.md) 生成的跨 case 报告。
+- 同一 case 的连续 Restore run 复盘使用 [`challenge-report.mjs`](../scripts/restore/challenge-report.mjs)；它输出 [`RestoreChallengeReport/v2`](../references/restore/challenge-report.schema.json) provenance DAG，连接 run、版本、candidate、assessment、verification、diff、static-check 与 Final E2E。Final E2E、Loop Assessment 与 StaticCheckSuite 分开显示，跨合同组不得解释为同口径提升。
 
 运行中事实以 `contract.json`、`run.json`、`events.jsonl` 和 observation 文件为准；`report.json` 与 HTML 是这些事实的呈现，不是第二套可手工维护的评分源。
 

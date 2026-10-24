@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:CaptureRegionFact:v1",
+  "title": "CaptureRegionFact/v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["selector", "missing", "visible", "visibility_reasons", "rect", "client_rect", "intersection", "display", "visibility", "opacity", "aria_hidden", "hidden", "style", "text"],
+  "properties": {
+    "selector": {"type": "string", "minLength": 1},
+    "missing": {"type": "boolean"},
+    "visible": {"type": "boolean"},
+    "visibility_reasons": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "rect": {"oneOf": [{"$ref": "#/$defs/rect"}, {"type": "null"}]},
+    "client_rect": {"oneOf": [{"$ref": "#/$defs/rect"}, {"type": "null"}]},
+    "intersection": {"oneOf": [{"$ref": "#/$defs/rect"}, {"type": "null"}]},
+    "display": {"type": ["string", "null"]},
+    "visibility": {"type": ["string", "null"]},
+    "opacity": {"type": ["number", "null"]},
+    "aria_hidden": {"type": ["boolean", "null"]},
+    "hidden": {"type": ["boolean", "null"]},
+    "style": {"oneOf": [{"type": "object", "required": ["fontFamily", "fontSize", "color", "backgroundColor"], "properties": {"fontFamily": {"type": "string"}, "fontSize": {"type": "string"}, "color": {"type": "string"}, "backgroundColor": {"type": "string"}}, "additionalProperties": true}, {"type": "null"}]},
+    "text": {"type": ["string", "null"], "maxLength": 500}
+  },
+  "$defs": {
+    "rect": {"type": "object", "additionalProperties": false, "required": ["x", "y", "width", "height"], "properties": {"x": {"type": "number"}, "y": {"type": "number"}, "width": {"type": "number", "minimum": 0}, "height": {"type": "number", "minimum": 0}}}
+  }
+}

@@ -1,5 +1,6 @@
 export async function evaluate(input) {
-  if(input.schema_version==='PairwiseRequest/v0.2')return {schema_version:'PairwiseVerdict/v0.2',binding:input.binding,issue_id:input.issue.id,assessor:{role:'independent',id:'synthetic-pairwise'},choice:input.order[0]==='candidate'?'A':'B',reason:'Candidate visibly closer in the synthetic fixture',visible_improvement:true};
+  if(input.schema_version==='PairwiseRequest/v0.2'&&input.candidate_evidence.some(e=>e.id.startsWith('pairwise-')))throw Error('Earlier pairwise verdict leaked into the next order');
+  if(input.schema_version==='PairwiseRequest/v0.2')return {schema_version:'PairwiseVerdict/v0.2',binding:input.binding,issue_id:input.issue.id,assessor:{role:'independent',id:'synthetic-pairwise'},choice:input.order[0]==='candidate'?'A':'B',reason:'Candidate visibly closer in the synthetic fixture',visible_improvement:true,request_context:{interactive_scene:input.interactive_scene,states:input.states,obligations:input.obligations}};
   return {received:input.kind,mode:'in-process-or-child'};
 }
 if(process.argv[1]?.endsWith('mock-adapter.mjs')) {

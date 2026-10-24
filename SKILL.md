@@ -362,19 +362,25 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 ### 执行前置
 
-先检查参考的可见页面与状态，并按需追查公开源码、资源和运行时。执行时生成 `design_brief.md` 记录还原范围、实现决策及证据缺口（若同时指定了 `--query`，会先完成 query 输出）。
+先检查参考的可见页面与状态。非评测任务只有在用户输入或冻结策略明确允许 `source_assisted` 时，才可追查并复用公开源码、资源和运行时；评测与 clean-room run 默认 `fixture_only`，不得额外调研公开资料来补齐生成输入。执行时生成 `design_brief.md` 记录还原范围、实现决策及证据缺口（若同时指定了 `--query`，会先完成 query 输出）。评测 case 中的源码与技术栈证据只供数据集分析和评测，不传给还原生成；组合模式产生的推断也不得绕过 Restore 的生成白名单。
 
 ### 实现要求
 
 - 盘点目标页面、视口、滚动关键帧和可观察交互状态，记录对应证据
 - 尽可能取得并正确使用参考所需的图片、字体、图标、视频、音频、3D 模型、纹理、文案等资源；不可取得时说明替代与偏差
 - 复现布局、色彩、排版、间距、组件细节、响应式行为、动效和核心交互；对关键动态区域使用足以还原行为的实现
+- 入口进入持续交互系统时，从入口追踪到可重复核心循环、成功/失败、重试/复位及已观察的持久化或解锁；不可达的可见目标不得写成已完成
+- 深层进度若必须跨多段采集，从 fresh profile 走真实输入；只有契约显式声明同一 `session_id` 才可共享浏览器存储，禁止用预载 `storage_state` 代替解锁路径
 - 交付可运行项目，包含必要的页面、代码、资源、依赖与启动方式；简单页面可使用单个 HTML 文件
 - 在浏览器中按目标视口与状态对照参考，修正主要差异并说明剩余限制
 
 具体取证、实现及完成检查见 [Restore 执行流程](references/restore.md)。
 
-还原时按 [Restore 执行流程](references/restore.md) 有界迭代：按页面复杂度分档并冻结参考与视觉 QA，生成基线，再围绕构图、外观、动态三类 [0–4 Criteria](references/restore/criteria.md)修复高影响偏差。每轮保留证据、假设及 keep/revert/inconclusive；有效执行时间、轮次或停滞触发退出，交付最佳版本。额度限制等外部暂停须有宿主起止证据才可扣除，并同时报告墙钟与有效耗时。若宿主或模型 API 提供可归属的 token 用量，按来源、Agent、阶段及覆盖状态登记，报告展示已观察总量；缺失时标未知，部分来源不得冒充完整成本。运行接口与可复用脚本见 [Restore 接口](references/restore/interfaces.md)。最终五维 E2E 按 [Restore 评测方案](evals/restore.md)由独立评分器执行；Loop 停止原因、E2E 结果和人工审批分别记录。缺少可用浏览器或独立评委时，继续完成可观察部分，并将未完成评分标为 `incomplete`，不得填造通过结果。
+遇到交互玩法、3D、动态几何或显著动画时，读取 [交互场景实现参考](references/restore/interactive-scenes.md)。工具能力排查、提前停止证据和用户可见的逐阶段进度统一按 Restore 执行流程执行。
+
+还原时按 [Restore 执行流程](references/restore.md) 有界迭代：按页面复杂度分档并冻结参考与视觉 QA，从白名单 `RestoreGenerationInput/v1` 生成 `v0`，再围绕构图、外观、动态三类 [0–4 Criteria](references/restore/criteria.md)执行 Generate → Measure → Diff → Repair → Verify。每轮保留候选快照、证据、规范化自动检查、文件与评分 Diff、假设及 keep/revert/inconclusive；报告呈现包括回退候选在内的完整版本轨迹，而不是只展示首版和最佳版。多 run 复盘由 `scripts/restore/challenge-report.mjs` 只读生成 `RestoreChallengeReport/v2` provenance DAG，通过哈希和来源链接连接 run、版本、候选与各类评测，不复制大证据或产生新评分。有效执行时间、轮次或停滞触发退出，交付最佳版本。额度限制等外部暂停须有宿主起止证据才可扣除，并同时报告墙钟与有效耗时。若宿主或模型 API 提供可归属的 token 用量，按来源、Agent、阶段及覆盖状态登记，报告展示已观察总量；缺失时标未知，部分来源不得冒充完整成本。运行接口与可复用脚本见 [Restore 接口](references/restore/interfaces.md)。最终五维 E2E 按 [Restore 评测方案](evals/restore.md)由独立评分器执行；Loop 停止原因、E2E 结果和人工审批分别记录。缺少可用浏览器或独立评委时，继续完成可观察部分，并将未完成评分标为 `incomplete`，不得填造通过结果。
+
+冻结后发现关键路径或契约漏项时，不得改写原 run 或用 `continue` 沿用旧合同；按 [Restore 接口](references/restore/interfaces.md#最短运行链) 的 `refreeze` 命令从显式新合同及其证据建立关联 run，只继承父 `best` 产物并重新测量。
 
 ### design_brief 模板
 

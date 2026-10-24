@@ -1,0 +1,2 @@
+# Browser evidence capture for scripts/restore/capture.py
+playwright==1.58.0

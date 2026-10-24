@@ -7,6 +7,138 @@
 - **验证：** 双语 README 的 31 个相对链接及语言/封面配对通过；两支视频均为 88 秒、1920×1080、H.264、30 fps，完整解码无错误；四份 Release 资产的服务端 SHA-256 与本地一致，公开链接全部 HTTP 200。`git diff --check` 通过；`skills-ref` 未安装。本次不修改运行时代码或依赖，未重跑游戏评测或完整运行时测试。
 - **推送：** 本次通过独立 `codex/tiny-skies-bilingual-showcase` 分支提交 PR，不合并 `main`；仅包含两份 README 和本条记录，不带入原工作区的其他改动。
 
+### 2026-10-23 — 标准报告窄屏页脚换行
+
+- **原因：** Tiny Skies 独立复评报告在 390px 视口下，页脚完整 SHA-256 文本撑宽页面至 412px；定位到文本 Range，排除证据对比容器内部滚动。
+- **范围：** 仅为标准报告模板页脚增加 `overflow-wrap:anywhere`，同步中英文 README 与报告呈现检查说明；不改候选游戏、冻结合同、评分或依赖。
+- **验证：** 真实 Chromium 桌面 1440×900、手机 390×844 均无整页横向溢出、0 页面脚本错误，236 个唯一图片链接和 345 个本地链接均 HTTP 200；未请求的 lazy 图片单列。报告与控制器回归 33/33 通过（含新增页脚规则回归）。用户案例产物仅保留本地，不提交；未推送。
+
+### 2026-10-23 — 统一报告升级为 provenance DAG，并修复 v28 candidate 证据显示
+
+- **原因：** v1 统一报告只能并排汇总 run，无法机器追踪 parent、版本、candidate artifact 与评估产物之间的依赖；v28 单次报告还把从工作树继承的 candidate 标成普通 `v0 初始版本`，且 candidate 图片采用延迟加载，在长报告或内嵌预览中可能不稳定。
+- **范围：** `RestoreChallengeReport/v2` 新增规范化 provenance 节点、边、root、issue 与统计，覆盖 run、版本、artifact、assessment、verification、diff、static-check 和 Final E2E；lineage 校验无父节点、循环和 legacy/invalid 关系，缺失状态增加 reason code、原因层、可恢复性、来源引用和受影响结论。生成器仍为本地无依赖、只读、确定性脚本，大证据只链接不复制。v28 单次报告将继承的工作树基线明确标为 `v0 继承候选 · 独立基线`，candidate 截图改为 eager load，参考截图仍保留 lazy load。
+- **验证：** 定向 Node 回归测试 32/32 通过；`RestoreChallengeReport/v2` Schema 通过 Draft 2020-12 meta-schema 与实例校验。Tiny Skies 汇总 30 个 run、94 个版本、387 个节点、495 条边和 14 条跨 run lineage 边，并保留 2 条历史 lineage 问题。真实 Chromium 检查 v28 单次报告 23 张图片全部解码成功、0 张损坏、8 张 candidate 图为 eager load；统一报告无控制台或请求错误。报告 JSON / HTML SHA-256 以本次生成输出为准；未把浏览器导航导致的媒体请求主动取消误记为图片失败。
+- **推送：** 未提交、未推送。
+
+### 2026-10-23 — Restore 多 run 统一评测报告
+
+- **原因：** Tiny Skies 连续 run 的单次报告可审计，但缺少一个不会混淆 Final E2E、Loop Assessment 与静态检查的统一视图；旧的手工 challenge HTML 也容易与事实源漂移。
+- **范围：** 新增 `scripts/restore/challenge-report.mjs`，从显式 run 列表只读生成 `RestoreChallengeReport/v1` JSON 和单文件 HTML。报告包含版本轨迹、Final E2E 五维、最新 StaticCheckSuite、Go 后状态覆盖、unknown/finding 与生成政策；以 `contract_sha256 + rubric + scorer` 划分可比组，缺失报告标 `unavailable`。同步中英文 README 与 Restore 接口说明；无新增运行时依赖。
+- **验证：** 新增 mixed complete/loop、missing report、unknown score 与 best-bound 静态套件回归测试；完整 Restore Node 测试 50 项中 46 通过、4 项真实浏览器集成按环境条件跳过、0 失败。`RestoreChallengeReport/v1` Schema 通过 Draft 2020-12 校验，最终 Tiny Skies 报告汇总 30 个 run；JSON / HTML SHA-256 分别为 `971d24a68ac23df1f590cf856ea980587563d0193cc6a142d105b3966fded278` / `28a286326074b4af4a2539f058dea29c36bf16c528487da479878dedcd5c72dc`。浏览器 UI 因安全策略拒绝 `file://`，未绕过；报告已在 Codex 本地文件面板排队打开，浏览器视觉验收如实保持未执行。
+- **推送：** 未提交、未推送。
+
+### 2026-10-21 — Restore Loop 将 unknown→scored 计为证据改善
+
+- **原因：** required unit 首次取得可验证长链证据时会从 `unknown` 变为 `scored`；旧决策器只在前后均为 scored 时计算数值 delta，因此该进步不能进入可审计改善，双向 pairwise 已确认的候选仍可能被判为 `inconclusive`。
+- **范围：** unit Diff 新增 `status_change`，区分 `newly_scored`、`lost_score`、`unchanged` 与其他变化；`unknown → scored` 纳入 unit 改善但保持 `delta=null`，不把旧 `null` 当数值比较。`unknown → unknown` 不改善；required unit 的 `scored → unknown` 与 scored 分数下降仍回退。报告显式展示首次评分/失去评分；ArtifactDiff v1 Schema 以可选字段保持历史记录兼容。Criteria 更新唯一决策规则；中英文 README 已链接 Criteria，无需重复新规则。
+- **验证：** 三条定向状态转换测试全部通过；`node --test scripts/restore/tests/*.test.mjs` 通过 45 项，4 项真实浏览器集成按环境条件跳过。新增用例分别覆盖 `unknown → scored` keep 且 `delta=null`、`unknown → unknown` inconclusive、`scored → unknown` revert；既有分数下降、pairwise 和回归守门继续通过。核心、报告与测试脚本语法、ArtifactDiff Schema JSON 解析、Skill quick validation、`git diff --check` 通过；`skills-ref` 当前不可用。首次沙箱执行 Node 测试因 `spawn EPERM` 无法创建 worker，在允许子进程的环境用相同命令重试后通过。
+- **推送：** 未提交、未推送。
+
+### 2026-10-21 — Restore Loop 将已解决 minor finding 计为可审计改善
+
+- **原因：** 修复循环允许任意严重度的已观察 finding 成为目标，但决策器只把 blocking/obvious finding 的解决计入结构化改善，导致 minor 目标已消失、双向 pairwise 均选择 candidate、可见改善且无回归时仍被判为 `inconclusive` 并回退。
+- **范围：** `record()` 将覆盖范围内已解决的 `minor` finding 纳入 `improvements.resolved_findings`。同 ID finding 未消失或同 obligation 仍有对应严重残差时不计解决；unit/gate 回归、新重大 finding、双向 pairwise、`visible_improvement`、产物哈希和预算门槛保持不变。唯一决策规则同步到 Criteria；中英文 README 只链接该规则，不复制判定细节。
+- **验证：** `node --test scripts/restore/tests/*.test.mjs` 通过 42 项，4 项真实浏览器集成按环境条件跳过；定向 core 回归 27/27 通过。新增 resolved minor keep 与 unresolved minor inconclusive 两条测试，既有 gate 回归、pairwise 选择 best、无结构化改善等守门测试继续通过。`core.mjs` 与测试脚本语法、Skill quick validation、`git diff --check` 通过；`skills-ref` 当前不可用。首次沙箱执行 Node 测试因 `spawn EPERM` 无法创建 worker，在允许子进程的环境用相同命令重试后通过。
+- **推送：** 未提交、未推送。
+
+### 2026-10-21 — Restore 动态采集增加显式持久化会话
+
+- **原因：** Tiny Skies 的 Carpet、Boat 与跨载具终局必须在真实前置进度后验证；旧采集器为每个 state 创建 fresh browser context，非空 steps 仍会从锁定载具开始，无法执行完整路径。
+- **范围：** state 新增可选 `session_id`。默认逐 state 隔离不变；相同 ID 的 states 按合同顺序共享浏览器存储，但每段新开页面、单独导航和取证。共享会话禁止预载 `storage_state`，并要求固定视口与配色。定向 candidate 采集自动闭合所需 session 前缀；前段或清理失败后，该 session 的后段只记录 prerequisite 失败，不从空 context 继续。Node/Python 采集器记录会话 ID，并统一证据时间戳格式；接口 SOP、Skill 入口和中英文 README 同步。
+- **验证：** Node capture 测试 15/15 通过，4 项真实浏览器集成按环境条件跳过；Python capture/clock 测试 7/7 通过。启用已安装 Python Playwright 后，采集聚焦测试 17/17 通过、2 项仅 Node Playwright 的集成按条件跳过，其中真实浏览器证明同 session 的第二段可见前段写入，而默认隔离 state 看不到该存储。共享会话计划、session 前缀闭包、预载存档拒绝、视口/配色漂移拒绝、非法 ID、setup/capture 故障诊断、page/context 双重清理、原始失败与 cleanup 失败合并保留及前置失效传播均有回归测试；Node/Python 语法通过。沙箱首次启动 Node 测试 worker 和 Python/Playwright 子进程时分别出现 `spawn EPERM` / `WinError 5`，用相同命令在允许子进程的环境重试后通过。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — Restore 捕获动作增加同上下文 reload
+
+- **原因：** Tiny Skies 的死亡后第二次 GO 与升级/解锁持久化要求跨 reload 验证；旧 CaptureStep 只能做输入和等待，合同只能描述 reload，不能执行它。
+- **范围：** `CaptureStep/v1`、Node/Python 动作执行器增加 `reload`，在同一浏览器上下文内用 `domcontentloaded` 重载当前页面，保留 localStorage，并允许以 `ready_selector` 等待重载后的地标。唯一接口 SOP 同步说明。
+- **验证：** Node 动作单测覆盖 reload 调用、重载后地标等待与采样；完整采集、Restore、Python 时钟隔离、Schema 和 Skill 校验在本轮后统一记录。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — Restore 新增合同重新冻结 lineage
+
+- **原因：** `continue` 只能原样继承旧冻结合同；冻结后发现关键路径或验收义务遗漏时，既有接口无法合法保留父 best provenance 并替换合同。
+- **范围：** 新增 `refreeze OLD_RUN NEW_RUN CONTRACT_SOURCE [TIER]`。命令要求父 run 已冻结且有可校验 best，只复制父 best snapshot/restored，从显式已变更合同及其引用证据创建 `phase: prepare` 的新 run。`RestoreLineage/v1` 新增 `contract_refreeze`，绑定父冻结合同、父 best、新合同来源的 canonical/字节哈希、证据列表哈希和继承产物；最终 `freeze` 必须保持合同不同于父合同。参考证据只允许在 `evidence/` 或 `reference-source/`，创建与最终冻结共用同一门禁；按 Windows 等价语义规范化并拒绝尾随点/空格、NTFS 冒号数据流和保留设备名。报告分别显示 continuation 与 contract refreeze，并重放来源绑定。`continue` 语义保持不变，无新运行时依赖。同步唯一接口 SOP、Skill 入口和中英文 README。
+- **验证：** Node 测试 36/36 通过，3 项需真实浏览器的集成测试按环境条件跳过；Python capture clock 测试 3/3 通过。覆盖成功创建、父未冻结/无 best 拒绝、旧/新/最终合同哈希分离、父 best 继承、新证据复制、评分不继承、继承快照与合同来源篡改拒绝、最终冻结前再次执行证据路径门禁、Windows 路径别名/尾随点空格/ADS/设备名拒绝、`reload` 动作、报告可读和 `continue` 回归。核心、CLI、报告和测试脚本语法通过；CaptureStep 与 Lineage Schema 通过 Draft 2020-12 meta-schema；Skill quick validation 与 `git diff --check` 通过。首次沙箱测试因 Windows `spawn EPERM` 无法创建 worker，按环境故障用同一命令在允许子进程的环境重试后通过。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — 明确结构化记录与证据文件的两种 SHA-256 口径
+
+- **原因：** Tiny Skies Round 2 复核把 `run.static_checks[].sha256` 的 canonical JSON digest 与同一 JSON 文件作为 assessment evidence 时的字节 SHA-256 直接对比，将两个正确但不同的值误判为文件漂移。
+- **范围：** 核验控制器与报告后确认现有逻辑正确，不改 `core.mjs`、历史 `run.json` 或 Tiny Skies 产物。接口唯一控制文档现明确：结构化 JSON pointer 使用 `digest(value)`，`evidence[].sha256` 使用 URI 文件字节 SHA-256；字段更名只能在后续版本化 Schema 迁移中进行。中英文 README 同步链接说明。
+- **验证：** `node --test scripts/restore/tests/*.test.mjs` 通过 32 项，跳过 3 项真实浏览器集成；回归新增同一静态检查记录的 canonical digest、文件名和 evidence 字节哈希断言，用 pointer digest 冒充 evidence 字节哈希必须 fail-closed。测试脚本语法、StaticCheck Schema JSON、Skill quick validation 与 `git diff --check` 通过；首次沙箱内测试因 Windows `spawn EPERM` 无法创建 worker，获准在可启动子进程的环境重试后通过。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — Restore Loop 改为增量门禁与可审计改善决策
+
+- **原因：** 旧 `record()` 只要候选仍有任一失败 gate 就回滚，且 keep 强制所有 gate 为 pass；baseline 有多个既存失败时，任何只修复一部分的中间版本都无法保留，多轮迭代被逻辑上截断。
+- **范围：** 候选改为相对 current best 比较 gate：`fail < unknown < pass`，仅状态下降回滚，既存 fail 不算新增回归。keep 仍要求无 required unit 回归、无 gate 回归、无新增 blocking/obvious finding、双向 pairwise 选 candidate、可见改善、产物变化和剩余预算，并新增至少一项结构化改善门槛（unit 升分、gate 改善或重大 finding 解决）。`target_reached` 的全 gate 通过要求不变。`ArtifactDiff/v1` 与 HTML/T2/T3 报告增加 gate changes。决策规则唯一维护在 Criteria，中英文 README 只链接说明。
+- **验证：** `node --test scripts/restore/tests/*.test.mjs` 通过 32 项，跳过 3 项真实浏览器集成；新增多 fail 部分改善 keep、pass→fail revert、无结构化改善 inconclusive、全 pass 正常 keep 回归，并验证报告输出 gate changes。核心与报告脚本语法及 `git diff --check` 通过。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — 修复跨版本证据路径碰撞导致历史报告不可生成
+
+- **原因：** 不同版本可复用同一 `evidence/...` URI；后写文件覆盖前一版本后，运行时保存的 assessment 仍引用旧哈希与可变路径，导致报告重放严格校验时整体失败。
+- **范围：** `initial-record` / `record` 在运行期严格校验后，将 assessment evidence 内容寻址归档到 `observations/evidence-archive/<sha256>/...`，持久化 assessment 改引归档副本。报告只读重放遇到历史证据缺失、绑定 snapshot 缺失或哈希漂移时输出 `integrity: degraded` 与逐项版本/ID/URI/expected/actual/error，隐藏失效媒体并撤销依赖结论及正向审批；运行期 measure/record 校验保持 fail-closed。历史 run 无需迁移。同步接口和中英文 README。
+- **验证：** `node --test scripts/restore/tests/*.test.mjs` 通过 28 项、跳过 3 项真实浏览器集成；新增运行期漂移拒绝、历史同 URI 覆盖降级生成、新记录归档不受后续覆盖、绑定 snapshot 漂移/缺失降级回归。核心与报告脚本语法、`git diff --check` 通过；`skills-ref` 当前不可用。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — 补齐持续交互系统的关键路径与目标可达性门禁
+
+- **原因：** Tiny Skies 复盘发现旧契约把 GO 后体验压缩为首个飞行画面、单次升级与简化竞速；候选即使无法完成 HUD 声明的 `7` 个 Gremlin、`3` 个包裹和完整竞速，仍可因候选侧遥测而取得较高交互分。这证明“入口可点、状态存在”不等于核心玩法等价。
+- **范围：** Restore SOP 要求入口后继续冻结到可重复核心循环、成功/失败、重试/复位及已观察的持久化/解锁/终局；发现关键漏项须新建重新冻结的 run，不能改写原契约。Criteria 新增同语义成对证据、目标分母可达性和持久化验证门禁；最终 E2E 将不可达目标与断裂关键路径列为 `interaction` S2。同步交互场景参考、brief、Skill 入口和中英文 README。
+- **架构与依赖：** 不新增 Schema、服务层或运行时依赖；现有 `InteractiveScene/v1.transitions` 已能表达 precondition、feedback、terminal state、repeat/reset 和 evidence，本次收紧语义与验收规则，保持历史 run 可读。
+- **验证：** 待完成文档链接、Schema、Skill quick validation、Restore 测试和 `git diff --check`；Tiny Skies 将在新冻结 run 中以完整 GO 后关键路径回归。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — 修复版本化静态检查证据漂移
+
+- **原因：** 历史 `StaticCheckSuite/v1` 可把 `restored/app.js` 作为源码证据，但报告重放时从当前工作树读取，后续 best 版本会使旧套件误报 `Evidence changed`。
+- **范围：** 证据校验器支持 artifact 绑定；报告将套件中的 `restored/...` 解析到 `snapshots/<artifact_sha256>/...`，普通 run 相对证据保持原规则。读取文件前校验整份 snapshot 的树哈希，缺失或篡改时明确失败，不回退到当前工作树。同步接口和中英文 README。
+- **验证：** Restore 控制/报告测试 14/14，通过“历史源码证据 + 后续新 best”回归；另覆盖绑定 snapshot 篡改与缺失拒绝。Tiny Skies v12 报告重生成成功，原 `r1-app` 阻断消失，结构化报告哈希为 `f05dd2721a84b67f646deb1c5c6b00089f4ac429a7c69ed3d072200e90f47059`。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — Restore 关联延续 run
+
+- **原因：** complex run 达到预算或轮数上限后，继续挑战不应篡改父 run 的开始时间、停止事实或事件账本，也不能丢失预算截止时尚未验证的当前工作树。
+- **范围：** 新增 `continue OLD_RUN NEW_RUN [TIER]`。命令只读父 run，复制冻结 contract、reference evidence、生成策略和当前 `restored/`，创建新预算与 `run_id`；`RestoreLineage/v1` 记录父 run/账本/契约/最佳快照及继承产物哈希。父工作树偏离 `best` 时显式标为 `working_tree_unverified`，并要求在新 run 重新 `initial-record`。父 `design_brief.md` 复制为子 run 可写工作副本；父 brief 缺失时从冻结 contract 投影最小副本，lineage 记录父链接、来源和初始哈希，但不把可写副本锁死。lineage 总是预记确定性的父报告相对链接，报告尚未生成时不伪造内容哈希；子报告展示 lineage，不合并父轨迹。同步执行 SOP、接口和中英文 README。
+- **依赖与兼容：** 无新增运行时依赖；沿用 `restore/v0.2` run 和报告版本，lineage 为可选 sidecar。`source_assisted` / `fixture_only` 策略原样继承，generation/evaluator 隔离规则不变。
+- **验证：** Restore 控制/报告测试 15/15 通过，覆盖父 `run.json`/`events.jsonl` 字节不变、working tree 继承标记、冻结证据哈希、source-assisted 策略继承、新 `v0` 重测、父报告链接、父 brief 复制、缺失 brief 的 contract 投影、子 brief 独立可写、重复目录拒绝和 lineage 篡改拒绝；核心、CLI、报告及测试脚本语法通过。
+- **推送：** 未提交、未推送。
+
+### 2026-10-20 — 隔离 Restore 截图成本与页面时间
+
+- **原因：** 动态 WebGL 采集显示，PNG 序列化可能显著慢于输入动作。旧采集器在截图期间继续推进 `requestAnimationFrame`、游戏计时器和后续采样的宿主时钟，使同一冻结轨迹因机器截图成本不同而到达不同玩法状态。
+- **范围：** Node/Python 采集器在导航前安装 Playwright page clock；每帧用 Chromium lifecycle + page clock 双重冻结，只排除截图区间，再恢复页面。页面当前时间的读取与暂停在同一页面任务内原子完成，避免长导航后公开 `pauseAt` 的协议竞态，也不使用会累计污染状态的固定 epsilon。动作执行器改用扣除截图耗时的 active timeline；`key_hold.capture_at_ms` 从 keydown 起算并在采样期间保持按下，到 `duration_ms` 才释放，其他动作继续使用输入完成后的采样语义。Node/Python 共用同一浏览器区域事实表达式，新增 `CaptureRegionFact/v1`，以自身/祖先 CSS 与属性、client rect 和视口交集计算 `visible`，避免把 opacity 0 或 aria-hidden overlay 误判为可见。证据新增 `clock_isolation`、`input_duration_ms`、`wall_elapsed_ms`、`excluded_capture_ms` 与区域可见性字段；CaptureStep Schema 增加跨字段语义说明。
+- **依赖与限制：** 无新增包，继续使用固定的 Playwright 1.58.0/Chromium；Node adapter 要求等价 Clock API 和 Chromium CDP lifecycle。该机制隔离页面时间，但不承诺亚帧级渲染确定性。
+- **验证：** 双实现单元测试通过；真实 Chromium 烟测确认冻结区额外 1 秒不推进 rAF、Date 或 performance，恢复后不补偿冻结耗时。回归覆盖导航前安装、导航与 readiness 等待、连续冻结截图、Python/Node 双适配器、key_hold 的前/中/末采样均保持按下且动作有效耗时不因采样翻倍，以及带文本和非零矩形的 opacity 0/aria-hidden 全屏层为 `visible:false`、解除两项隐藏条件后为 `visible:true`。完整测试与动态 Capture 集成结果见本次任务记录。
+- **推送：** 未提交、未推送。
+
+### 2026-10-18 — Restore 完整版本轨迹、生成数据隔离与静态检查 Schema
+
+- **原因：** 旧流程把首个基线和最佳版作为报告主线，无法审阅 Generate → Measure → Diff → Repair → Verify 的全部自迭代过程；`cases.yaml` 的源码/技术栈证据也缺少生成侧硬隔离；“脚本语法通过”等结论没有统一检查项、绑定、覆盖率和汇总口径。
+- **范围：** 报告新增 `trajectory[]`，保留 `v0` 和所有 keep/revert/inconclusive 候选；每轮生成 `ArtifactDiff/v1`，记录文件、义务分数和 finding 变化。新增 `RestoreGenerationInput/v1` 白名单投影与 `generation-input` 命令；评测 case 只允许 case ID/数据集哈希进入冻结合同，默认 `fixture_only` 过滤 source 证据和源码类资源。新增 `StaticCheckSuite/v1`、`static-check-record` 和自动汇总，在报告、T2/T4 与进度快照中展示。修复轮数上限改为 ordinary/refined/complex = 3/6/9。同步执行 SOP、接口架构图、Criteria、brief、中英文 README、评测说明、Case Schema、Case Manager 和跨 case 报告模板。
+- **依赖：** 无新增运行时包；实现继续使用 Node 标准库。JSON Schema 仅定义交换契约，控制器在写入时执行对应语义与哈希校验。
+- **验证：** Restore 控制/报告测试 12/12；采集与资源测试 6/6，真实浏览器集成 1 项因未设置 `RESTORE_CAPTURE_PYTHON` 跳过；Case Manager 生产构建通过，Sites 测试 4/4。13 份 JSON Schema 通过 Draft 2020-12 元 Schema 检查；核心脚本语法、全部 JSON 解析和 `git diff --check` 通过。Case Manager 首次在沙箱内因 Windows `spawn EPERM` 失败，按环境故障重试到允许子进程的执行环境后通过。`skills-ref` 当前不可用。
+- **推送：** 未提交、未推送。
+
+### 2026-10-16 — 审计并补强 Restore 交互场景、动态采集与提前停止
+
+- **原因：** Firewood run 在约 3 分 52 秒、0 个修复轮次时结束；导航/遥测错误未按目标主体复查，本地能力检查不完整，文本摘要被用于冻结视觉任务。最终 Judge 缺失与 Loop 是否还能继续未区分。复查确认原站可见，并能列出第一方脚本、GLB、纹理、音效和解码资源。
+- **范围：** 增加交互场景实现参考及 InteractiveScene/v1，贯通 measure/verify/E2E 和报告；两种采集器增加拖动、持续按键、wheel/fill/select、动画采样与失败诊断；共享哈希/预算 capture plan。新增 GLB/glTF 检查，资源下载兼容 pageAssets 清单及逐项大小上限。冻结视觉证据门禁、RestoreBlocker/v1、只读 progress 和用户可见阶段进度落地。修复 pairwise 跨顺序判词泄漏、候选输入预校验和报告覆盖玩法信息的问题。
+- **兼容变化：** 新 freeze 要求 applicable C1/C2 引用截图、C3 引用序列/视频；`stop ... blocked` 新调用需提供 blocker.json。历史冻结 run 和停止记录保持原样，现有 v0.2 pairwise 协议仍保留，尚未升级为完全盲评。
+- **验证：** Restore 控制/报告测试 9/9，采集与资源测试 7/7，共 16/16；真实浏览器在临时目录与 localhost 验证 Python/Node 输入、帧采样、冻结绑定、加载层就绪、下载和缓存。Case Manager build 与 Sites 测试 4/4 通过。Skill quick_validate、JSON Schema 检查、JS/Python 语法、文档本地链接与 diff 格式检查通过。C 盘已满后将测试临时目录定向到 D 盘项目忽略目录。`skills-ref` 不可用；未校准独立视觉 Judge，不把 fixture 通过称为 Firewood 还原 E2E 通过。
+- **审计：** 见 `evals/audits/2026-10-16-restore-interactive-scenes.md`，包含历史结论纠正、证据边界及剩余能力验证。
+- **真实目标补查：** 独立 Chromium 遭遇加载层/网络故障，诊断保留原始请求和失败原因；补入加载遮罩就绪条件及失败状态资源发现。原站四个已观察 GLB 中两个已下载/解析，确认一个约 0.967 秒的斧头动画 clip，其余两个下载超时。证据留在忽略目录，未宣称整站还原或视觉 E2E 已完成。
+- **推送：** 未提交、未推送。
+
+### 2026-10-15 — 声明并验证 Restore Playwright 采集环境
+
+- **范围：** 新增 `requirements-dev.txt`，固定 Python Playwright 版本；中英文 README 增加 Chromium 安装、启动验证和 Node 可选采集器说明。
+- **原因：** Restore 的页面状态、交互序列和运行时证据需要可复现的浏览器采集环境，不能假定宿主已经具备浏览器驱动。
+- **验证：** 已安装 Python Playwright 1.58.0 与 Chromium；本机无头 Chromium 成功启动并渲染最小页面。Node 包安装因 npm 下载缓存损坏未完成，README 将其保留为可选路径。
+- **推送：** 未推送。
+
 ### 2026-10-15 — 新增独立 Stack Audit 证据采集脚本
 
 - **范围：** 新增 `scripts/stack-audit/`，包含 Playwright 页面/资源/Canvas 采集、已加载同主机 JS/CSS 的候选扫描、目标页地标确认、人工裁决与证据引用验证，以及独立用法说明。同步技术栈 SOP、SKILL 入口、中英文 README 和评测目录说明。

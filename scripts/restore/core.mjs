@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename, readdir, lstat, cp, open, unlink } from 'node:fs/promises';
-import { resolve, relative, sep, join, isAbsolute } from 'node:path';
+import { resolve, relative, sep, join, isAbsolute, dirname } from 'node:path';
 import { validateRedlineProfile, validateRedlineAssessments } from '../../evals/pipeline/redline-contract.mjs';
+import { validateCaptureStep, validateCaptureReadiness } from './capture-actions.mjs';
 
 export const VERSION = 'restore/v0.2';
-export const TIERS = Object.freeze({ ordinary: { minutes:30, rounds:2, reserve:3 }, refined: { minutes:60, rounds:3, reserve:6 }, complex: { minutes:120, rounds:4, reserve:12 } });
+export const TIERS = Object.freeze({ ordinary: { minutes:30, rounds:3, reserve:3 }, refined: { minutes:60, rounds:6, reserve:6 }, complex: { minutes:120, rounds:9, reserve:12 } });
 export const criteria = ['C1','C2','C3'];
 export const sha = value => createHash('sha256').update(value).digest('hex');
 export function canonical(value) { return JSON.stringify(value, (_,v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])) : v); }
@@ -25,7 +26,7 @@ export async function safeFile(root,path) {
 export async function writeJSON(file,data) {
   const temp=file+'.'+randomUUID()+'.tmp'; await writeFile(temp,JSON.stringify(data,null,2)+'\n'); await rename(temp,file);
 }
-export async function treeHash(root) {
+export async function treeManifest(root) {
   const files=[];
   async function walk(dir) {
     for(const entry of (await readdir(dir,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name,'en'))) {
@@ -34,7 +35,15 @@ export async function treeHash(root) {
       if(entry.isDirectory()) await walk(path); else if(entry.isFile()) files.push([relative(root,path).replaceAll('\\','/'),sha(await readFile(path))]);
     }
   }
-  await walk(root); assert(files.length,'Artifact is empty'); return digest(files);
+  await walk(root); assert(files.length,'Artifact is empty'); return files;
+}
+export async function treeHash(root) { return digest(await treeManifest(root)); }
+export async function artifactDiff(root,before,after) {
+  const from=new Map(await treeManifest(local(root,`snapshots/${before}`))),to=new Map(await treeManifest(local(root,`snapshots/${after}`)));
+  const added=[],removed=[],modified=[];
+  for(const [path,hash] of to) if(!from.has(path)) added.push(path); else if(from.get(path)!==hash) modified.push(path);
+  for(const path of from.keys()) if(!to.has(path)) removed.push(path);
+  return {schema_version:'ArtifactDiff/v1',from_artifact_sha256:before,to_artifact_sha256:after,files:{added,modified,removed,unchanged_count:[...to.keys()].filter(path=>from.get(path)===to.get(path)).length}};
 }
 async function snapshot(root) {
   const source=local(root,'restored'), hash=await treeHash(source), target=local(root,`snapshots/${hash}`);
@@ -49,13 +58,24 @@ async function restore(root,hash) {
   await rename(dest,backup); // Preserve rejected work; never recursively delete user files.
   try { await cp(source,dest,{recursive:true}); } catch(e) { await rename(backup,dest); throw e; }
 }
-export async function verifyEvidence(root,items) {
+export async function verifyEvidence(root,items,{artifact_sha256=null}={}) {
   assert(Array.isArray(items) && items.length>0,'Evidence is required');
+  let artifactRoot=null;
+  if(artifact_sha256) {
+    assert(/^[a-f0-9]{64}$/.test(artifact_sha256),'Invalid evidence artifact binding');
+    artifactRoot=local(root,`snapshots/${artifact_sha256}`);
+    let actual;
+    try { actual=await treeHash(artifactRoot); }
+    catch(error) { if(error.code==='ENOENT')throw new Error(`Bound evidence snapshot missing: ${artifact_sha256}`); throw error; }
+    assert(actual===artifact_sha256,`Bound evidence snapshot changed: ${artifact_sha256}`);
+  }
   const ids=new Set();
   for(const e of items) {
     assert(text(e.id)&&!ids.has(e.id),'Evidence IDs must be unique'); ids.add(e.id);
     assert(['screenshot','sequence','video','checks','source'].includes(e.kind),'Invalid evidence kind');
-    assert(sha(await readFile(await safeFile(root,e.uri)))===e.sha256,`Evidence changed: ${e.id}`);
+    const normalized=e.uri.replaceAll('\\','/');
+    const path=artifactRoot&&normalized.startsWith('restored/')?await safeFile(artifactRoot,normalized.slice('restored/'.length)):await safeFile(root,e.uri);
+    assert(sha(await readFile(path))===e.sha256,`Evidence changed: ${e.id}`);
   }
   return ids;
 }
@@ -66,6 +86,15 @@ export async function validateContract(root,c) {
   assert(text(c.requested_url)&&text(c.observed_url)&&text(c.start_command),'URLs and start command required');
   assert(c.environment && ['browser','os','dpr','locale'].every(k=>c.environment[k]!=null),'Capture environment required');
   assert(c.e2e_profile?.rubric_version && c.e2e_profile?.scorer_version,'E2E versions must be frozen');
+  assert(c.generation_policy&&['fixture_only','source_assisted'].includes(c.generation_policy.mode)&&c.generation_policy.case_metadata_visibility==='id_only'&&['forbidden','allowed'].includes(c.generation_policy.source_reuse),'Generation policy must isolate evaluation metadata');
+  assert((c.generation_policy.mode==='source_assisted')===(c.generation_policy.source_reuse==='allowed'),'Generation mode/source reuse mismatch');
+  const forbiddenCaseFields=['technology_stack','technology_stack_source','technology_stack_evidence','source_code_evidence','source_repository'];
+  assert(forbiddenCaseFields.every(key=>!(key in c)),'Contract contains evaluation-only case metadata');
+  if(c.case_source) {
+    assert(text(c.case_source.case_id),'case_source.case_id required');
+    assert(Object.keys(c.case_source).every(key=>['case_id','dataset_sha256'].includes(key)),'Contract contains evaluation-only case metadata');
+    if(c.case_source.dataset_sha256!=null) assert(/^[a-f0-9]{64}$/.test(c.case_source.dataset_sha256),'Invalid case dataset hash');
+  }
   unique(c.states,'id','states'); unique(c.obligations,'id','obligations'); unique(c.runtime_gates,'id','runtime gates');
   const evidence=await verifyEvidence(root,c.reference_evidence);
   assert(c.obligations.filter(o=>o.required&&o.applicability==='applicable').length>0,'At least one observable required visual obligation is needed');
@@ -73,8 +102,25 @@ export async function validateContract(root,c) {
     assert(text(s.id)&&text(s.page_id)&&text(s.viewport_id)&&text(s.path)&&Array.isArray(s.regions)&&s.regions.length,'State identity/regions missing');
     assert(s.viewport?.width>0&&s.viewport?.height>0&&text(s.ready_selector),'State viewport/readiness required');
     assert(Array.isArray(s.steps)&&typeof s.sentinel==='boolean','State steps/sentinel required');
+    s.steps.forEach(validateCaptureStep);
+    validateCaptureReadiness(s);
   }
   assert(c.states.some(s=>s.sentinel),'At least one sentinel state required');
+  if(c.interactive_scene) {
+    const scene=c.interactive_scene;
+    assert(scene.schema_version==='InteractiveScene/v1','InteractiveScene/v1 required');
+    unique(scene.transitions,'id','scene transitions');
+    for(const t of scene.transitions) {
+      assert(c.states.some(s=>s.id===t.state_id)&&['input','precondition','feedback','timing','terminal_state','repeat_reset'].every(k=>text(t[k])),'Scene transition fields/state missing');
+    }
+    assert(Array.isArray(scene.rendering),'Scene rendering observations required');
+    for(const r of scene.rendering) assert(text(r.aspect)&&text(r.description),'Rendering observation missing');
+    for(const item of [...scene.transitions,...scene.rendering]) {
+      assert(['observed','inferred','unknown'].includes(item.status),'Explicit scene evidence status required');
+      references(evidence,item.evidence,'interactive scene');
+      if(c.generation_policy.mode==='fixture_only') assert(item.evidence.every(id=>c.reference_evidence.find(e=>e.id===id)?.kind!=='source'),'Fixture-only generation cannot consume source evidence');
+    }
+  }
   for(const o of c.obligations) {
     const s=c.states.find(x=>x.id===o.state_id);
     assert(s&&s.regions.includes(o.region_id)&&criteria.includes(o.criterion_id),`Invalid obligation: ${o.id}`);
@@ -83,18 +129,159 @@ export async function validateContract(root,c) {
     assert(['applicable','not_applicable','unknown'].includes(o.applicability),'Invalid applicability');
     if(o.applicability!=='applicable') assert(text(o.reason),'Applicability reason required');
     references(evidence,o.reference_evidence,o.id);
+    if(o.applicability==='applicable') {
+      const kinds=o.reference_evidence.map(id=>c.reference_evidence.find(e=>e.id===id).kind);
+      assert(o.criterion_id==='C3'?kinds.some(k=>['sequence','video'].includes(k)):kinds.includes('screenshot'),
+        `Observable ${o.criterion_id} reference requires ${o.criterion_id==='C3'?'sequence/video':'screenshot'} evidence: ${o.id}`);
+    }
   }
   for(const id of criteria) assert(c.obligations.some(o=>o.criterion_id===id&&o.required),`Declare required ${id}, including explicit N/A`);
   for(const g of c.runtime_gates) assert(text(g.id)&&text(g.description),'Gate description required');
+}
+function validateRefreezeEvidencePaths(root,c) {
+  assert(Array.isArray(c.reference_evidence),'Refreeze reference evidence is required');
+  const allowedRoots=new Set(['evidence','reference-source']);
+  for(const evidence of c.reference_evidence) {
+    const normalized=relative(root,local(root,evidence.uri)).replaceAll('\\','/');
+    const segments=normalized.split('/');
+    assert(segments.every(segment=>segment&&!/[ .]$/.test(segment)&&!segment.includes(':')&&!/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(segment)),`Unsupported Windows-equivalent refreeze evidence path: ${evidence.uri}`);
+    const topLevel=segments[0].toLowerCase();
+    assert(allowedRoots.has(topLevel),`Refreeze evidence path conflicts with managed run content: ${evidence.uri}`);
+  }
 }
 export async function init(root,url,tier='ordinary') {
   assert(TIERS[tier] && /^https?:\/\//.test(url),'Valid URL/tier required');
   await mkdir(root,{recursive:true}); const guard=await open(join(root,'run.json'),'wx'); await guard.close();
   for(const path of ['restored','snapshots','discarded','observations','evidence','docs']) await mkdir(local(root,path),{recursive:true});
-  const run={schema_version:VERSION,run_id:randomUUID(),started_at:new Date().toISOString(),tier,phase:'prepare',rounds:[],best:null,baseline:null,pending:null,stop:null,e2e:null,approval:null,enforcement:'cooperative',profile_changes:0};
+  const run={schema_version:VERSION,run_id:randomUUID(),started_at:new Date().toISOString(),tier,phase:'prepare',rounds:[],static_checks:[],best:null,baseline:null,pending:null,stop:null,e2e:null,approval:null,enforcement:'cooperative',profile_changes:0};
   await writeJSON(join(root,'run.json'),run);
-  await writeJSON(join(root,'contract.json'),{schema_version:VERSION,requested_url:url,observed_url:null,start_command:null,environment:{browser:null,os:null,dpr:1,locale:'en-US'},e2e_profile:{rubric_version:'site-restore-v1.2-draft',scorer_version:'e2e/v0.4'},states:[],obligations:[],runtime_gates:[{id:'runnable',description:'主页面可加载、主体可见'},{id:'reachable',description:'关键视觉状态可到达'},{id:'unobstructed',description:'无严重遮挡或溢出'}],reference_evidence:[],resources:[],unknowns:[]});
+  await writeJSON(join(root,'contract.json'),{schema_version:VERSION,requested_url:url,observed_url:null,start_command:null,environment:{browser:null,os:null,dpr:1,locale:'en-US'},generation_policy:{mode:'fixture_only',case_metadata_visibility:'id_only',source_reuse:'forbidden'},e2e_profile:{rubric_version:'site-restore-v1.2-draft',scorer_version:'e2e/v0.4'},states:[],obligations:[],runtime_gates:[{id:'runnable',description:'主页面可加载、主体可见'},{id:'reachable',description:'关键视觉状态可到达'},{id:'unobstructed',description:'无严重遮挡或溢出'}],reference_evidence:[],resources:[],unknowns:[]});
   await writeFile(join(root,'events.jsonl'),JSON.stringify({at:run.started_at,type:'init',tier})+'\n'); return run;
+}
+function linkedBrief(contract,parentRunId,relationship='continuation') {
+  const states=contract.states.map(state=>`- ${state.id}: ${state.path} · ${state.viewport.width}x${state.viewport.height}`).join('\n');
+  const unknowns=(contract.unknowns??[]).map(item=>`- ${item}`).join('\n')||'- None recorded';
+  const refreeze=relationship==='contract_refreeze';
+  return `# Restore ${refreeze?'contract refreeze':'continuation'} brief\n\nParent run: ${parentRunId}\n\nReference: ${contract.requested_url}\n\nObserved page: ${contract.observed_url}\n\nDelivery: restored/; start: ${contract.start_command}\n\nGeneration policy: ${contract.generation_policy.mode}\n\n## ${refreeze?'Proposed':'Frozen'} states\n\n${states}\n\n## Unknowns\n\n${unknowns}\n\nThis writable ${refreeze?'refreeze':'continuation'} brief was projected from the ${refreeze?'explicit contract source':'frozen contract'}${refreeze?'': ' because the parent run had no design_brief.md'}. Update it during implementation; contract.json ${refreeze?'becomes authoritative only after freeze':'remains authoritative for frozen requirements'}.\n`;
+}
+export async function continueRun(parentRoot,newRoot,tier=null) {
+  parentRoot=resolve(parentRoot);newRoot=resolve(newRoot);
+  assert(parentRoot!==newRoot,'Continuation run must use a new directory');
+  const parentRunPath=join(parentRoot,'run.json'),parentEventsPath=join(parentRoot,'events.jsonl');
+  const parentRunBytes=await readFile(parentRunPath),parentEventsBytes=await readFile(parentEventsPath);
+  const parentRun=JSON.parse(parentRunBytes.toString('utf8'));
+  assert(parentRun.schema_version===VERSION&&parentRun.contract_sha256,'Parent run must have a frozen restore/v0.2 contract');
+  assert(parentRun.best&&/^[a-f0-9]{64}$/.test(parentRun.best),'Parent run has no verified best artifact');
+  const selectedTier=tier??parentRun.tier;assert(TIERS[selectedTier],'Invalid continuation tier');
+  const parentContractBytes=await readFile(join(parentRoot,'contract.json'));
+  const parentContract=JSON.parse(parentContractBytes.toString('utf8'));
+  assert(digest(parentContract)===parentRun.contract_sha256,'Parent frozen contract changed');
+  await validateContract(parentRoot,parentContract);
+  const parentSnapshot=local(parentRoot,`snapshots/${parentRun.best}`);
+  assert(await treeHash(parentSnapshot)===parentRun.best,'Parent best snapshot changed or is unavailable');
+  const parentWorking=local(parentRoot,'restored'),workingHash=await treeHash(parentWorking);
+  const inheritedSource=workingHash===parentRun.best?'best_snapshot':'working_tree_unverified';
+  const inheritedArtifact=workingHash;
+  const parentRelative=relative(newRoot,parentRoot).replaceAll('\\','/');
+  assert(parentRelative&&!isAbsolute(parentRelative),'Continuation run must share a filesystem with its parent for relative lineage links');
+  const parentBrief={href:`${parentRelative}/design_brief.md`};let parentBriefBytes=null;
+  try { parentBriefBytes=await readFile(join(parentRoot,'design_brief.md'));parentBrief.sha256=sha(parentBriefBytes); }
+  catch(error) { if(error.code!=='ENOENT') throw error; }
+  try { await lstat(newRoot); throw new Error('Continuation directory already exists'); }
+  catch(error) { if(error.code!=='ENOENT') throw error; }
+
+  await mkdir(dirname(newRoot),{recursive:true});await mkdir(newRoot);
+  for(const path of ['restored','snapshots','discarded','observations','evidence','docs']) await mkdir(local(newRoot,path),{recursive:true});
+  await writeFile(join(newRoot,'contract.json'),parentContractBytes);
+  const copiedEvidence=new Set();
+  for(const evidence of parentContract.reference_evidence) {
+    if(copiedEvidence.has(evidence.uri))continue;copiedEvidence.add(evidence.uri);
+    const source=await safeFile(parentRoot,evidence.uri),destination=local(newRoot,evidence.uri);
+    assert(sha(await readFile(source))===evidence.sha256,`Evidence changed: ${evidence.id}`);
+    await mkdir(dirname(destination),{recursive:true});await cp(source,destination);
+  }
+  const briefBytes=parentBriefBytes??Buffer.from(linkedBrief(parentContract,parentRun.run_id));
+  await writeFile(join(newRoot,'design_brief.md'),briefBytes);
+  const briefSource=parentBriefBytes?'parent_copy':'contract_projection';
+  await cp(parentWorking,local(newRoot,'restored'),{recursive:true,force:true});
+  await cp(parentWorking,local(newRoot,`snapshots/${inheritedArtifact}`),{recursive:true});
+  assert(await treeHash(local(newRoot,'restored'))===inheritedArtifact,'Inherited artifact copy changed');
+
+  const createdAt=new Date().toISOString(),runId=randomUUID();
+  const report={href:`${parentRelative}/report.html`};
+  try {
+    const bytes=await readFile(join(parentRoot,'report.html'));
+    report.sha256=sha(bytes);
+  } catch(error) { if(error.code!=='ENOENT') throw error; }
+  const lineage={schema_version:'RestoreLineage/v1',relationship:'continuation',created_at:createdAt,child_run_id:runId,parent:{run_id:parentRun.run_id,started_at:parentRun.started_at,run_json_sha256:sha(parentRunBytes),events_jsonl_sha256:sha(parentEventsBytes),contract_sha256:parentRun.contract_sha256,best_artifact_sha256:parentRun.best,report,design_brief:parentBrief},inherited:{contract_sha256:parentRun.contract_sha256,reference_evidence_sha256:digest(parentContract.reference_evidence),artifact_sha256:inheritedArtifact,artifact_source:inheritedSource,generation_policy:parentContract.generation_policy,design_brief:{uri:'design_brief.md',source:briefSource,initial_sha256:sha(briefBytes)}}};
+  const lineageHash=digest(lineage);await writeJSON(join(newRoot,'lineage.json'),lineage);
+  const run={schema_version:VERSION,run_id:runId,started_at:createdAt,tier:selectedTier,phase:'baseline',rounds:[],static_checks:[],best:null,baseline:null,pending:null,stop:null,e2e:null,approval:null,enforcement:'cooperative',profile_changes:0,contract_sha256:parentRun.contract_sha256,lineage:{uri:'lineage.json',sha256:lineageHash,parent_run_id:parentRun.run_id,inherited_artifact_sha256:inheritedArtifact,artifact_source:inheritedSource}};
+  await writeJSON(join(newRoot,'run.json'),run);
+  await writeFile(join(newRoot,'events.jsonl'),JSON.stringify({at:createdAt,type:'continue',tier:selectedTier,parent_run_id:parentRun.run_id,parent_run_json_sha256:lineage.parent.run_json_sha256,parent_events_jsonl_sha256:lineage.parent.events_jsonl_sha256,contract_sha256:parentRun.contract_sha256,inherited_artifact_sha256:inheritedArtifact,artifact_source:inheritedSource,lineage_sha256:lineageHash})+'\n');
+  return {run_id:runId,phase:run.phase,tier:selectedTier,lineage:run.lineage,next:'assessment-input then initial-record'};
+}
+export async function refreezeRun(parentRoot,newRoot,contractSource,tier=null) {
+  parentRoot=resolve(parentRoot);newRoot=resolve(newRoot);contractSource=resolve(contractSource);
+  assert(parentRoot!==newRoot,'Refreeze run must use a new directory');
+  const parentRunPath=join(parentRoot,'run.json'),parentEventsPath=join(parentRoot,'events.jsonl');
+  const parentRunBytes=await readFile(parentRunPath),parentEventsBytes=await readFile(parentEventsPath);
+  const parentRun=JSON.parse(parentRunBytes.toString('utf8'));
+  assert(parentRun.schema_version===VERSION&&parentRun.contract_sha256,'Parent run must have a frozen restore/v0.2 contract');
+  assert(parentRun.best&&/^[a-f0-9]{64}$/.test(parentRun.best),'Parent run has no verified best artifact');
+  const selectedTier=tier??parentRun.tier;assert(TIERS[selectedTier],'Invalid refreeze tier');
+  const parentContract=await readJSON(join(parentRoot,'contract.json'));
+  assert(digest(parentContract)===parentRun.contract_sha256,'Parent frozen contract changed');
+  await validateContract(parentRoot,parentContract);
+  const parentSnapshot=local(parentRoot,`snapshots/${parentRun.best}`);
+  assert(await treeHash(parentSnapshot)===parentRun.best,'Parent best snapshot changed or is unavailable');
+
+  const sourceStat=await lstat(contractSource);
+  const sourceKind=sourceStat.isDirectory()?'directory':'json_file';
+  assert(sourceStat.isDirectory()||sourceStat.isFile(),'Contract source must be a directory or JSON file');
+  const sourceRoot=sourceStat.isDirectory()?contractSource:dirname(contractSource);
+  const sourcePath=sourceStat.isDirectory()?join(contractSource,'contract.json'):contractSource;
+  const sourceBytes=await readFile(sourcePath),sourceContract=JSON.parse(sourceBytes.toString('utf8'));
+  validateRefreezeEvidencePaths(sourceRoot,sourceContract);
+  await validateContract(sourceRoot,sourceContract);
+  assert(digest(sourceContract)!==parentRun.contract_sha256,'Refreeze contract source must differ from the parent frozen contract');
+  const parentRelative=relative(newRoot,parentRoot).replaceAll('\\','/');
+  assert(parentRelative&&!isAbsolute(parentRelative),'Refreeze run must share a filesystem with its parent for relative lineage links');
+  try { await lstat(newRoot); throw new Error('Refreeze directory already exists'); }
+  catch(error) { if(error.code!=='ENOENT') throw error; }
+
+  await mkdir(dirname(newRoot),{recursive:true});await mkdir(newRoot);
+  for(const path of ['restored','snapshots','discarded','observations','evidence','docs']) await mkdir(local(newRoot,path),{recursive:true});
+  await writeFile(join(newRoot,'contract.json'),sourceBytes);
+  const copiedEvidence=new Set();
+  for(const evidence of sourceContract.reference_evidence) {
+    if(copiedEvidence.has(evidence.uri))continue;copiedEvidence.add(evidence.uri);
+    const source=await safeFile(sourceRoot,evidence.uri),destination=local(newRoot,evidence.uri);
+    assert(sha(await readFile(source))===evidence.sha256,`Evidence changed: ${evidence.id}`);
+    await mkdir(dirname(destination),{recursive:true});await cp(source,destination);
+  }
+  await validateContract(newRoot,sourceContract);
+  const sourceArchiveUri='refreeze-contract-source.json';
+  await writeFile(local(newRoot,sourceArchiveUri),sourceBytes);
+  const sourceArchiveBytes=await readFile(local(newRoot,sourceArchiveUri));
+  const briefBytes=Buffer.from(linkedBrief(sourceContract,parentRun.run_id,'contract_refreeze'));
+  await writeFile(join(newRoot,'design_brief.md'),briefBytes);
+  await cp(parentSnapshot,local(newRoot,'restored'),{recursive:true});
+  await cp(parentSnapshot,local(newRoot,`snapshots/${parentRun.best}`),{recursive:true});
+  assert(await treeHash(local(newRoot,'restored'))===parentRun.best,'Inherited best artifact copy changed');
+
+  const createdAt=new Date().toISOString(),runId=randomUUID();
+  const report={href:`${parentRelative}/report.html`};
+  try { report.sha256=sha(await readFile(join(parentRoot,'report.html'))); }
+  catch(error) { if(error.code!=='ENOENT') throw error; }
+  const parentBrief={href:`${parentRelative}/design_brief.md`};
+  try { parentBrief.sha256=sha(await readFile(join(parentRoot,'design_brief.md'))); }
+  catch(error) { if(error.code!=='ENOENT') throw error; }
+  const lineage={schema_version:'RestoreLineage/v1',relationship:'contract_refreeze',created_at:createdAt,child_run_id:runId,parent:{run_id:parentRun.run_id,started_at:parentRun.started_at,run_json_sha256:sha(parentRunBytes),events_jsonl_sha256:sha(parentEventsBytes),contract_sha256:parentRun.contract_sha256,best_artifact_sha256:parentRun.best,report,design_brief:parentBrief},inherited:{artifact_sha256:parentRun.best,artifact_source:'best_snapshot',design_brief:{uri:'design_brief.md',source:'contract_refreeze_projection',initial_sha256:sha(briefBytes)}},contract_refreeze:{source:{uri:sourceArchiveUri,kind:sourceKind,canonical_sha256:digest(sourceContract),input_file_sha256:sha(sourceBytes),archived_file_sha256:sha(sourceArchiveBytes),reference_evidence_sha256:digest(sourceContract.reference_evidence)},generation_policy:sourceContract.generation_policy}};
+  const lineageHash=digest(lineage);await writeJSON(join(newRoot,'lineage.json'),lineage);
+  const run={schema_version:VERSION,run_id:runId,started_at:createdAt,tier:selectedTier,phase:'prepare',rounds:[],static_checks:[],best:null,baseline:null,pending:null,stop:null,e2e:null,approval:null,enforcement:'cooperative',profile_changes:0,lineage:{uri:'lineage.json',sha256:lineageHash,relationship:'contract_refreeze',parent_run_id:parentRun.run_id,inherited_artifact_sha256:parentRun.best,artifact_source:'best_snapshot',source_contract_sha256:digest(sourceContract)}};
+  await writeJSON(join(newRoot,'run.json'),run);
+  await writeFile(join(newRoot,'events.jsonl'),JSON.stringify({at:createdAt,type:'refreeze',tier:selectedTier,parent_run_id:parentRun.run_id,parent_run_json_sha256:lineage.parent.run_json_sha256,parent_events_jsonl_sha256:lineage.parent.events_jsonl_sha256,parent_contract_sha256:parentRun.contract_sha256,source_contract_sha256:lineage.contract_refreeze.source.canonical_sha256,source_reference_evidence_sha256:lineage.contract_refreeze.source.reference_evidence_sha256,inherited_artifact_sha256:parentRun.best,artifact_source:'best_snapshot',lineage_sha256:lineageHash})+'\n');
+  return {run_id:runId,phase:run.phase,tier:selectedTier,lineage:run.lineage,next:'review contract.json, then freeze'};
 }
 export async function locked(root,action,fn) {
   root=resolve(root); const lock=join(root,'.lock'); const handle=await open(lock,'wx').catch(()=>{throw new Error('Run is locked; inspect the owner before removing a stale .lock');});
@@ -152,6 +339,59 @@ export async function contract(root,run) {
   const c=await readJSON(join(root,'contract.json')); assert(digest(c)===run.contract_sha256,'Frozen contract changed; start an explicitly linked new run with remaining budget');
   await verifyEvidence(root,c.reference_evidence); return c;
 }
+export async function generationInput(root,run) {
+  const c=await contract(root,run),fixtureOnly=c.generation_policy.mode==='fixture_only';
+  const referenceEvidence=c.reference_evidence.filter(e=>!fixtureOnly||e.kind!=='source');
+  const allowedIds=new Set(referenceEvidence.map(e=>e.id));
+  const obligations=c.obligations.map(item=>({...item,reference_evidence:(item.reference_evidence??[]).filter(id=>allowedIds.has(id))}));
+  const scene=c.interactive_scene?{
+    ...c.interactive_scene,
+    transitions:c.interactive_scene.transitions.map(item=>({...item,evidence:item.evidence.filter(id=>allowedIds.has(id))})),
+    rendering:c.interactive_scene.rendering.map(item=>({...item,evidence:item.evidence.filter(id=>allowedIds.has(id))}))
+  }:null;
+  const resources=(c.resources??[]).filter(item=>item.evaluation_only!==true&&!['source','source_code','repository'].includes(item.kind??item.type));
+  return {schema_version:'RestoreGenerationInput/v1',run_id:run.run_id,case_id:c.case_source?.case_id??null,generation_policy:c.generation_policy,binding:{contract_sha256:run.contract_sha256,reference_sha256:digest(referenceEvidence)},requested_url:c.requested_url,observed_url:c.observed_url,states:c.states,obligations,interactive_scene:scene,reference_evidence:referenceEvidence,resources,unknowns:c.unknowns??[],output:{project_path:'restored/',start_command:c.start_command}};
+}
+export function summarizeStaticChecks(checks) {
+  const count=status=>checks.filter(check=>check.status===status).length,total=checks.length,skipped=count('skipped'),applicable=total-skipped,assessed=count('pass')+count('fail');
+  const summary={total,pass:count('pass'),fail:count('fail'),unknown:count('unknown'),skipped,blocking_failures:checks.filter(check=>check.status==='fail'&&check.severity==='blocking').length,coverage_percent:applicable?Math.round(10000*assessed/applicable)/100:0,overall_status:'pass'};
+  if(summary.fail>0) summary.overall_status='fail'; else if(summary.unknown>0||applicable===0) summary.overall_status='incomplete';
+  return summary;
+}
+export function normalizeStaticCheckSuite(data) {
+  assert(data?.schema_version==='StaticCheckSuite/v1'&&text(data.suite_id)&&text(data.label),'Expected StaticCheckSuite/v1');
+  assert(['initial','candidate','final','supplemental'].includes(data.stage),'Invalid static check stage');
+  assert(data.binding&&text(data.binding.run_id)&&/^[a-f0-9]{64}$/.test(data.binding.artifact_sha256)&&/^[a-f0-9]{64}$/.test(data.binding.contract_sha256),'Static check binding required');
+  assert(data.executor&&['tool','implementer','independent'].includes(data.executor.role)&&text(data.executor.id),'Static check executor required');
+  assert(Number.isFinite(Date.parse(data.started_at))&&Number.isFinite(Date.parse(data.completed_at))&&Date.parse(data.completed_at)>=Date.parse(data.started_at),'Invalid static check interval');
+  unique(data.checks,'id','static checks');
+  const categories=['syntax','http','content','runtime','browser','resources','accessibility','security','performance','quality','custom'];
+  for(const check of data.checks) {
+    assert(categories.includes(check.category)&&['pass','fail','unknown','skipped'].includes(check.status)&&['blocking','obvious','minor','informational'].includes(check.severity),'Invalid static check category/status/severity');
+    assert(text(check.description)&&text(check.expected)&&text(check.actual)&&Array.isArray(check.evidence),'Static check result fields required');
+    if(check.duration_ms!=null) assert(Number.isFinite(check.duration_ms)&&check.duration_ms>=0,'Invalid static check duration');
+  }
+  assert(Array.isArray(data.evidence),'Static check evidence required');
+  return {...data,summary:summarizeStaticChecks(data.checks)};
+}
+export async function recordStaticChecks(root,run,data) {
+  assert(run.contract_sha256,'Freeze the contract before recording checks');
+  const suite=normalizeStaticCheckSuite(data);
+  assert(suite.binding.run_id===run.run_id&&suite.binding.contract_sha256===run.contract_sha256,'Static check run/contract binding mismatch');
+  const current=await treeHash(local(root,'restored'));
+  let snapshotMatches=false;
+  try { snapshotMatches=await treeHash(local(root,`snapshots/${suite.binding.artifact_sha256}`))===suite.binding.artifact_sha256; } catch(error) { if(error.code!=='ENOENT') throw error; }
+  assert(current===suite.binding.artifact_sha256||snapshotMatches,'Static check artifact binding mismatch');
+  const ids=await verifyEvidence(root,suite.evidence,snapshotMatches&&current!==suite.binding.artifact_sha256?{artifact_sha256:suite.binding.artifact_sha256}:{});
+  for(const check of suite.checks) {
+    if(check.status!=='skipped') references(ids,check.evidence,check.id);
+    else assert(check.evidence.every(id=>ids.has(id)),'Unknown evidence in skipped check');
+  }
+  run.static_checks??=[];
+  assert(!run.static_checks.some(item=>item.suite_id===suite.suite_id&&item.artifact_sha256===suite.binding.artifact_sha256),'Duplicate static check suite for artifact');
+  const hash=digest(suite),uri=`observations/static-check-${hash}.json`;await writeJSON(local(root,uri),suite);
+  const pointer={suite_id:suite.suite_id,label:suite.label,stage:suite.stage,artifact_sha256:suite.binding.artifact_sha256,uri,sha256:hash,summary:suite.summary};run.static_checks.push(pointer);return pointer;
+}
 export function binding(run,c,artifact) { return {artifact_sha256:artifact,reference_sha256:digest(c.reference_evidence),contract_sha256:run.contract_sha256,environment_sha256:digest(c.environment),rubric_version:c.e2e_profile.rubric_version,scorer_version:c.e2e_profile.scorer_version}; }
 export async function assess(root,run,c,a,artifact,requiredStates=c.states.map(s=>s.id)) {
   assert(a.schema_version==='LoopAssessment/v0.2','Expected LoopAssessment/v0.2');
@@ -184,21 +424,78 @@ function target(c,a) {
   return a.assessor.role==='independent' && a.gates.every(g=>g.status==='pass') && !a.findings.some(f=>f.severity!=='minor') && c.obligations.filter(o=>o.required).every(o=>{const u=a.units.find(x=>x.obligation_id===o.id); return u && (o.applicability==='not_applicable'?u.status==='not_applicable':u.status==='scored'&&u.score>=o.target);});
 }
 async function observation(root,a) { const name=`observations/${digest(a)}.json`; await writeJSON(local(root,name),a); return name; }
+async function archiveAssessmentEvidence(root,a) {
+  const evidence=[];
+  for(const item of a.evidence) {
+    const bytes=await readFile(await safeFile(root,item.uri));
+    const actual=sha(bytes);assert(actual===item.sha256,`Evidence changed: ${item.id}`);
+    const originalName=item.uri.replaceAll('\\','/').split('/').at(-1).replace(/[^a-zA-Z0-9._-]/g,'_')||'evidence';
+    const evidenceId=item.id.replace(/[^a-zA-Z0-9._-]/g,'_')||'evidence';
+    const uri=`observations/evidence-archive/${item.sha256}/${evidenceId}-${originalName}`;
+    const destination=local(root,uri);await mkdir(dirname(destination),{recursive:true});
+    try { await writeFile(destination,bytes,{flag:'wx'}); }
+    catch(error) { if(error.code!=='EEXIST')throw error;assert(sha(await readFile(destination))===item.sha256,`Archived evidence changed: ${item.id}`); }
+    evidence.push({...item,uri});
+  }
+  return {...a,evidence};
+}
 export async function freeze(root,run) {
-  assert(run.phase==='prepare'&&budget(run).remaining_ms>0,'Run deadline exhausted or already frozen'); const c=await readJSON(join(root,'contract.json')); await validateContract(root,c); run.contract_sha256=digest(c); run.phase='baseline'; return {contract_sha256:run.contract_sha256,budget:budget(run)};
+  assert(run.phase==='prepare'&&budget(run).remaining_ms>0,'Run deadline exhausted or already frozen'); const c=await readJSON(join(root,'contract.json')); await validateContract(root,c);
+  const contractHash=digest(c);
+  if(run.lineage?.relationship==='contract_refreeze') {
+    const lineage=await readJSON(await safeFile(root,run.lineage.uri));
+    assert(digest(lineage)===run.lineage.sha256&&lineage.relationship==='contract_refreeze','Contract refreeze lineage changed or is invalid');
+    assert(contractHash!==lineage.parent.contract_sha256,'Contract refreeze final contract must differ from the parent frozen contract');
+    validateRefreezeEvidencePaths(root,c);
+  }
+  run.contract_sha256=contractHash; run.phase='baseline'; return {contract_sha256:run.contract_sha256,budget:budget(run)};
 }
 export async function baseline(root,run,a) {
   assert(run.phase==='baseline'&&budget(run).remaining_ms>0,'Baseline deadline exhausted or wrong phase'); const c=await contract(root,run), hash=await snapshot(root);
   await assess(root,run,c,a,hash); assert(a.stability && ['stable','variable'].includes(a.stability.status)&&text(a.stability.reason),'Baseline stability observation required');
   references(new Set(a.evidence.map(e=>e.id)),a.stability.evidence,'stability');
+  a=await archiveAssessmentEvidence(root,a);
   run.baseline=run.best=hash; run.baseline_assessment=run.best_assessment=await observation(root,a); run.phase='loop'; return advance(root,run);
 }
-export async function end(root,run,reason,detail='') {
+export async function end(root,run,reason,detail='',blocker=null) {
   assert(!run.pending,'Resolve pending candidate first'); assert(!run.stop,'Run already stopped');
   assert(['target_reached','plateau','cycle_detected','budget_exhausted','blocked','failed'].includes(reason),'Invalid stop reason');
+  let blockerRef=null;
+  if(reason==='blocked') {
+    assert(blocker?.schema_version==='RestoreBlocker/v1','Blocked stop requires a RestoreBlocker/v1 evidence record');
+    assert(['reference_capture','assets','runtime','loop_measure','loop_verify'].includes(blocker.scope),'Final E2E/Judge unavailability is not a Restore Loop blocker');
+    assert(text(blocker.reason),'Blocker reason required');
+    const ids=await verifyEvidence(root,blocker.evidence);
+    assert(Array.isArray(blocker.attempts)&&blocker.attempts.length>0,'Record available alternatives and their outcomes');
+    for(const a of blocker.attempts) {
+      assert(text(a.capability)&&['failed','unavailable'].includes(a.status)&&text(a.reason),'Blocker attempt requires capability/status/reason');
+      references(ids,a.evidence,'blocker attempt');
+    }
+    assert(Array.isArray(blocker.remaining_work)&&blocker.remaining_work.length>0,'Remaining work disposition required');
+    for(const w of blocker.remaining_work) {
+      assert(text(w.task)&&['done','blocked','not_applicable'].includes(w.status)&&text(w.reason),'Finish unaffected work before stopping');
+      references(ids,w.evidence,'remaining work');
+    }
+    const hash=digest(blocker),uri=`observations/blocker-${hash}.json`;
+    await writeJSON(local(root,uri),blocker);blockerRef={uri,sha256:hash,scope:blocker.scope};
+  }
   if(run.best) await restore(root,run.best);
-  run.stop={reason,detail,at:new Date().toISOString(),budget:budget(run),artifact_sha256:run.best}; run.phase='final';
+  run.stop={reason,detail,at:new Date().toISOString(),budget:budget(run),artifact_sha256:run.best,...(blockerRef?{blocker:blockerRef}:{})}; run.phase='final';
   return {action:'final_e2e',stop:run.stop};
+}
+export async function progress(root,run) {
+  const a=run.best_assessment?await readJSON(local(root,run.best_assessment)):null;
+  const result=run.post_run_e2e_review??run.e2e;
+  const staticChecks=run.static_checks??[];
+  return {run_id:run.run_id,phase:run.phase,
+    stage:run.stop?(run.phase==='complete'?'report':'final_e2e'):run.pending?'measure_verify':run.phase==='prepare'?'discovery':run.phase==='baseline'?'initial_measure':'iterate',
+    budget:budget(run,run.stop?Date.parse(run.stop.at):Date.now()),budget_basis:run.stop?'loop_stop':'live',
+    finalization_budget:run.phase==='final'?budget(run):null,completed_rounds:run.rounds.length,pending_round:run.pending?.round??null,
+    version_count:(run.baseline?1:0)+run.rounds.length,round_limit:TIERS[run.tier].rounds,
+    best_artifact_sha256:run.best,last_decision:run.rounds.at(-1)?.decision??null,
+    static_checks:{suite_count:staticChecks.length,latest:staticChecks.at(-1)?.summary??null},
+    units:a?.units.map(({obligation_id,status,score})=>({obligation_id,status,score}))??[],
+    gates:a?.gates??[],findings:a?.findings??[],stop:run.stop,final_e2e:result?.status??'not_run'};
 }
 export async function advance(root,run) {
   if(run.stop) return {action:run.phase==='complete'?'report':'final_e2e',stop:run.stop};
@@ -241,20 +538,32 @@ export async function record(root,run,a,v) {
   }
   assert(['candidate','best','same','uncertain'].includes(v.forward)&&['candidate','best','same','uncertain'].includes(v.reverse),'Pairwise verdicts required (normalized to candidate/best)');
   assert(typeof v.visible_improvement==='boolean'&&text(v.reason),'Visible improvement and reason required');
+  a=await archiveAssessmentEvidence(root,a);
   const before=await readJSON(local(root,run.best_assessment));
-  const regressions=a.units.filter(u=>{const old=before.units.find(x=>x.obligation_id===u.obligation_id),o=c.obligations.find(x=>x.id===u.obligation_id);return old?.status==='scored'&&o?.required&&o.importance!=='minor'&&(u.status!=='scored'||u.score<old.score);});
+  const regressions=a.units.filter(u=>{const old=before.units.find(x=>x.obligation_id===u.obligation_id),o=c.obligations.find(x=>x.id===u.obligation_id);return old?.status==='scored'&&o?.required&&(u.status!=='scored'||u.score<old.score);});
   const rank={minor:0,obvious:1,blocking:2};
   const newMajor=a.findings.some(f=>f.severity!=='minor'&&!before.findings.some(old=>old.obligation_id===f.obligation_id&&rank[old.severity]>=rank[f.severity]));
+  const unit_changes=a.units.map(unit=>{const prior=before.units.find(x=>x.obligation_id===unit.obligation_id),beforeStatus=prior?.status??'missing',status_change=beforeStatus===unit.status?'unchanged':beforeStatus==='unknown'&&unit.status==='scored'?'newly_scored':beforeStatus==='scored'&&unit.status==='unknown'?'lost_score':'changed';return {obligation_id:unit.obligation_id,before_status:beforeStatus,before_score:prior?.score??null,candidate_status:unit.status,candidate_score:unit.score,status_change,delta:prior?.status==='scored'&&unit.status==='scored'?unit.score-prior.score:null};});
+  const gateRank={fail:0,unknown:1,pass:2};
+  const gate_changes=a.gates.map(gate=>{const prior=before.gates.find(x=>x.id===gate.id),delta=prior?gateRank[gate.status]-gateRank[prior.status]:null;return {gate_id:gate.id,before_status:prior?.status??'missing',candidate_status:gate.status,change:delta==null?'unknown':delta>0?'improved':delta<0?'regressed':'unchanged'};});
+  const gateRegressions=gate_changes.filter(change=>change.change==='regressed'),gateImprovements=gate_changes.filter(change=>change.change==='improved');
+  const covered=new Set(a.covered_states),findingInScope=finding=>covered.has(c.obligations.find(o=>o.id===finding.obligation_id)?.state_id);
+  const resolvedFindings=before.findings.filter(old=>findingInScope(old)&&!a.findings.some(n=>n.id===old.id));
+  const introducedFindings=a.findings.filter(item=>!before.findings.some(old=>old.id===item.id));
+  const auditableResolvedFindings=resolvedFindings.filter(old=>!a.findings.some(item=>item.obligation_id===old.obligation_id&&(old.severity==='minor'||item.severity!=='minor')));
+  const improvements={unit_scores:unit_changes.filter(change=>change.delta>0||change.status_change==='newly_scored').map(change=>change.obligation_id),gates:gateImprovements.map(change=>change.gate_id),resolved_findings:auditableResolvedFindings.map(finding=>finding.id)};
+  const hasAuditableImprovement=Object.values(improvements).some(items=>items.length>0);
   let decision='inconclusive';
-  if(a.gates.some(g=>g.status==='fail')||regressions.length||newMajor||v.forward==='best'||v.reverse==='best') decision='revert';
-  else if(a.gates.every(g=>g.status==='pass')&&a.assessor.role==='independent'&&v.forward==='candidate'&&v.reverse==='candidate'&&v.visible_improvement&&hash!==run.best&&budget(run).repair_remaining_ms>0) decision='keep';
+  if(gateRegressions.length||regressions.length||newMajor||v.forward==='best'||v.reverse==='best') decision='revert';
+  else if(a.assessor.role==='independent'&&v.forward==='candidate'&&v.reverse==='candidate'&&v.visible_improvement&&hasAuditableImprovement&&hash!==run.best&&budget(run).repair_remaining_ms>0) decision='keep';
   const cycle=run.rounds.some(r=>r.candidate===hash)&&hash!==run.best;
   if(cycle) decision='revert';
+  const artifact_diff={...await artifactDiff(root,p.before,hash),units:unit_changes,gates:gate_changes,findings:{before:before.findings.map(x=>x.id),candidate:a.findings.map(x=>x.id),resolved:resolvedFindings.map(x=>x.id),introduced:introducedFindings.map(x=>x.id)}};
+  const diffHash=digest(artifact_diff),diffUri=`observations/artifact-diff-${diffHash}.json`;await writeJSON(local(root,diffUri),artifact_diff);
   const path=await observation(root,a); const verifyPath=await observation(root,v);
-  run.rounds.push({...p,candidate:hash,assessment:path,verification:verifyPath,decision,at:new Date().toISOString(),regressions:regressions.map(x=>x.obligation_id)}); run.pending=null;
+  run.rounds.push({...p,version_id:`v${p.round}`,candidate:hash,assessment:path,verification:verifyPath,diff:{uri:diffUri,sha256:diffHash},decision,at:new Date().toISOString(),regressions:regressions.map(x=>x.obligation_id),gate_regressions:gateRegressions.map(x=>x.gate_id),improvements}); run.pending=null;
   if(decision==='keep') {
     // Carry forward untouched states explicitly; final E2E recaptures the complete scope.
-    const covered=new Set(a.covered_states);
     const merged={...a,covered_states:[...new Set([...a.covered_states,...before.covered_states])],evidence:[...a.evidence,...before.evidence.filter(e=>!a.evidence.some(n=>n.id===e.id))],units:[...a.units,...before.units.filter(u=>!covered.has(c.obligations.find(o=>o.id===u.obligation_id).state_id))],findings:[...a.findings,...before.findings.filter(f=>!covered.has(c.obligations.find(o=>o.id===f.obligation_id).state_id))],inherited_from:run.best_assessment};
     run.best=hash; run.best_assessment=await observation(root,merged);
   } else await restore(root,run.best);
@@ -268,14 +577,14 @@ export async function abort(root,run,detail) {
 }
 export async function assessmentInput(root,run) {
   const c=await contract(root,run), hash=await treeHash(local(root,'restored'));
-  return {schema_version:'LoopAssessmentRequest/v0.2',binding:binding(run,c,hash),states:c.states.filter(s=>!run.pending||run.pending.required_states.includes(s.id)),obligations:c.obligations,reference_evidence:c.reference_evidence,runtime_gates:c.runtime_gates,rubric:'references/restore/criteria.md',assessor:{role:'independent',id:null},required_output:'LoopAssessment/v0.2'};
+  return {schema_version:'LoopAssessmentRequest/v0.2',binding:binding(run,c,hash),states:c.states.filter(s=>!run.pending||run.pending.required_states.includes(s.id)),obligations:c.obligations,interactive_scene:c.interactive_scene??null,reference_evidence:c.reference_evidence,runtime_gates:c.runtime_gates,rubric:'references/restore/criteria.md',assessor:{role:'independent',id:null},required_output:'LoopAssessment/v0.2'};
 }
 export async function finalInput(root,run) {
   assert(run.stop,'Loop must end before E2E'); const c=await contract(root,run);
   if(!run.best) return {schema_version:'FinalEvalRequest/v0.2',status:'incomplete',reason:'No runnable artifact'};
   assert(await treeHash(local(root,'restored'))===run.best,'Final artifact changed');
   const effectiveDeadline=Date.parse(run.started_at)+TIERS[run.tier].minutes*60000+(run.time_exclusions??[]).reduce((sum,x)=>sum+Date.parse(x.end_at)-Date.parse(x.start_at),0);
-  return {schema_version:'FinalEvalRequest/v0.2',case_id:c.case_source?.case_id??run.run_id,binding:binding(run,c,run.best),reference_evidence:c.reference_evidence,states:c.states,resources:c.resources??[],obligations:c.obligations.map(({id,state_id,region_id,expected,reference_evidence})=>({id,state_id,region_id,expected,reference_evidence})),redline_profile:c.redline_profile??null,start_command:c.start_command,project_path:'restored/',deadline:new Date(effectiveDeadline).toISOString()};
+  return {schema_version:'FinalEvalRequest/v0.2',case_id:c.case_source?.case_id??run.run_id,binding:binding(run,c,run.best),reference_evidence:c.reference_evidence,states:c.states,resources:c.resources??[],interactive_scene:c.interactive_scene??null,obligations:c.obligations.map(({id,state_id,region_id,expected,reference_evidence})=>({id,state_id,region_id,expected,reference_evidence})),redline_profile:c.redline_profile??null,start_command:c.start_command,project_path:'restored/',deadline:new Date(effectiveDeadline).toISOString()};
 }
 export async function recordE2E(root,run,result) {
   assert(run.phase==='final'&&!run.e2e,'Final E2E can be recorded once after loop stop');

@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ui-reverse-engineer.local/schemas/restore-challenge-report-v2.json",
+  "title": "RestoreChallengeReport/v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "title", "generated_at", "comparison_rule", "provenance", "runs"],
+  "properties": {
+    "schema_version": { "const": "RestoreChallengeReport/v2" },
+    "title": { "type": "string", "minLength": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "comparison_rule": { "const": "contract_sha256 + rubric_version + scorer_version" },
+    "provenance": { "$ref": "#/$defs/provenance" },
+    "runs": { "type": "array", "items": { "$ref": "#/$defs/run" } }
+  },
+  "$defs": {
+    "nullableString": { "type": ["string", "null"] },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nullableSha256": { "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+    "sourceRef": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["uri", "href", "available", "file_sha256"],
+      "properties": {
+        "uri": { "type": "string", "minLength": 1 },
+        "href": { "type": "string", "minLength": 1 },
+        "available": { "type": "boolean" },
+        "file_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "canonical_sha256": { "$ref": "#/$defs/nullableSha256" }
+      }
+    },
+    "statusDetail": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["reason_code", "cause_layer", "recoverability", "source_ref", "affected_conclusions"],
+      "properties": {
+        "reason_code": { "type": "string", "minLength": 1 },
+        "cause_layer": { "enum": ["contract", "trajectory", "evidence", "evaluation", "diagnostics", "reporting", "environment"] },
+        "recoverability": { "enum": ["rerunnable", "regenerable_if_sources_exist", "migration_required", "historical_or_rerunnable", "historical_only", "contract_refreeze", "not_reached"] },
+        "source_ref": { "$ref": "#/$defs/nullableString" },
+        "affected_conclusions": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "roots", "nodes", "edges", "issues", "stats"],
+      "properties": {
+        "model": { "const": "RestoreProvenanceDAG/v1" },
+        "roots": { "type": "array", "items": { "type": "string", "pattern": "^run:" }, "uniqueItems": true },
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+        "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+        "issues": { "type": "array", "items": { "type": "object" } },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["runs", "versions", "artifacts", "evaluations", "lineage_edges"],
+          "properties": {
+            "runs": { "type": "integer", "minimum": 0 },
+            "versions": { "type": "integer", "minimum": 0 },
+            "artifacts": { "type": "integer", "minimum": 0 },
+            "evaluations": { "type": "integer", "minimum": 0 },
+            "lineage_edges": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "kind", "label", "status"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["run", "version", "artifact", "assessment", "verification", "diff", "static_check", "final_e2e"] },
+        "label": { "type": "string" },
+        "status": { "type": "string" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "decision": { "$ref": "#/$defs/nullableString" },
+        "issue_id": { "$ref": "#/$defs/nullableString" },
+        "source_ref": { "$ref": "#/$defs/sourceRef" }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "kind", "status"],
+      "properties": {
+        "from": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["continuation", "contract_refreeze", "legacy_lineage", "contains", "has_baseline", "has_best", "input", "produced", "assessed_by", "verified_by", "diffed_by", "diagnosed_by", "final_evaluated_by"] },
+        "status": { "type": "string" },
+        "source_ref": { "$ref": "#/$defs/sourceRef" }
+      }
+    },
+    "round": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["round", "version_id", "key", "issue_id", "hypothesis", "started_at", "before_artifact_sha256", "candidate_artifact_sha256", "assessment", "verification", "diff", "decision", "reason", "decided_at", "completeness", "status_detail"],
+      "properties": {
+        "round": { "type": "integer", "minimum": 1 },
+        "version_id": { "type": "string", "minLength": 1 },
+        "key": { "$ref": "#/$defs/nullableString" },
+        "issue_id": { "$ref": "#/$defs/nullableString" },
+        "hypothesis": { "$ref": "#/$defs/nullableString" },
+        "started_at": { "$ref": "#/$defs/nullableString" },
+        "before_artifact_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "candidate_artifact_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "assessment": { "$ref": "#/$defs/sourceRef" },
+        "verification": { "$ref": "#/$defs/sourceRef" },
+        "diff": { "$ref": "#/$defs/sourceRef" },
+        "decision": { "$ref": "#/$defs/nullableString" },
+        "reason": { "$ref": "#/$defs/nullableString" },
+        "decided_at": { "$ref": "#/$defs/nullableString" },
+        "completeness": { "enum": ["complete", "terminated", "incomplete"] },
+        "status_detail": { "$ref": "#/$defs/statusDetail" }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "relationship", "parent_run_id", "inherited_artifact_sha256", "artifact_source", "parent_contract_sha256", "source_contract_sha256", "source", "issues"],
+      "properties": {
+        "status": { "enum": ["root", "valid", "invalid"] },
+        "relationship": { "$ref": "#/$defs/nullableString" },
+        "parent_run_id": { "$ref": "#/$defs/nullableString" },
+        "inherited_artifact_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "artifact_source": { "$ref": "#/$defs/nullableString" },
+        "parent_contract_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "source_contract_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "source": { "$ref": "#/$defs/sourceRef" },
+        "issues": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "run": {
+      "type": "object",
+      "required": ["label", "run_id", "phase", "round_count", "rounds", "decisions", "comparison_group", "report_status", "report_status_detail", "integrity_issues", "e2e", "static_checks", "state_coverage", "unknown_units", "findings", "lineage", "sources"],
+      "properties": {
+        "label": { "type": "string" },
+        "run_id": { "type": "string" },
+        "started_at": { "type": "string" },
+        "phase": { "type": "string" },
+        "stop": { "type": ["object", "null"] },
+        "round_count": { "type": "integer", "minimum": 0 },
+        "rounds": { "type": "array", "items": { "$ref": "#/$defs/round" } },
+        "decisions": {
+          "type": "object",
+          "required": ["keep", "revert", "inconclusive"],
+          "properties": {
+            "keep": { "type": "integer", "minimum": 0 },
+            "revert": { "type": "integer", "minimum": 0 },
+            "inconclusive": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "best_artifact_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "baseline_artifact_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "contract_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "comparison_group": { "type": "string" },
+        "rubric_version": { "$ref": "#/$defs/nullableString" },
+        "scorer_version": { "$ref": "#/$defs/nullableString" },
+        "generation_policy": { "type": ["object", "null"] },
+        "report_status": { "enum": ["missing", "present", "valid", "degraded"] },
+        "report_status_detail": { "$ref": "#/$defs/statusDetail" },
+        "integrity_issues": { "type": "array", "items": { "type": "object" } },
+        "report_href": { "$ref": "#/$defs/nullableString" },
+        "e2e": {
+          "type": "object",
+          "required": ["status", "status_detail", "score_100", "dimensions", "coverage_percent"],
+          "properties": {
+            "status": { "enum": ["pass", "fail", "incomplete", "unavailable"] },
+            "status_detail": { "$ref": "#/$defs/statusDetail" },
+            "score_100": { "type": ["number", "null"] },
+            "provisional": { "type": ["boolean", "null"] },
+            "dimensions": { "type": "array", "items": { "type": "object" } },
+            "coverage_percent": { "type": ["number", "null"] }
+          }
+        },
+        "static_checks": { "type": "object", "required": ["overall_status", "selection", "status_detail"] },
+        "state_coverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "status", "obligations", "status_detail"],
+            "properties": {
+              "id": { "type": "string" },
+              "status": { "enum": ["scored", "unknown", "not_applicable", "unavailable"] },
+              "obligations": { "type": "integer", "minimum": 0 },
+              "status_detail": { "$ref": "#/$defs/statusDetail" }
+            }
+          }
+        },
+        "unknown_units": { "type": "array", "items": { "type": "string" } },
+        "findings": { "type": "array", "items": { "type": "object" } },
+        "lineage": { "$ref": "#/$defs/lineage" },
+        "sources": { "type": "object", "required": ["run", "contract", "events", "report", "best_assessment", "lineage"] }
+      }
+    }
+  }
+}

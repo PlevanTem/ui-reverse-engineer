@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:StaticCheckSuite:v1",
+  "title": "Restore normalized static check suite",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "suite_id", "label", "stage", "binding", "executor", "started_at", "completed_at", "evidence", "checks"],
+  "properties": {
+    "schema_version": {"const": "StaticCheckSuite/v1"},
+    "suite_id": {"type": "string", "minLength": 1},
+    "label": {"type": "string", "minLength": 1},
+    "stage": {"enum": ["initial", "candidate", "final", "supplemental"]},
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "artifact_sha256", "contract_sha256"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "contract_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "id"],
+      "properties": {
+        "role": {"enum": ["tool", "implementer", "independent"]},
+        "id": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+    "checks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/check"}},
+    "summary": {"$ref": "#/$defs/summary"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "references": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "uri", "sha256"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["screenshot", "sequence", "video", "checks", "source"]},
+        "uri": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "status", "severity", "description", "expected", "actual", "evidence"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "category": {"enum": ["syntax", "http", "content", "runtime", "browser", "resources", "accessibility", "security", "performance", "quality", "custom"]},
+        "status": {"enum": ["pass", "fail", "unknown", "skipped"]},
+        "severity": {"enum": ["blocking", "obvious", "minor", "informational"]},
+        "description": {"type": "string", "minLength": 1},
+        "expected": {"type": "string", "minLength": 1},
+        "actual": {"type": "string", "minLength": 1},
+        "evidence": {"$ref": "#/$defs/references"},
+        "duration_ms": {"type": "number", "minimum": 0}
+      },
+      "allOf": [{
+        "if": {"properties": {"status": {"enum": ["pass", "fail", "unknown"]}}},
+        "then": {"properties": {"evidence": {"minItems": 1}}}
+      }]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "pass", "fail", "unknown", "skipped", "blocking_failures", "coverage_percent", "overall_status"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 1},
+        "pass": {"type": "integer", "minimum": 0},
+        "fail": {"type": "integer", "minimum": 0},
+        "unknown": {"type": "integer", "minimum": 0},
+        "skipped": {"type": "integer", "minimum": 0},
+        "blocking_failures": {"type": "integer", "minimum": 0},
+        "coverage_percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "overall_status": {"enum": ["pass", "fail", "incomplete"]}
+      }
+    }
+  }
+}
