@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:ArtifactDiff:v1",
+  "title": "Restore version-to-version artifact and assessment diff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "from_artifact_sha256", "to_artifact_sha256", "files", "units", "findings"],
+  "properties": {
+    "schema_version": {"const": "ArtifactDiff/v1"},
+    "from_artifact_sha256": {"$ref": "#/$defs/sha256"},
+    "to_artifact_sha256": {"$ref": "#/$defs/sha256"},
+    "files": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "removed", "unchanged_count"],
+      "properties": {
+        "added": {"$ref": "#/$defs/paths"},
+        "modified": {"$ref": "#/$defs/paths"},
+        "removed": {"$ref": "#/$defs/paths"},
+        "unchanged_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "units": {"type": "array", "items": {"$ref": "#/$defs/unit"}},
+    "gates": {"type": "array", "items": {"$ref": "#/$defs/gate"}},
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before", "candidate", "resolved", "introduced"],
+      "properties": {
+        "before": {"$ref": "#/$defs/ids"},
+        "candidate": {"$ref": "#/$defs/ids"},
+        "resolved": {"$ref": "#/$defs/ids"},
+        "introduced": {"$ref": "#/$defs/ids"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "paths": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate_id", "before_status", "candidate_status", "change"],
+      "properties": {
+        "gate_id": {"type": "string", "minLength": 1},
+        "before_status": {"type": "string", "minLength": 1},
+        "candidate_status": {"type": "string", "minLength": 1},
+        "change": {"enum": ["improved", "regressed", "unchanged", "unknown"]}
+      }
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["obligation_id", "before_status", "before_score", "candidate_status", "candidate_score", "delta"],
+      "properties": {
+        "obligation_id": {"type": "string", "minLength": 1},
+        "before_status": {"type": "string", "minLength": 1},
+        "before_score": {"type": ["number", "null"]},
+        "candidate_status": {"type": "string", "minLength": 1},
+        "candidate_score": {"type": ["number", "null"]},
+        "status_change": {"enum": ["newly_scored", "lost_score", "unchanged", "changed"]},
+        "delta": {"type": ["number", "null"]}
+      }
+    }
+  }
+}

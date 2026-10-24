@@ -92,17 +92,24 @@
           "type": "array",
           "uniqueItems": true,
           "items": { "type": "string", "minLength": 1 },
-          "description": "Verified or analyzed technologies as a list. Use [] when unknown; never guess."
+          "description": "Evaluation-only technologies for dataset analysis and stratification. Use [] when unknown; never guess or export this field to generation.",
+          "x-data-plane": "evaluation_only",
+          "x-generation-export": false
         },
         "technology_stack_source": {
           "type": "string",
           "enum": ["manual", "url_analysis", "source_analysis", "unknown"],
-          "default": "unknown"
+          "default": "unknown",
+          "description": "Evaluation-only provenance for technology analysis; never export to generation.",
+          "x-data-plane": "evaluation_only",
+          "x-generation-export": false
         },
         "technology_stack_evidence": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Optional short evidence notes for detected technologies."
+          "description": "Evaluation-only evidence notes for detected technologies; never export to generation.",
+          "x-data-plane": "evaluation_only",
+          "x-generation-export": false
         },
         "difficulty": {
           "type": "string",

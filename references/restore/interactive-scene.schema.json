@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:InteractiveScene:v1",
+  "type": "object", "required": ["schema_version", "transitions", "rendering"],
+  "properties": {
+    "schema_version": {"const": "InteractiveScene/v1"},
+    "transitions": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "required": ["id", "state_id", "input", "precondition", "feedback", "timing", "terminal_state", "repeat_reset", "status", "evidence"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1}, "state_id": {"type": "string", "minLength": 1},
+        "input": {"type": "string", "minLength": 1}, "precondition": {"type": "string", "minLength": 1},
+        "feedback": {"type": "string", "minLength": 1}, "timing": {"type": "string", "minLength": 1},
+        "terminal_state": {"type": "string", "minLength": 1}, "repeat_reset": {"type": "string", "minLength": 1},
+        "status": {"enum": ["observed", "inferred", "unknown"]}, "evidence": {"$ref": "#/$defs/references"}
+      }
+    }},
+    "rendering": {"type": "array", "items": {
+      "type": "object", "required": ["aspect", "description", "status", "evidence"],
+      "properties": {
+        "aspect": {"type": "string", "minLength": 1}, "description": {"type": "string", "minLength": 1},
+        "status": {"enum": ["observed", "inferred", "unknown"]}, "evidence": {"$ref": "#/$defs/references"}
+      }
+    }}
+  },
+  "$defs": {"references": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}
+}

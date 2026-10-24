@@ -24,6 +24,7 @@
     "reference_evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
     "states": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 } }, "additionalProperties": true } },
     "resources": { "type": "array", "items": { "type": "object", "required": ["kind", "url"], "properties": { "kind": { "type": "string" }, "url": { "type": "string", "format": "uri" } }, "additionalProperties": true } },
+    "interactive_scene": {"type": ["object", "null"], "description": "Optional frozen InteractiveScene/v1, defined in interactive-scene.schema.json; passed unchanged to Loop and final evaluators."},
     "obligations": { "type": "array", "items": { "type": "object", "required": ["id", "state_id", "region_id", "expected"], "properties": { "id": { "type": "string" }, "state_id": { "type": "string" }, "region_id": { "type": "string" }, "expected": { "type": "string" }, "reference_evidence": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false } },
     "redline_profile": { "type": ["object", "null"], "description": "When present, validate as RedlineProfile/v1. Required by grader for rubric site-restore-v1.1-draft and later." },
     "start_command": { "type": "string" },

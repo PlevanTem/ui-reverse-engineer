@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "RestoreLineage/v1",
+  "title": "Restore linked-run lineage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "relationship", "created_at", "child_run_id", "parent", "inherited"],
+  "properties": {
+    "schema_version": {"const": "RestoreLineage/v1"},
+    "relationship": {"enum": ["continuation", "contract_refreeze"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "child_run_id": {"type": "string", "minLength": 1},
+    "parent": {"$ref": "#/$defs/parent"},
+    "inherited": {"$ref": "#/$defs/inherited"},
+    "contract_refreeze": {"$ref": "#/$defs/contractRefreeze"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"relationship": {"const": "continuation"}}},
+      "then": {
+        "properties": {"inherited": {"required": ["contract_sha256", "reference_evidence_sha256", "generation_policy"]}},
+        "not": {"required": ["contract_refreeze"]}
+      }
+    },
+    {
+      "if": {"properties": {"relationship": {"const": "contract_refreeze"}}},
+      "then": {
+        "required": ["contract_refreeze"],
+        "properties": {
+          "inherited": {
+            "properties": {"artifact_source": {"const": "best_snapshot"}},
+            "not": {"anyOf": [{"required": ["contract_sha256"]}, {"required": ["reference_evidence_sha256"]}, {"required": ["generation_policy"]}]}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "parent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "started_at", "run_json_sha256", "events_jsonl_sha256", "contract_sha256", "best_artifact_sha256", "report"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "started_at": {"type": "string", "format": "date-time"},
+        "run_json_sha256": {"$ref": "#/$defs/sha256"},
+        "events_jsonl_sha256": {"$ref": "#/$defs/sha256"},
+        "contract_sha256": {"$ref": "#/$defs/sha256"},
+        "best_artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "report": {"$ref": "#/$defs/link"},
+        "design_brief": {"$ref": "#/$defs/link"}
+      }
+    },
+    "inherited": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_sha256", "artifact_source"],
+      "properties": {
+        "contract_sha256": {"$ref": "#/$defs/sha256"},
+        "reference_evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "artifact_source": {"enum": ["best_snapshot", "working_tree_unverified"]},
+        "generation_policy": {"$ref": "#/$defs/generationPolicy"},
+        "design_brief": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["uri", "source", "initial_sha256"],
+          "properties": {
+            "uri": {"const": "design_brief.md"},
+            "source": {"enum": ["parent_copy", "contract_projection", "contract_refreeze_projection"]},
+            "initial_sha256": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      }
+    },
+    "contractRefreeze": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "generation_policy"],
+      "properties": {
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["uri", "kind", "canonical_sha256", "input_file_sha256", "archived_file_sha256", "reference_evidence_sha256"],
+          "properties": {
+            "uri": {"const": "refreeze-contract-source.json"},
+            "kind": {"enum": ["directory", "json_file"]},
+            "canonical_sha256": {"$ref": "#/$defs/sha256"},
+            "input_file_sha256": {"$ref": "#/$defs/sha256"},
+            "archived_file_sha256": {"$ref": "#/$defs/sha256"},
+            "reference_evidence_sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "generation_policy": {"$ref": "#/$defs/generationPolicy"}
+      }
+    },
+    "generationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "case_metadata_visibility", "source_reuse"],
+      "properties": {
+        "mode": {"enum": ["fixture_only", "source_assisted"]},
+        "case_metadata_visibility": {"const": "id_only"},
+        "source_reuse": {"enum": ["forbidden", "allowed"]}
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["href"],
+      "properties": {
+        "href": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}
