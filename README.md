@@ -90,13 +90,17 @@ WorkBuddy 当前通过本地 Skill 包导入；`vercel-labs/skills` CLI 暂无 W
 
 ## 效果展示
 
-当前暂无可核对的“逆向目标 + 结果”样例，先留出占位；后续补充时同时提供参考、产物与验证方式。
+### Tiny Skies：从 v1 到 v28 的自迭代还原
 
-| 场景 | 逆向目标 / 参考 | 结果 | 验证方式 |
-| --- | --- | --- | --- |
-| 页面还原 | 待补充 | 待补充 | 待补充 |
-| 设计资产提取 | 待补充 | 待补充 | 待补充 |
-| 既有页面风格迁移 | 待补充 | 待补充 | 待补充 |
+对标 [Tiny Skies 原网站](https://tinyskies.vercel.app/)，用 **生成 → 独立评估 → 差异修复** 的循环推进 3D 网页游戏还原。88 秒横屏视频先对比原站与 v28，再展示版本变化、Agent 的观察/计划/修复，以及自动汇总的评测报告。
+
+[![Tiny Skies 中文横屏演示：原站对比、v1–v28 迭代与评测报告](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/poster-landscape-zh.jpg)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4)
+
+[观看/下载中文横屏视频（88 秒，1080p）](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4) · [English version](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4) · [展示媒体与校验信息](https://github.com/PlevanTem/ui-reverse-engineer/releases/tag/tiny-skies-v28-showcase)
+
+- **实现边界：** 本案例为源码辅助还原（source-assisted），不是 clean-room 基准。前端样式与交互实现可参考公开代码；3D 场景和美术资产用代码重建，不镜像原站美术资产，未接入 3D 生成 MCP。
+- **审阅方式：** 视频尾帧展示最新独立评测摘要；本地完整报告用于审阅状态证据、核心迭代轨迹和未解决问题。展示片不是全流程测试录像，媒体 Release 不包含完整案例输出。
+- **结果边界：** 当前评测仍为 `fail / provisional`，存在交互差异与未验证的长链玩法，Judge 尚未校准。版本改善不等于完整 E2E 通过，也不是模型已完成 RL 训练的证明。
 
 ## 项目结构
 

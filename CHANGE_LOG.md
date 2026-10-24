@@ -1,5 +1,12 @@
 # 变更日志
 
+### 2026-10-24 — 中英文 README 增加 Tiny Skies 横屏展示
+
+- **范围与原因：** 用 Tiny Skies v1–v28 迭代视频替换双语 README 的展示占位；中英文分别链接对应横屏视频、封面和校验信息。仅展示媒体存放在非 Latest 的专用 Release，不把案例输出、游戏代码或视频二进制写入 Git 历史。
+- **边界：** 明确 source-assisted、代码重建美术资产、未使用 3D 生成 MCP，以及最新评测 `fail / provisional`、未验证玩法和 Judge 未校准；不把展示改善冒充基准通过或 RL 训练结果。
+- **验证：** 双语 README 的 31 个相对链接及语言/封面配对通过；两支视频均为 88 秒、1920×1080、H.264、30 fps，完整解码无错误；四份 Release 资产的服务端 SHA-256 与本地一致，公开链接全部 HTTP 200。`git diff --check` 通过；`skills-ref` 未安装。本次不修改运行时代码或依赖，未重跑游戏评测或完整运行时测试。
+- **推送：** 本次通过独立 `codex/tiny-skies-bilingual-showcase` 分支提交 PR，不合并 `main`；仅包含两份 README 和本条记录，不带入原工作区的其他改动。
+
 ### 2026-10-15 — 新增独立 Stack Audit 证据采集脚本
 
 - **范围：** 新增 `scripts/stack-audit/`，包含 Playwright 页面/资源/Canvas 采集、已加载同主机 JS/CSS 的候选扫描、目标页地标确认、人工裁决与证据引用验证，以及独立用法说明。同步技术栈 SOP、SKILL 入口、中英文 README 和评测目录说明。
