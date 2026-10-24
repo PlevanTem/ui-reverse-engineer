@@ -90,13 +90,17 @@ A website URL is enough to start source discovery; users do not need to provide 
 
 ## Showcase
 
-There are no verifiable target/result examples yet, so this table is a placeholder. Add the reference, output, and verification method together.
+### Tiny Skies: reconstruction from v1 to v28
 
-| Scenario | Reverse-engineering target / reference | Result | Verification |
-| --- | --- | --- | --- |
-| Page reconstruction | To be added | To be added | To be added |
-| Design asset extraction | To be added | To be added | To be added |
-| Restyling an existing page | To be added | To be added | To be added |
+Reconstructing the [original Tiny Skies website](https://tinyskies.vercel.app/) through a **generate → independently evaluate → fix the gaps** loop. The 88-second landscape film opens with the original versus v28, then shows the evolving versions, the Agent's Observe/Plan/Fix decisions, and the automatically compiled evaluation report.
+
+[![Tiny Skies English landscape demo: original comparison, v1–v28 iterations, and evaluation report](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/poster-landscape-en.jpg)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4)
+
+[Watch/download the English landscape video (88 seconds, 1080p)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4) · [中文版](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4) · [Showcase media and checksums](https://github.com/PlevanTem/ui-reverse-engineer/releases/tag/tiny-skies-v28-showcase)
+
+- **Implementation scope:** this is a source-assisted reconstruction, not a clean-room benchmark. Public code may inform frontend styling and interaction implementation; the 3D scene and art assets are rebuilt in code, without mirroring the original art assets or using a 3D-generation MCP.
+- **Reviewing the result:** the closing frame shows the latest independent evaluation summary. The full local report supports review of state evidence, key iteration traces, and unresolved issues. The film is not a complete test recording; the media Release does not include the full case outputs.
+- **Result limits:** the evaluation remains `fail / provisional`, with interaction differences and unverified long-chain gameplay; the Judge is not calibrated. Visible improvement is neither a complete E2E pass nor evidence that model RL training has been performed.
 
 ## Project structure
 
