@@ -1,0 +1,3 @@
+:root{--paper:#f5f5f0;--ink:#20211f;--muted:#63655f;--line:#c9cbc2;--control-line:#76796e;--wash:#eaece3;--white:#fff;--mono:Consolas,'SFMono-Regular','Liberation Mono','Microsoft YaHei','PingFang SC',monospace;--body:'Microsoft YaHei','PingFang SC',sans-serif;--max:1320px;--gutter:40px;--section:104px;--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s6:24px;--s8:32px;--s12:48px;--s16:64px;--speed:140ms}
+@media(max-width:1000px){:root{--gutter:24px}}
+@media(max-width:680px){:root{--gutter:20px;--section:64px}}

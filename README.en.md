@@ -29,6 +29,14 @@ The single-run report template wraps verification hashes on narrow screens. See 
 
 ## How to start
 
+### Project website and design system
+
+[Project website](https://plevantem.github.io/ui-reverse-engineer/) · [Design system](https://plevantem.github.io/ui-reverse-engineer/design-system.html)
+
+The local presentation site includes a landing page, case catalogue, Tiny Skies details, getting-started guide and component specimens. Audit visual and component decisions in [DESIGN.md](DESIGN.md), then follow [website/README.md](website/README.md) to build and preview. Case metadata is generated from `evals/cases.yaml`; draft status and public showcase availability remain distinct. The site is built and deployed by the GitHub Pages workflow.
+
+Section 04 compares capabilities and mechanisms with Screenshot to Code and Open Lovable. Cells link official sources; undocumented does not mean unsupported, and the matrix is not a controlled performance ranking.
+
 After installation, describe the task in plain language and provide the reference:
 
 ```text

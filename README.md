@@ -29,6 +29,14 @@
 
 ## 如何开始
 
+### 项目展示网站与设计系统
+
+[访问项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [设计系统](https://plevantem.github.io/ui-reverse-engineer/design-system.html)
+
+本地展示站包含首页、案例库、Tiny Skies 详情、快速上手和设计系统预览。先阅读 [DESIGN.md](DESIGN.md) 审计视觉与组件约定，再按 [website/README.md](website/README.md) 构建和预览。案例元数据由 `evals/cases.yaml` 生成，草稿状态与公开展示分开；网站由 GitHub Pages 工作流构建部署。
+
+首页 04 按能力与机制对比 Screenshot to Code、Open Lovable 与本项目；单元格附官方来源，未见说明不等于不支持，不作为同条件效果排名。
+
 安装后直接用自然语言给任务和参考资料，例如：
 
 ```text
