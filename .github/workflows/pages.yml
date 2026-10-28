@@ -1,0 +1,53 @@
+name: Deploy project website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'DESIGN.md'
+      - 'evals/cases.yaml'
+      - 'evals/case-manager/package.json'
+      - 'evals/case-manager/package-lock.json'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: evals/case-manager/package-lock.json
+      - name: Install existing YAML dependency
+        run: npm ci --prefix evals/case-manager --ignore-scripts
+      - name: Build website
+        run: node website/build.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: website/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
