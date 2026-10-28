@@ -1,5 +1,7 @@
 # 评测目录
 
+Showcase 与测试样例库中的案例仅供学习、研究与技术评测，相关设计、商标及素材的权利归原权利人所有，展示不代表商业使用授权。
+
 本目录只服务于 UI Reverse Engineer Skill 的离线自我优化，不建设生产级观测平台。当前只固化 Restore；其余模式在有真实评测需求后各自增加一份最终方案。
 
 ## Single source of control

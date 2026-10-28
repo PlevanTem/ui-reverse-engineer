@@ -126,6 +126,8 @@ A website URL is enough to start source discovery for technology-stack analysis;
 
 ## Showcase
 
+Cases in the showcase and test case library are provided solely for learning, research, and technical evaluation; rights to the referenced designs, trademarks, and assets remain with their respective rights holders, and inclusion does not grant permission for commercial use.
+
 ### Tiny Skies: reconstruction from v1 to v28
 
 Reconstructing the [original Tiny Skies website](https://tinyskies.vercel.app/) through a **generate → independently evaluate → fix the gaps** loop. The 88-second landscape film opens with the original versus v28, then shows the evolving versions, the Agent's Observe/Plan/Fix decisions, and the automatically compiled evaluation report.

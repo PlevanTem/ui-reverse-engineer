@@ -3,6 +3,7 @@ export const release=`${repo}/releases/tag/tiny-skies-v28-showcase`;
 export const media=`${repo}/releases/download/tiny-skies-v28-showcase/`;
 // Presentation generation status is independent of evaluation dataset readiness.
 export const generatedCaseIds=['UIR-0008'];
+export const learningNotice='Showcase 与测试样例库中的案例仅供学习、研究与技术评测，相关设计、商标及素材的权利归原权利人所有，展示不代表商业使用授权。';
 export const workflows=[
  {id:'query',n:'01',name:'反推需求',en:'INFER THE BRIEF',desc:'从成品界面，梳理可能的需求、功能与风格偏好。',output:'query_instruction.json',prompt:'把这张产品截图反推成需求 JSON，只做需求分析，不生成页面。'},
  {id:'design-md',n:'02',name:'提取设计规范',en:'EXTRACT THE SYSTEM',desc:'把颜色、排版与组件规则，整理成可复用的视觉资产。',output:'DESIGN.md + CSV',prompt:'分析这个网站的视觉规范，生成可复用的 DESIGN.md。'},
