@@ -1,8 +1,16 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/header-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/readme/header-light.svg">
+  <img src="assets/readme/header-light.svg" alt="UI Reverse Engineer：需求反推、设计资产、风格迁移与可运行 UI 还原的 Agent Skill" width="1200">
+</picture>
+
 # UI Reverse Engineer
 
-中文 | [English](README.en.md)
+**把网页、截图和录屏，转成可执行需求、可复用设计规范与可运行的还原项目。**
 
-**把界面参考转成可执行的需求、设计规范或可运行的网站还原项目。** 提供网页、截图、录屏、源码或现有页面，选择你要的结果；证据不足处会保留推断，不把猜测写成事实。
+[项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [快速上手](#如何开始) · [案例库](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [执行与评测](evals/README.md) · [English](README.en.md)
+
+还原结果按案例与输入策略审阅；源码辅助展示不等于 clean-room 基准或完整 E2E 通过。
 
 ## 什么时候用
 

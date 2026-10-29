@@ -1,8 +1,16 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/header-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/readme/header-light.svg">
+  <img src="assets/readme/header-light.svg" alt="UI Reverse Engineer — Agent Skill for requirements, design assets, style transfer and runnable UI reconstruction" width="1200">
+</picture>
+
 # UI Reverse Engineer
 
-[中文](README.md) | English
+**Turn websites, screenshots and recordings into actionable requirements, reusable design rules and runnable reconstructions.**
 
-**Turn interface references into actionable requirements, reusable design rules, or runnable site reconstructions.** Provide a website, screenshot, recording, source code, or an existing page. The Skill distinguishes evidence from inference instead of presenting guesses as facts.
+[Website](https://plevantem.github.io/ui-reverse-engineer/) · [Get started](#how-to-start) · [Cases](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [Execution & evaluation](evals/README.md) · [中文](README.md)
+
+Review results per case and input policy; a source-assisted showcase is not a clean-room benchmark or proof of full E2E success.
 
 ## When to use it
 

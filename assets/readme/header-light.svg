@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
+  <title id="title">UI Reverse Engineer</title>
+  <desc id="desc">An Agent Skill for turning interface references into code, design assets and reviewable evidence. Four workflows: query, design-md, transfer, restore. Decorative ASCII globe.</desc>
+  <rect width="1200" height="340" fill="#f5f5f0"/>
+  <g fill="#20211f" font-family="Consolas, 'Liberation Mono', monospace">
+    <rect x="44" y="36" width="7" height="7"/>
+    <text x="64" y="44" font-size="12" letter-spacing="1.4">AGENT SKILL / UI REVERSE ENGINEERING</text>
+    <text x="40" y="133" font-size="76" letter-spacing="-4">UI REVERSE</text>
+    <text x="40" y="212" font-size="76" letter-spacing="-4">ENGINEER_</text>
+    <text x="44" y="249" font-size="18" fill="#63655f">UI references → code, design assets &amp; evidence.</text>
+    <text x="850" y="44" font-size="11" fill="#63655f" letter-spacing="1">OBSERVE / BUILD / REVIEW</text>
+    <g aria-hidden="true" font-size="9" style="white-space:pre" xml:space="preserve" fill="#63655f">
+      <text x="1078.8" y="67"></text>
+      <text x="949.2" y="75">+                       </text>
+      <text x="900.6" y="83">#...:###:+..:....##              </text>
+      <text x="879.0" y="91">:::::#:.+....+####+:....::.          </text>
+      <text x="868.2" y="99">+++++++++++++++++++++++++++++++        </text>
+      <text x="857.4" y="107">....:::....::####+::.......:####:..      </text>
+      <text x="846.6" y="115">::###:.......:#####+#::........:.....##    </text>
+      <text x="841.2" y="123">.:####:........:::::+....::#####:......##   </text>
+      <text x="841.2" y="131">.:##:+::::::+:::....+.....:#+####:.+....:   </text>
+      <text x="835.8" y="139">.+......:####+##:....+......:+##::::::::#+.  </text>
+      <text x="835.8" y="147">#:......::######::...+..::::.........:####:  </text>
+      <text x="830.4" y="155">+++++++++++++++++++++++++++++++++++++++++++++ </text>
+      <text x="835.8" y="163">:..::###::..........:+#######:........:....  </text>
+      <text x="835.8" y="171">.+.:######:..+.......+::::::.+.::#####:..+.  </text>
+      <text x="841.2" y="179">...:#+##:::.+:::::::+.......+.:####+#:...   </text>
+      <text x="841.2" y="187">:..:........:#######+..........:###::::::   </text>
+      <text x="846.6" y="195">.###:.......:######+:.....::::......:#:    </text>
+      <text x="857.4" y="203">:##:......:......+..:######:.....:#      </text>
+      <text x="868.2" y="211">+++++++++++++++++++++++++++++++        </text>
+      <text x="879.0" y="219">#....###+:..:+:::.+...:###.          </text>
+      <text x="900.6" y="227">.##:....#+##.......              </text>
+      <text x="949.2" y="235">+                       </text>
+      <text x="1078.8" y="243"></text>
+    </g>
+    <path d="M44 276H1156" stroke="#c9cbc2" fill="none"/>
+    <text x="44" y="312" font-size="13">01 / QUERY</text>
+    <text x="304" y="312" font-size="13">02 / DESIGN-MD</text>
+    <text x="612" y="312" font-size="13">03 / TRANSFER</text>
+    <text x="928" y="312" font-size="13">04 / RESTORE</text>
+  </g>
+</svg>
