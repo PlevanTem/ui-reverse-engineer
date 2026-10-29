@@ -113,6 +113,8 @@
 | S2 | 必需状态、内容或核心动作不可用，或重要事实被实质误述 | `fail` |
 | S3 | 主要任务不可完成、核心含义被改变，或发生未授权外部写入 | `fail` |
 
+画面声明的 `x/N` 目标总量不可达时，`interaction` 红线至少为 S2；Loop 的 `reachable` 门禁判定见 [Loop Criteria](../references/restore/criteria.md#measure--verify)。
+
 具体结构由 [`E2ERedlineAssessment/v1`](../references/restore/e2e-redline.schema.json) 和 [`RedlineProfile/v1`](../references/restore/redline-profile.schema.json) 约束。Loop 的 `blocking / obvious / minor` 是修复优先级，不能复制为最终红线严重度。
 
 ## 4. 计算与判定

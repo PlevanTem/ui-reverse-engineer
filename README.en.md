@@ -202,26 +202,17 @@ This is a test oracle problem: define what counts as a correct result and how th
 
 ## Further reading
 
-- [Full Skill specification](SKILL.md)
-- [Website technology stack analysis SOP](references/technology-stack-analysis.md): cross-check source/runtime and visual evidence; Canvas/3D pages must pass the API, renderer, model-resource, and page-mapping gate, with Three.js attribution and version-drift reviews
-- [Stack audit scripts](scripts/stack-audit/README.md): local collection, first-party source candidate scanning, and a human evidence gate; no automatic stack confirmation
-- [Restore execution flow](references/restore.md): freeze references, isolate generation input, preserve the complete `v0 → vN` trajectory, run bounded repairs, stop, and evaluate
-- [Interactive scene reconstruction](references/restore/interactive-scenes.md): gameplay critical paths, objective reachability, semantically matched pairwise evidence, 3D models/textures/decoders, cameras, and animation implementation; capability recovery, progress updates, and early stops are controlled by the Restore execution flow
-- [Reconstruction brief template](references/restore-brief-template.md)
-- Restore uses bounded 30/60/120-minute tiers with at most 3/6/9 repair rounds. Candidates are judged incrementally against the current best, and reports preserve the complete trajectory. The [Loop criteria](references/restore/criteria.md) are the single source for keep/revert/inconclusive decisions, auditable improvements, and completion; commands, fields, and report flow are defined in the [interfaces](references/restore/interfaces.md).
-- To continue a frozen run, use `continue OLD_RUN NEW_RUN [TIER]` to create a new run with hashed lineage. The parent timestamps, contract, and ledger stay unchanged; frozen inputs, generation policy, and the current working tree are copied and remeasured as the new `v0`. The parent `design_brief.md` is also copied into an independent, writable child working brief; if none exists, a minimal brief is projected from the frozen contract. The child report links to the parent trajectory without duplicating mutable parent facts. See the [interfaces](references/restore/interfaces.md#最短运行链).
-- If a frozen run omitted a critical path or acceptance obligation, use `refreeze OLD_RUN NEW_RUN CONTRACT_SOURCE [TIER]` to create `contract_refreeze` lineage. It inherits only the parent's verified `best`, enters `prepare` from an explicit changed contract and its evidence, and does not inherit parent scores or an unverified working tree. The [interfaces](references/restore/interfaces.md#最短运行链) own the complete rule.
-- Source and technology-stack evidence in `cases.yaml` belongs to the evaluation data plane and is used only for analytics and post-run audits. Generation receives the allowlisted `RestoreGenerationInput/v1` and excludes source evidence by default. [`StaticCheckSuite/v1`](references/restore/static-check.schema.json) is automatically aggregated and does not replace independent visual evaluation. Newly recorded per-version assessment evidence is content-addressed; runtime operations still reject missing or changed evidence, while historical report replay degrades explicitly and excludes affected quality conclusions. Structured JSON pointers use a canonical digest, while evidence references use the file-byte SHA-256; the two are not interchangeable. The [interfaces](references/restore/interfaces.md#证据不可变性与历史报告重放) own the complete rule.
-- E2E evaluates only the final delivered artifact. The report and approval flow use one final result. `PostRunE2EReview/v1` binds that result to the final artifact and frozen contract; when present, it is authoritative in the final quality view. The report records Judge provider/model, evaluation time, rubric/scorer versions, environment, and limitations. It does not record evaluator role or ID. See the [interfaces](references/restore/interfaces.md) and [schema](references/restore/post-run-e2e-review.schema.json).
-- Every case uses six stable redline IDs, judged against frozen states, regions, interactions, and fact boundaries. New rubric v1.2-draft cases require `RedlineProfile/v1`; the grader checks contract consistency but does not replace visual judgment. See [Restore final E2E](evals/restore.md).
-- Final E2E uses five equally weighted dimensions: `layout`, `style`, `content`, `interaction`, and `robustness`. `fidelity` is no longer scored; factual overreach is handled by the `fabrication` redline. A case passes when every applicable dimension is at least 3 and no redline fails; there is no duplicate 75-point gate.
-- For `interaction` and `robustness`, evaluators may use browser browse control to operate controls, observe visible feedback, and inspect viewports. Leave console or resource states marked unchecked when they were not inspected.
-- Persistent interactive systems such as games and editors do not pass because their entry button works. The frozen critical path must cover the repeatable core loop, success/failure, retry/reset, and any observed persistence or unlocks. If a visible `x/N` objective cannot be completed, the `reachable` gate fails and the final `interaction` redline is at least S2.
-- When persistence must be verified after a reload, CaptureStep supports a same-browser-context `reload` action. The [interfaces](references/restore/interfaces.md#动态采集) define its readiness and capture semantics.
-- For a long unlock path that must survive navigation, related states may explicitly share a `session_id`. State capture remains isolated by default, and shared sessions cannot preload `storage_state`; the [interfaces](references/restore/interfaces.md#动态采集) own the complete rule.
-- When a dimension is unknown, keep the complete total empty. The report may show a normalized score for scored dimensions with weight coverage, clearly labeled as partial rather than a complete E2E total.
-- [DESIGN.md template](references/design-md-template.md)
-- [Style transfer guide](references/transfer-guide.md)
+- [Full Skill specification](SKILL.md): modes, usage, and outputs.
+- [Website technology stack analysis SOP](references/technology-stack-analysis.md): technology and asset investigation.
+- [Stack audit scripts](scripts/stack-audit/README.md): local collection and human verification.
+- [Restore execution flow](references/restore.md): freezing, generation, iteration, and stopping.
+- [Loop Criteria](references/restore/criteria.md): local visual assessment and candidate decisions.
+- [Restore interfaces](references/restore/interfaces.md): commands, capture, evidence, and reports.
+- [Restore final E2E](evals/restore.md): final acceptance, scoring, and redlines.
+- [Interactive scene reconstruction](references/restore/interactive-scenes.md): persistent interactions, 3D, and motion.
+- [Reconstruction brief template](references/restore-brief-template.md): scope, implementation, and evidence.
+- [DESIGN.md template](references/design-md-template.md): design asset structure.
+- [Style transfer guide](references/transfer-guide.md): transferring a reference style.
 
 The Chinese README is the default entry point. See [README.md](README.md).
 

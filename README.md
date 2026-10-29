@@ -202,25 +202,16 @@ obligation 把“页面要还原得像”转化为可观察、可比较、可追
 
 ## 进一步阅读
 
-- [技能完整说明](SKILL.md)
-- [网站技术栈分析 SOP](references/technology-stack-analysis.md)：源码与视觉证据交叉核验；Canvas/3D 页面必须通过 API、renderer、模型资源与页面映射门禁，含 Three.js 归因和版本漂移复盘
-- [技术栈审计脚本](scripts/stack-audit/README.md)：本地采集、第一方源码候选扫描和人工证据门禁，不自动确认技术栈
-- [Restore 执行流程](references/restore.md)：冻结参考、隔离生成输入、记录 `v0 → vN` 完整轨迹、有界修复、停止与最终验收
-- [交互场景还原](references/restore/interactive-scenes.md)：玩法关键路径、目标可达性、同语义成对证据、3D 模型/纹理/解码依赖、相机与动画实现；能力排查、阶段进度和提前停止要求由 Restore 执行流程统一控制
-- [还原 brief 模板](references/restore-brief-template.md)
-- Restore 按 30/60/120 分钟、最多 3/6/9 轮三档做有界视觉迭代。候选相对当前 best 增量判断，报告展示完整生成轨迹。keep / revert / inconclusive、可审计改善与最终达标的唯一决策规则见三维 0–4 [Loop Criteria](references/restore/criteria.md)；命令、字段和报告流见[接口](references/restore/interfaces.md)。
-- 已冻结 run 需要继续时，用 `continue OLD_RUN NEW_RUN [TIER]` 创建带哈希 lineage 的新 run；父时间戳、契约和账本不改，冻结输入、生成策略和当前工作树被复制后作为新 `v0` 重新评测。父 `design_brief.md` 同时复制为子 run 的可写工作副本；父 brief 不存在时从冻结 contract 生成最小副本。子报告链接父轨迹，不复制父 run 的可变事实。详见[接口](references/restore/interfaces.md#最短运行链)。
-- 冻结后发现关键路径或验收义务遗漏时，用 `refreeze OLD_RUN NEW_RUN CONTRACT_SOURCE [TIER]` 建立 `contract_refreeze` lineage。它只继承父 `best` 快照，从显式新合同及其证据进入 `prepare`，不继承父评分或未验证工作树。完整规则见[接口](references/restore/interfaces.md#最短运行链)。
-- `cases.yaml` 的源码与技术栈证据属于评测数据面，只用于分析统计和事后审计；生成侧只接收 `RestoreGenerationInput/v1` 白名单，默认不接收源码证据。静态检查按 [`StaticCheckSuite/v1`](references/restore/static-check.schema.json) 自动汇总，不替代独立视觉评测。新记录的逐版本 assessment 证据使用内容寻址归档；运行期仍严格拒绝缺失或漂移，历史报告重放则显式降级并排除受影响质量结论。结构化 JSON 引用使用 canonical digest，证据引用使用文件字节 SHA-256；二者不能互换。完整规则见[接口](references/restore/interfaces.md#证据不可变性与历史报告重放)。
-- E2E 只评价最终交付产物，报告与审批只使用一份最终结果。`PostRunE2EReview/v1` 通过哈希绑定最终产物和冻结契约；存在时，它是最终质量视图的权威结果。报告记录 Judge 提供方/模型、评测时间、Rubric/Scorer 版本、环境及限制，不记录评委角色或标识。字段定义见[接口与 Schema](references/restore/interfaces.md#冻结与输出)。
-- 每个 case 使用六个稳定红线 ID，并按冻结状态、区域、交互和事实边界判定。Rubric v1.2-draft 的新 case 必须提供 `RedlineProfile/v1`；grader 只校验契约和判断的一致性，不替代视觉判断。见 [Restore 最终 E2E](evals/restore.md)。
-- 最终 E2E 使用五个等权维度：`layout`、`style`、`content`、`interaction`、`robustness`。`fidelity` 不再计分；事实越界由 `fabrication` 红线处理。单 case 通过要求所有适用维度 ≥3 且红线无失败，不再重复设置 75 分门槛。
-- `interaction` 与 `robustness` 评测允许 evaluator 在浏览器中使用 browse control 操作交互控件、观察可见反馈并检查不同视口；未检查的控制台或资源状态必须保留为未检查。
-- 游戏、编辑器等持续交互系统不能以“入口可点”判定完成：冻结关键路径须覆盖核心循环、成功/失败、重试/复位及目标已观察的持久化/解锁；可见 `x/N` 目标不可达时，`reachable` 失败且最终 `interaction` 红线至少为 S2。
-- 需要验证 reload 后持久化时，CaptureStep 支持同一浏览器上下文的 `reload` 动作；完整动作与就绪语义见[接口](references/restore/interfaces.md#动态采集)。
-- 需要验证跨导航的长程解锁链时，可让相关 states 显式共享 `session_id`；默认仍逐 state 隔离，共享会话禁止预载 `storage_state`，完整规则见[接口](references/restore/interfaces.md#动态采集)。
-- 若有维度未知，完整总分保持空值；报告另显示已评分维度折算分和权重覆盖率，不将折算分冒充完整 E2E 总分。
-- [DESIGN.md 资产模板](references/design-md-template.md)
-- [风格迁移指南](references/transfer-guide.md)
+- [技能完整说明](SKILL.md)：模式、使用方式与输出。
+- [网站技术栈分析 SOP](references/technology-stack-analysis.md)：技术栈与资源取证。
+- [技术栈审计脚本](scripts/stack-audit/README.md)：本地采集与人工核验。
+- [Restore 执行流程](references/restore.md)：冻结、生成、迭代与停止。
+- [Loop Criteria](references/restore/criteria.md)：局部视觉评估与候选决策。
+- [Restore 接口](references/restore/interfaces.md)：命令、采集、证据与报告。
+- [Restore 最终 E2E](evals/restore.md)：最终验收、评分与红线。
+- [交互场景还原](references/restore/interactive-scenes.md)：持续交互、3D 与动态场景。
+- [还原 brief 模板](references/restore-brief-template.md)：记录范围、实现与证据。
+- [DESIGN.md 资产模板](references/design-md-template.md)：设计资产结构。
+- [风格迁移指南](references/transfer-guide.md)：参考风格迁移。
 
 中文 README 为默认入口；英文版见 [README.en.md](README.en.md)。
