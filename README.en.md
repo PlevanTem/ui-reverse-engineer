@@ -179,6 +179,27 @@ See [`evals/README.md`](evals/README.md) for the evaluation entry point, single 
 
 Ctrl+S saves a snapshot of the page currently loaded in the browser. The exact HTML, assets, and state depend on the browser's save mode; dynamic data, cross-origin assets, and interactions may not work offline. `--restore` uses evidence from the reference page—screenshots, states, interactions, and assets—to build a separate, runnable local copy that can be changed, while recording iterations and differences. Ctrl+S is useful for archiving; reconstruction is useful for reproducing and continuing development.
 
+<details>
+<summary>What is an obligation in Restore mode?</summary>
+
+An obligation turns “make the page look similar” into an observable, comparable, traceable acceptance target. It specifies which aspects of the reference must be reproduced and what evidence can show whether a change improved them.
+
+For example, an obligation for the desktop home page might require the dark background, centered headline, and relative positions of four colored label groups to be close to the reference screenshot. This identifies the state and region to inspect, helps prioritize repairs, and allows the next comparison to check both improvement and regressions. Mark insufficient evidence as `unknown` rather than scoring from memory.
+
+This is a test oracle problem: define what counts as a correct result and how the evidence will establish it.
+
+</details>
+
+<details>
+<summary>When are obligations used in the Restore workflow?</summary>
+
+1. **Freeze before generation:** The [Restore workflow](references/restore.md#1-冻结任务) records pages, viewports, states, key regions, interaction steps, and reference evidence. Obligations are written to the run's `contract.json`.
+2. **Define judgment criteria:** [Loop Criteria](references/restore/criteria.md) ties each obligation to a state and region, expected behavior, importance, evidence, and method. It classifies them as C1 composition, C2 appearance, or C3 motion.
+3. **Measure and repair:** An evaluator records a score from 0–4 or `unknown` when evidence is insufficient. After a repair, compare again for improvements and regressions in other required obligations. Distinguish independent evaluation from implementer self-checks; see the [Restore interfaces](references/restore/interfaces.md#冻结与输出).
+4. **Evaluate E2E separately:** Obligations guide iteration. Final acceptance separately evaluates layout, style, content, interaction, and robustness alongside redlines; obligation scores cannot be converted directly into the final E2E score. See [final evaluation](evals/restore.md).
+
+</details>
+
 ## Further reading
 
 - [Full Skill specification](SKILL.md)
