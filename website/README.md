@@ -34,4 +34,6 @@ Check desktop and phone widths; capability tabs including keyboard; case search/
 
 Local-only Firewood preview: run `node website/build.mjs --local-firewood-preview` to include the hash-checked iteration13 baseline screenshot from `output/` in ignored `website/dist/`. A normal build removes that screenshot and does not publish case outputs. The image illustrates the baseline; it does not imply the final E2E passed.
 
-- UIR-0007 is generated locally. Its 2026-10-15 historical report records 75/100 and a human-adjudicated pass after the original judge failed the obstruction redline; calibration and coverage limits remain. Its output and report are not published.
+- UIR-0007 is generated locally. Its 2026-10-15 historical report records 75/100 and a human-adjudicated pass after the original judge failed the obstruction redline; calibration and coverage limits remain. The site publishes one recorded local reconstruction screenshot (`candidate1c-desktop-hero-t0`, SHA-256 `d3cd20b…03afac`) as the card and detail visual; it is not the original site and does not expose the output or full report.
+
+- Case cards use one 16:10 cover frame across the homepage and library. General Intuition uses a recorded local reconstruction screenshot; Tiny Skies links its existing Release poster and video; Firewood uses a hash-checked local image only in the opt-in preview. Cases without public images use a labeled typographic placeholder. Detail pages preserve the distinction between public video, published evidence screenshots and local-only outputs.

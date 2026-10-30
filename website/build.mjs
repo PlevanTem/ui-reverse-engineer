@@ -26,10 +26,12 @@ if (localFirewoodPreview) {
 }
 const data = {schema_version:source.schema_version,source:'evals/cases.yaml',source_sha256:createHash('sha256').update(raw).digest('hex'),local_firewood_preview:localFirewoodPreview,ui_types:source.ui_types,task_types:source.task_types,cases:source.cases.map(c=>Object.fromEntries(fields.filter(k=>k in c).map(k=>[k,c[k]])))};
 await mkdir(new URL('dist/', import.meta.url), {recursive:true});
+await mkdir(new URL('dist/assets/', import.meta.url), {recursive:true});
 if (localFirewoodPreview) await copyFile(previewSource, previewTarget);
 else await rm(previewTarget, {force:true});
 await writeFile(new URL('dist/cases-data.js', import.meta.url),`export default ${JSON.stringify(data,null,2)};\n`);
 for(const name of ['index.html','cases.html','case.html','guide.html','design-system.html','tokens.css','styles.css','content.js','comparison.js','app.js']) await copyFile(new URL(name,import.meta.url),new URL(`dist/${name}`,import.meta.url));
 await copyFile(new URL('favicon.svg',import.meta.url),new URL('dist/favicon.svg',import.meta.url));
+await copyFile(new URL('assets/general-intuition-cover.png',import.meta.url),new URL('dist/assets/general-intuition-cover.png',import.meta.url));
 await copyFile(new URL('../DESIGN.md',import.meta.url),new URL('dist/DESIGN.md',import.meta.url));
 console.log(`Built ${data.cases.length} reference cases; ${data.cases.filter(c=>c.status==='ready').length} ready. Output: ${fileURLToPath(new URL('dist/',import.meta.url))}`);
