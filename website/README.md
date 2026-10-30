@@ -22,10 +22,16 @@ Serve the generated `dist/`, not the source directory: `cases-data.js` and the d
 - Editorial capability/workflow descriptions: `content.js`, with repository evidence links. Tiny Skies description references the README's dated showcase, not a new evaluation.
 - Section 04 project mechanism matrix: `comparison.js`, with official source links and review date. A dash means not found in the reviewed sources, never confirmed absence. The matrix is not a same-budget performance benchmark.
 - Catalogue status, showcase availability and final E2E remain distinct. Zero ready entries is not zero frozen historical runs.
-- Presentation generation state is controlled by `generatedCaseIds` in `content.js`: only Tiny Skies is generated. Cards and filters use 已生成/待生成; evaluation status remains in case details. ASCII motion has pause/play, reduced-motion default, visibility gating and offscreen pause.
+- Presentation generation state is controlled by `generatedCaseIds` in `content.js`: General Intuition, Tiny Skies, and the local Firewood run are generated. Cards and filters use 已生成/待生成; evaluation status remains in case details. ASCII motion has pause/play, reduced-motion default, visibility gating and offscreen pause.
 - Video/poster are official GitHub Release URLs, loaded remotely without mirroring binary files. Internet/account access may affect them; source links and an error fallback remain available. No autoplay.
 - No full run artifact, implementation source, personal input or secret is copied into this site. Case evidence contains public catalogue descriptions and reference links.
 
 ## Manual verification
 
 Check desktop and phone widths; capability tabs including keyboard; case search/type/status filters, reset and ready empty state; every case detail; task deep links and copy feedback; menu; missing case fallback; remote video separately. Website checks do not establish Restore E2E success.
+
+- UIR-0011 is generated locally and appears in generated filters. Its latest fixture-only run has incomplete final E2E; an earlier completed independent evaluation is fail / provisional at 60/100. Artifacts and full reports are not published.
+
+Local-only Firewood preview: run `node website/build.mjs --local-firewood-preview` to include the hash-checked iteration13 baseline screenshot from `output/` in ignored `website/dist/`. A normal build removes that screenshot and does not publish case outputs. The image illustrates the baseline; it does not imply the final E2E passed.
+
+- UIR-0007 is generated locally. Its 2026-10-15 historical report records 75/100 and a human-adjudicated pass after the original judge failed the obstruction redline; calibration and coverage limits remain. Its output and report are not published.
