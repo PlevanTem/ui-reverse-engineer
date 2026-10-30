@@ -32,7 +32,7 @@ Check desktop and phone widths; capability tabs including keyboard; case search/
 
 - UIR-0011 is generated locally and appears in generated filters. Its latest fixture-only run has incomplete final E2E; an earlier completed independent evaluation is fail / provisional at 60/100. Artifacts and full reports are not published.
 
-Local-only Firewood preview: run `node website/build.mjs --local-firewood-preview` to include the hash-checked iteration13 baseline screenshot from `output/` in ignored `website/dist/`. A normal build removes that screenshot and does not publish case outputs. The image illustrates the baseline; it does not imply the final E2E passed.
+Firewood publishes one hash-checked iteration13 baseline screenshot from `output/` as its card and detail visual. It is local restoration evidence, not the original site, a runnable output or a final-E2E pass claim; the normal build includes this image while keeping complete artifacts and reports private.
 
 - UIR-0007 is generated locally. Its 2026-10-15 historical report records 75/100 and a human-adjudicated pass after the original judge failed the obstruction redline; calibration and coverage limits remain. The site publishes one recorded local reconstruction screenshot (`candidate1c-desktop-hero-t0`, SHA-256 `d3cd20b…03afac`) as the card and detail visual; it is not the original site and does not expose the output or full report.
 

@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, copyFile, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -16,19 +16,16 @@ for (const c of source.cases) {
   if(c.url && !/^https?:\/\//.test(c.url)) throw new Error(`Unsafe URL: ${c.id}`);
 }
 const fields = ['id','title','ui_type_id','task_type_id','description','keywords','url','technology_stack','technology_stack_evidence','difficulty','input_kinds','status','notes','updated_at'];
-// Local case outputs are private working data, not repository or release assets.
-const localFirewoodPreview = process.argv.includes('--local-firewood-preview');
+// Publish one recorded baseline frame as case evidence, never the runnable output or report.
+const hasFirewoodPreview = true;
 const previewSource = new URL('output/firewood-iteration13-20261030/observations/baseline/desktop-cycle-ready.png', root);
 const previewTarget = new URL('dist/firewood-local-preview.png', import.meta.url);
-if (localFirewoodPreview) {
-  const preview = await readFile(previewSource);
-  if (createHash('sha256').update(preview).digest('hex') !== '49149e805a76a8f5a46f386ad344a9f3a16547756bb64ca6735492feef88de0e') throw new Error('Firewood preview evidence does not match the recorded image');
-}
-const data = {schema_version:source.schema_version,source:'evals/cases.yaml',source_sha256:createHash('sha256').update(raw).digest('hex'),local_firewood_preview:localFirewoodPreview,ui_types:source.ui_types,task_types:source.task_types,cases:source.cases.map(c=>Object.fromEntries(fields.filter(k=>k in c).map(k=>[k,c[k]])))};
+const preview = await readFile(previewSource);
+if (createHash('sha256').update(preview).digest('hex') !== '49149e805a76a8f5a46f386ad344a9f3a16547756bb64ca6735492feef88de0e') throw new Error('Firewood preview evidence does not match the recorded image');
+const data = {schema_version:source.schema_version,source:'evals/cases.yaml',source_sha256:createHash('sha256').update(raw).digest('hex'),local_firewood_preview:hasFirewoodPreview,ui_types:source.ui_types,task_types:source.task_types,cases:source.cases.map(c=>Object.fromEntries(fields.filter(k=>k in c).map(k=>[k,c[k]])))};
 await mkdir(new URL('dist/', import.meta.url), {recursive:true});
 await mkdir(new URL('dist/assets/', import.meta.url), {recursive:true});
-if (localFirewoodPreview) await copyFile(previewSource, previewTarget);
-else await rm(previewTarget, {force:true});
+await copyFile(previewSource, previewTarget);
 await writeFile(new URL('dist/cases-data.js', import.meta.url),`export default ${JSON.stringify(data,null,2)};\n`);
 for(const name of ['index.html','cases.html','case.html','guide.html','design-system.html','tokens.css','styles.css','content.js','comparison.js','app.js']) await copyFile(new URL(name,import.meta.url),new URL(`dist/${name}`,import.meta.url));
 await copyFile(new URL('favicon.svg',import.meta.url),new URL('dist/favicon.svg',import.meta.url));
