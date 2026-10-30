@@ -16,9 +16,13 @@ for (const c of source.cases) {
   if(c.url && !/^https?:\/\//.test(c.url)) throw new Error(`Unsafe URL: ${c.id}`);
 }
 const fields = ['id','title','ui_type_id','task_type_id','description','keywords','url','technology_stack','technology_stack_evidence','difficulty','input_kinds','status','notes','updated_at'];
-// Publish one recorded baseline frame as case evidence, never the runnable output or report.
+// Publish only the explicitly reviewed cover frames, never runnable outputs or reports.
 const hasFirewoodPreview = true;
-const previewSource = new URL('output/firewood-iteration13-20261030/observations/baseline/desktop-cycle-ready.png', root);
+const mosbyPreviewSource = new URL('assets/mosby-files-preview.png', import.meta.url);
+const mosbyPreviewTarget = new URL('dist/assets/mosby-files-preview.png', import.meta.url);
+const mosbyPreview = await readFile(mosbyPreviewSource);
+if (createHash('sha256').update(mosbyPreview).digest('hex') !== '6b326f79dcddaf6a40e484e535100542775fc60ba1b85e93daa881a6a47ac0fe') throw new Error('Mosby preview evidence does not match the recorded image');
+const previewSource = new URL('assets/firewood-preview.png', import.meta.url);
 const previewTarget = new URL('dist/firewood-local-preview.png', import.meta.url);
 const preview = await readFile(previewSource);
 if (createHash('sha256').update(preview).digest('hex') !== '49149e805a76a8f5a46f386ad344a9f3a16547756bb64ca6735492feef88de0e') throw new Error('Firewood preview evidence does not match the recorded image');
@@ -26,6 +30,7 @@ const data = {schema_version:source.schema_version,source:'evals/cases.yaml',sou
 await mkdir(new URL('dist/', import.meta.url), {recursive:true});
 await mkdir(new URL('dist/assets/', import.meta.url), {recursive:true});
 await copyFile(previewSource, previewTarget);
+await copyFile(mosbyPreviewSource, mosbyPreviewTarget);
 await writeFile(new URL('dist/cases-data.js', import.meta.url),`export default ${JSON.stringify(data,null,2)};\n`);
 for(const name of ['index.html','cases.html','case.html','guide.html','design-system.html','tokens.css','styles.css','content.js','comparison.js','app.js']) await copyFile(new URL(name,import.meta.url),new URL(`dist/${name}`,import.meta.url));
 await copyFile(new URL('favicon.svg',import.meta.url),new URL('dist/favicon.svg',import.meta.url));
