@@ -29,7 +29,7 @@
 | `--transfer` | 如何在保留原页面内容与交互的同时换风格？ | `{target}_transferred.html` |
 | `--restore` | 如何复现参考页面的资源、视觉和交互？ | `design_brief.md` 与可运行的 `restored/` 项目 |
 
-所有案例产物默认写入 `reverse_output/{case_name}_{YYYYMMDD}/`；设计资产写入 `design_assets/`。细节见 [`SKILL.md`](SKILL.md)。
+所有案例产物默认写入 `reverse_output/{case_name}_{YYYYMMDD}/`；设计资产写入 `design_assets/`。细节见 [`SKILL.md`](SKILL.md)。 Restore 的[收尾检查](references/restore.md#完成检查)及[归档与临时文件只读清单](references/restore/interfaces.md#证据不可变性与历史报告重放)可用于核对过程产物。
 
 多个 Restore run 需要统一复盘时，使用 `node scripts/restore/challenge-report.mjs OUTPUT_DIR RUN_DIR...` 生成 `RestoreChallengeReport/v2` 的 `challenge-report.json` 与 `challenge-report.html`。聚合器从各 run 的事实源确定性投影 provenance DAG，保留 run、版本、候选 artifact、assessment、verification、diff、static-check 和 Final E2E 的节点、哈希与边；大证据仍留在原 run，通过相对链接访问，以控制生成成本和 Agent 上下文。Final E2E、Loop Assessment 与绑定 `run.best` 的 StaticCheckSuite 分开呈现，只在相同合同、Rubric 和 scorer 组内允许横向比较；缺失结果带结构化原因与可恢复性，不按零分处理。
 

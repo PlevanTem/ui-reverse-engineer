@@ -29,7 +29,7 @@ Review results per case and input policy; a source-assisted showcase is not a cl
 | `--transfer` | How can I apply a new style and keep the existing content and interactions? | `{target}_transferred.html` |
 | `--restore` | How can I reproduce the reference's assets, appearance, and behavior? | `design_brief.md` and a runnable `restored/` project |
 
-Case outputs go to `reverse_output/{case_name}_{YYYYMMDD}/`; design assets go to `design_assets/`. See [`SKILL.md`](SKILL.md) for the complete specification.
+Case outputs go to `reverse_output/{case_name}_{YYYYMMDD}/`; design assets go to `design_assets/`. See [`SKILL.md`](SKILL.md) for the complete specification. See the [Restore completion checks](references/restore.md#完成检查) and [read-only archive and scratch inventories](references/restore/interfaces.md#证据不可变性与历史报告重放).
 
 To review multiple Restore runs under one standard, run `node scripts/restore/challenge-report.mjs OUTPUT_DIR RUN_DIR...`. It produces `challenge-report.json` and `challenge-report.html` using the deterministic `RestoreChallengeReport/v2` provenance projection. The DAG preserves nodes, hashes, and edges for runs, versions, candidate artifacts, assessments, verifications, diffs, static checks, and Final E2E; large evidence stays in its source run and is reached through relative links, which keeps generation and agent-context costs low. Final E2E, Loop Assessment, and the StaticCheckSuite bound to `run.best` remain separate, and direct comparison is allowed only inside the same contract, rubric, and scorer group. Missing results carry structured reasons and recoverability and are never converted to zero.
 
