@@ -467,6 +467,8 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 归档至：`reverse_output/{case_name}_{YYYYMMDD}/`
 
+采集文件、评测请求和其他过程产物放在对应案例目录或系统临时目录；Restore 的临时文件和归档约定见 [Restore 接口](references/restore/interfaces.md#证据不可变性与历史报告重放)。
+
 - `case_name` 规则：
   1. URL 域名主体（如 `notion`、`linear`、`stripe`）
   2. 图片/视频文件名去扩展名
@@ -504,7 +506,7 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
    - 分析目标代码
    - 输出迁移方案，确认后执行
    - 生成迁移后的 HTML
-7. **汇报**：说明产出文件的存放位置，以及关键设计洞察
+7. **收尾与汇报**：检查产物和过程文件；Restore 按 [完成检查](references/restore.md#完成检查)执行。说明产出文件的位置、已完成检查和未解决限制
 
 ---
 
