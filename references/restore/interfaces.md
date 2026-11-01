@@ -89,7 +89,40 @@ E2E 维度 ID 采用英文并与 `evals/pipeline/grader.mjs` 保持一致；文�
 
 报告证据区按页面状态分行、按冻结参考/`v0` 初始版本/逐轮候选分列；最佳快照在其对应版本列标记，独立 E2E 证据并入该最佳版本。报告同时用 `trajectory[]` 展示每个版本的产物哈希、文件 Diff、义务分数变化、gate 状态变化、finding 增减、自动检查、验证和决策；revert 与 inconclusive 版本不得省略。截图依次依据显式 `state_id`、采集序列清单中的截图 URI/状态键、obligation 的证据引用对齐；采集状态键按与冻结状态 ID 的最长前缀匹配。采集状态优先于 obligation 引用，避免同一张输入截图因被多个评分义务引用而跨状态重复；缺少可确认关联时才放入“未关联状态”，不按数组顺序猜配。跨版本继承的相同 evidence ID 只在首次来源列显示，避免证据重复。检查 JSON、视频和其他非截图证据放在可展开的补充区。
 
-## 最短运行链
+## 任务连续性
+
+`RestoreTask/v1` 的结构由 [task.schema.json](task.schema.json)定义；适用范围与执行顺序只维护在 [SOP](../restore.md#可选的任务连续性)。命令的 `TASK` 是独立任务目录，`RUN` 是已有 run。启动示例：
+
+```powershell
+node scripts/restore/cli.mjs task-init TASK RUN references/restore/task-policy.example.json "还原必需页面、状态与交互"
+node scripts/restore/cli.mjs task-status TASK
+node scripts/restore/cli.mjs task-arm TASK ACTUAL_SESSION_ID
+```
+
+| 命令 | 输入 / 输出 |
+| --- | --- |
+| `task-init TASK RUN policy.json OBJECTIVE` | 排他创建 task，不重置既有记录；策略示例须按任务预算选择 |
+| `task-status TASK` | 核对 run 身份、冻结合同、最终产物/评估的绑定、摘要和证据；重用既有 grader 重算结果，返回 status/action/累计预算；会原子更新任务状态 |
+| `task-arm TASK SESSION_ID` | 绑定明确的宿主会话；不会建立宿主信任，暂停/等待须用 resume |
+| `task-resume TASK SESSION_ID` | 用户明确继续后恢复/转交；清除停滞与中断标记，不重置累计成本/次数 |
+| `task-pause TASK REASON` / `task-wait TASK REASON` | 暂停 / 记录需外部输入或资源的等待；不冒充 accepted |
+| `task-plan TASK plan.json` | 已结束开发 E2E 的下一轮假设；必需 `mode: continue|refreeze`、`hypothesis`、`expected_change`、原 run 相对 URI 的 `evidence[]`；refreeze 另需显式 `contract_source`；Incomplete 不接受 continue |
+| `task-handoff TASK` | 核验计划与父评估未改变，创建确定标识的 staged 子 run，校验 lineage 后发布；重试采用同一子 run；部分复制不自动清除 |
+| `task-propose TASK proposal.json` | 必需 `problem/hypothesis/proposed_change`、非空 `regression_cases[]`、当前 run `evidence[]`；保存为 proposed，不写 Skill 源文件 |
+
+`TASK/task.json` 是目标、会话、累计预算和子 run 游标的唯一所有者。run 事实仍归原 `run.json/events.jsonl/observations/`；计划与提案以 canonical digest 引用 `TASK/plans/`、`TASK/proposals/`。生成者的恢复投影仅含开发任务 ID、阶段、路径和剩余预算，不导入其他案例历史、留出结果或原始 transcript。此工具不是操作系统级隔离，正式盲测仍须控制可读资源与上下文。
+
+`task-init/task-status/task-handoff` 返回 `RestoreTaskStatus/v1` 投影，结构见 [status_view](task.schema.json#/$defs/status_view)，不与完整的持久化 `RestoreTask/v1` 文件混用。
+
+`max_wall_ms` 包含任务创建后的暂停和评测时间，不因子 run 重置；`max_runs` 含初始 run；`max_total_rounds` 累加所有子 run 已结束的轮次；`max_stop_requests` 限制累计续跑请求；`max_stalled_stops` 限制相同事实指纹的连续无进展回调。指纹不依赖 hook 时间或助手结束语。达到任一上限可以如实停止，pending 候选仍保留，不能伪造 E2E 通过。
+
+计划记录另保存控制器派生的 `source_run_id/source_result_sha256`；refreeze 保存 `source_contract_sha256`。子 run 发布同时核对父账本、计划合同与继承产物的哈希；在途计划不可替换。此边界属于协作式 harness：它限制任务入口和续跑请求，不是对所有独立命令的操作系统级硬限时，单次工具调用仍可能超时。
+
+`.codex/hooks.json` 调用 `scripts/restore/hooks.mjs`，由 git root 定位；配置只影响已绑定会话。绑定索引在 `reverse_output/restore-task-bindings/<sha256(session_id)>.json`，不提交。Stop 的 `decision:block` 请求宿主继续，Interrupt 独立写 `TASK/interrupt.json`，即使任务锁被占用也能留痕。Pre/PostCompact 重算并持久化状态；SessionStart 的 compact/resume 重新注入最小投影。`TASK/hook-events.jsonl` 只证明适配器收到输入，`source: stdin_unverified` 不能单独证明宿主触发。原 `run.phase=complete` 仍表示该 run 已归档完成，只有 `task.status=accepted` 表示其当前网站目标通过独立最终规则。
+
+Hook 定义必须由用户在宿主审阅并信任；项目层也须可信。见 [官方 hooks 文档](https://learn.chatgpt.com/docs/hooks)。不覆盖全局 notify、不绕过信任、不启动常驻服务。大证据集的哈希核查可能超过宿主 hook 超时，此时报告未验证，不能视为成功；后续可在真实案例测量后优化。`.task-lock` / 原 `.lock` 的未知或崩溃持有者须人工核对，不自动接管。
+
+## 最短运行链（run）
 
 ```powershell
 node scripts/restore/cli.mjs init reverse_output/example_20261014 https://example.com ordinary

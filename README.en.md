@@ -18,6 +18,8 @@ Optional preparation gates, durable section specifications, design tokens/region
 
 [Interfaces](references/restore/interfaces.md#优化规格与准备检查) · [Asset layout](references/restore/asset-layout.md) · [Upgrade scope](docs/restore-vnext-upgrade.md) · [Acceptance](evals/vnext-acceptance.md)
 
+Optional [task continuity](references/restore/interfaces.md#任务连续性) separates a website objective from an individual run: durable recovery, explicit session binding, shared budgets, and Stop/compaction/interrupt hooks support bounded continuation. Development E2E gaps can inform an evidence-bound linked run; Skill changes remain proposals. Hooks require host trust and a real callback acceptance check. Passing scripts does not prove automatic execution, and files cannot wake a stopped app.
+
 ## Showcase
 
 A reference reconstruction showing the progression from v1 to v28. For learning only; we respect the rights of the original website.

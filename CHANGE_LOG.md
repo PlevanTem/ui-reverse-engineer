@@ -1,5 +1,13 @@
 # 变更日志
 
+### 2026-11-01 — Restore 任务连续性（网站闭环 + Skill 改进提案）
+
+- **范围：** 新增 `RestoreTask/v1` 持久任务与独立状态投影、累计预算、显式会话绑定、Stop/SessionStart/压缩/Interrupt 项目 hook；按事实恢复构建/测量/验证或过期候选处理。开发 E2E 未完成先修评测，失败后以证据绑定计划创建 continue/refreeze 子 run；计划/父账本/合同哈希及 staged 发布防止重复交接。Skill 只保存 proposed 记录，留出策略不接入。同步入口、中英文 README、SOP、接口与验收协议。
+- **原因：** 原 run 的 complete 只表示本轮收尾，不能代表网站通过最终验收。保留原语义，用外层任务判断目标与下一步，避免过早结束或无上限续跑。
+- **验证：** 最终 Restore 103/103，无跳过（含 19 项连续性测试与真实本地 Node/Python 浏览器）；Case Manager 构建与 4/4 检查通过；Skill 校验通过；20 份 Schema 结构与真实任务/策略/状态 3 份实例通过。边界问题各经 RED→GREEN 修复。Firewood 仅做历史诊断的路由检查：incomplete → repair_evaluation，原 run 未变，未新增网站生成或质量/效率结论；提案与过程记录留在忽略目录。归档完整、0 哈希不匹配，scratch 未创建。
+- **激活边界：** 本机 CLI 0.153.0；已测试 git 子目录定位、实际 shell/stdin 与绑定任务。未绕过宿主信任；尚未观察真实宿主回调 → 自动续跑 → 任务进展，因此原生自动执行仍为 unverified。没有创建调度或常驻服务；Firewood 诊断任务未绑定会话并处于 waiting。`skills-ref` 不可用。
+- **状态：** 独立分支 `codex/restore-vnext-firewood` 的本地实现；未合并、未推送、未发布。
+
 ### 2026-11-01 — Restore vNext 首批架构改造（独立分支）
 
 - **范围：** 可选优化合同、准备/缓存完整性检查、分块计划与生成 v2；几何诊断、严格匿名媒体、音频证据/播放器；保留旧协议和原五维 E2E。同步中英文 README、SOP、接口、资产布局和验收协议。

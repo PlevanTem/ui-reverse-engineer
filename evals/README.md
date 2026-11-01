@@ -76,3 +76,5 @@ npm run test:sites
 本次能力审计、已修复项与剩余验证见 [交互场景 Restore 审计](audits/2026-10-16-restore-interactive-scenes.md)。
 
 版本增量与 Firewood 诊断试验使用 [vNext 验收协议](vnext-acceptance.md)。运行 `node --test scripts/restore/tests/*.test.mjs` 覆盖规格、几何、匿名输入、音频和旧记录回放。浏览器压力较大时串行执行；Node/Python 的浏览器版本不同会按设计拒绝比较，不得用关闭环境门禁解决。
+
+任务连续性包含 `task.test.mjs` 的状态、预算、锁竞争、崩溃恢复、会话隔离和真实 CLI/stdin 检查；宿主真实 hook 激活仍按 [vNext 验收协议](vnext-acceptance.md#continuity-activation)单独记录。

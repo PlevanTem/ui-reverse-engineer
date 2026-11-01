@@ -376,6 +376,8 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 具体取证、实现及完成检查见 [Restore 执行流程](references/restore.md)。新任务可启用其“准备与分块规格”流程；数据仍归冻结合同所有，资源目录按 [资产布局](references/restore/asset-layout.md)适配已有项目。
 
+用户授权持续完成网站目标时，可启用其[任务连续性](references/restore.md#可选的任务连续性)；绑定任务会话后按持久状态续跑。Skill 学习仅输出提案，留出评测不进入开发反馈。
+
 遇到交互玩法、3D、动态几何或显著动画时，读取 [交互场景实现参考](references/restore/interactive-scenes.md)。工具能力排查、提前停止证据和用户可见的逐阶段进度统一按 Restore 执行流程执行。
 
 还原时按 [Restore 执行流程](references/restore.md) 有界迭代：按页面复杂度分档并冻结参考与视觉 QA，从白名单 `RestoreGenerationInput/v1`（旧合同）或 `v2`（启用优化规格） 生成 `v0`，再围绕构图、外观、动态三类 [0–4 Criteria](references/restore/criteria.md)执行 Generate → Measure → Diff → Repair → Verify。每轮保留候选快照、证据、规范化自动检查、文件与评分 Diff、假设及 keep/revert/inconclusive；报告呈现包括回退候选在内的完整版本轨迹，而不是只展示首版和最佳版。多 run 复盘由 `scripts/restore/challenge-report.mjs` 只读生成 `RestoreChallengeReport/v2` provenance DAG，通过哈希和来源链接连接 run、版本、候选与各类评测，不复制大证据或产生新评分。有效执行时间、轮次或停滞触发退出，交付最佳版本。额度限制等外部暂停须有宿主起止证据才可扣除，并同时报告墙钟与有效耗时。若宿主或模型 API 提供可归属的 token 用量，按来源、Agent、阶段及覆盖状态登记，报告展示已观察总量；缺失时标未知，部分来源不得冒充完整成本。运行接口与可复用脚本见 [Restore 接口](references/restore/interfaces.md)。最终五维 E2E 按 [Restore 评测方案](evals/restore.md)由独立评分器执行；Loop 停止原因、E2E 结果和人工审批分别记录。缺少可用浏览器或独立评委时，继续完成可观察部分，并将未完成评分标为 `incomplete`，不得填造通过结果。
