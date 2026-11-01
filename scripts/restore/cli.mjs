@@ -1,13 +1,15 @@
 #!/usr/bin/env node
+import { geometrySuite } from './geometry.mjs';
 import { resolve, join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import * as core from './core.mjs';
 import { invoke } from './adapter.mjs';
 import { report, approve } from './report.mjs';
 import { compare } from './pairwise.mjs';
+import { checkPreparation, createOptimizationTemplate, optimizationBrief } from './optimization.mjs';
 
 const [command,directory,...args]=process.argv.slice(2), root=directory&&resolve(directory);
-const usage=`Restore v0.2 (Node 20+)\ninit RUN URL [ordinary|refined|complex]\ncontinue OLD_RUN NEW_RUN [ordinary|refined|complex]\nrefreeze OLD_RUN NEW_RUN CONTRACT_SOURCE [ordinary|refined|complex]\nprofile RUN TIER\nfreeze RUN\nprogress RUN\ngeneration-input RUN [output.json]\nassessment-input RUN [output.json]\ninitial-record RUN assessment.json (baseline is a compatibility alias)\nnext RUN\nbegin RUN hypothesis.json\nrecord RUN assessment.json verification.json\nverify RUN candidate-assessment.json pairwise-adapter.mjs\nabort RUN reason\nstatic-check-record RUN suite.json\nstop RUN blocked reason blocker.json\nstop RUN failed reason\nmeasure RUN adapter.mjs output.json\neval-input RUN output.json\neval RUN evaluator.mjs [judge.mjs]\neval-record RUN result.json\npost-run-review-record RUN review.json\ntime-exclude RUN interval.json\nusage-record RUN token-usage.json\nreport RUN\napprove RUN approval.json\nAll evidence paths are relative to RUN. Read references/restore/interfaces.md.`;
+const usage=`Restore v0.2 (Node 20+)\ninit RUN URL [ordinary|refined|complex]\ninit-vnext RUN URL [ordinary|refined|complex]\nprepare-check RUN\ngeometry-check RUN capture.json [suite.json]\nimplementation-brief RUN [output.md]\ncontinue OLD_RUN NEW_RUN [ordinary|refined|complex]\nrefreeze OLD_RUN NEW_RUN CONTRACT_SOURCE [ordinary|refined|complex]\nprofile RUN TIER\nfreeze RUN\nprogress RUN\ngeneration-input RUN [output.json]\nassessment-input RUN [output.json]\ninitial-record RUN assessment.json (baseline is a compatibility alias)\nnext RUN\nbegin RUN hypothesis.json\nrecord RUN assessment.json verification.json\nverify RUN candidate-assessment.json pairwise-adapter.mjs\nabort RUN reason\nstatic-check-record RUN suite.json\nstop RUN blocked reason blocker.json\nstop RUN failed reason\nmeasure RUN adapter.mjs output.json\neval-input RUN output.json\neval RUN evaluator.mjs [judge.mjs]\neval-record RUN result.json\npost-run-review-record RUN review.json\ntime-exclude RUN interval.json\nusage-record RUN token-usage.json\nreport RUN\napprove RUN approval.json\nAll evidence paths are relative to RUN. Read references/restore/interfaces.md.`;
 async function input(path){core.assert(path,'Input JSON path required');return core.readJSON(resolve(path));}
 async function save(value,file){if(file)await core.writeJSON(resolve(file),value);return value;}
 try {
@@ -15,6 +17,10 @@ try {
   else {
     core.assert(root,'Run directory required'); let result;
     if(command==='init') result=await core.init(root,args[0],args[1]);
+    else if(command==='init-vnext'){result=await core.init(root,args[0],args[1]);const c=await core.readJSON(join(root,'contract.json'));c.optimization=createOptimizationTemplate();await core.writeJSON(join(root,'contract.json'),c);result.optimization='RestoreOptimization/v1';}
+    else if(command==='prepare-check')result=await checkPreparation(root,await core.readJSON(join(root,'contract.json')));
+    else if(command==='geometry-check'){const run=await core.readJSON(join(root,'run.json'));result=await save(await geometrySuite(root,run,args[0]),args[1]);}
+    else if(command==='implementation-brief'){const run=await core.readJSON(join(root,'run.json'));const c=await core.contract(root,run);const brief=optimizationBrief(c);const file=resolve(args[0]??join(root,'implementation-brief.md'));const {writeFile}=await import('node:fs/promises');await writeFile(file,brief);result={file,contract_sha256:run.contract_sha256};}
     else if(command==='continue') {core.assert(args[0],'New run directory required');result=await core.continueRun(root,resolve(args[0]),args[1]);}
     else if(command==='refreeze') {core.assert(args[0]&&args[1],'New run directory and contract source required');result=await core.refreezeRun(root,resolve(args[0]),resolve(args[1]),args[2]);}
     else if(command==='progress') result=await core.progress(root,await core.readJSON(join(root,'run.json')));

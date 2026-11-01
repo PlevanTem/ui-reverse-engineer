@@ -12,6 +12,13 @@
 
 还原结果按案例与输入策略审阅；源码辅助展示不等于 clean-room 基准或完整 E2E 通过。
 
+
+## Restore vNext（兼容增量）
+
+新增可选准备门禁、持久化分块规格、设计 token/区域框、状态与动效/声音 cue、灵活资产布局、匿名视觉比较及音频证据播放器。旧合同保持可读，运行端不新增依赖或服务。几何诊断与局部盲比不等于完整 E2E。
+
+[Interfaces](references/restore/interfaces.md#优化规格与准备检查) · [Asset layout](references/restore/asset-layout.md) · [Upgrade scope](docs/restore-vnext-upgrade.md) · [Acceptance](evals/vnext-acceptance.md)
+
 ## 效果展示
 
 参考还原案例，展示从 v1 到 v28 的迭代效果。仅供学习，尊重源网站版权。

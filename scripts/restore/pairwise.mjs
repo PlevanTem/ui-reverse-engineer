@@ -1,3 +1,4 @@
+import { blindRequest, focusVisualEvidence } from './blind.mjs';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { assert, contract, readJSON, local, writeJSON, sha, canonical, text, budget, assess, treeHash } from './core.mjs';
@@ -29,7 +30,12 @@ export async function compare(root,run,assessmentPath,adapter) {
   const outputs=[];
   for(const order of [['best','candidate'],['candidate','best']]) {
     const request={schema_version:'PairwiseRequest/v0.2',binding:a.binding,issue,order,reference_evidence:c.reference_evidence,best_evidence:bestEvidence,candidate_evidence:candidateEvidence,states:c.states.filter(s=>run.pending.required_states.includes(s.id)),obligations:c.obligations.filter(o=>run.pending.required_states.includes(o.state_id)),interactive_scene:c.interactive_scene??null,run_dir:root,expected_output:'PairwiseVerdict/v0.2'};
-    const raw=await invoke(adapter,request,budget(run).repair_remaining_ms);
+    const blinded=c.optimization?.verification.protocol==='blind/v1';
+    const focus=c.obligations.find(o=>o.id===issue.obligation_id),scope={state_id:focus.state_id,criterion_id:focus.criterion_id,allow_unscoped:c.states.length===1};
+    const submitted=blinded?await blindRequest(root,{reference:focusVisualEvidence(c.reference_evidence,scope),before:focusVisualEvidence(bestEvidence,scope),after:focusVisualEvidence(candidateEvidence,scope),order,task:{states:c.states.filter(s=>s.id===focus.state_id),expected:[focus]}}):request;
+    const response=await invoke(adapter,submitted,budget(run).repair_remaining_ms);
+    if(blinded)assert(response.schema_version==='BlindPairwiseVerdict/v1'&&response.request_id===submitted.request_id,'Invalid anonymous verdict request identity');
+    const raw=blinded?{schema_version:'PairwiseVerdict/v0.2',binding:a.binding,issue_id:issue.id,assessor:response.assessor,choice:response.choice,reason:response.reason,visible_improvement:response.visible_improvement,verification_protocol:'blind/v1',request_id:submitted.request_id}:response;
     assert(raw.schema_version==='PairwiseVerdict/v0.2'&&canonical(raw.binding)===canonical(a.binding)&&raw.issue_id===issue.id&&raw.assessor?.role==='independent'&&text(raw.assessor.id)&&text(raw.reason),'Invalid independent pairwise verdict');
     const choice=normalizeChoice(raw.choice,order),uri=`evidence/pairwise-${run.pending.round}-${randomUUID()}.json`;
     await writeJSON(local(root,uri),{...raw,order});

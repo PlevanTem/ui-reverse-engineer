@@ -12,6 +12,12 @@
 
 Review results per case and input policy; a source-assisted showcase is not a clean-room benchmark or proof of full E2E success.
 
+## Restore vNext (compatible extension)
+
+Optional preparation gates, durable section specifications, design tokens/region boxes, behavior/motion/audio cues, flexible asset layouts, anonymous visual comparison and audio evidence playback are available. Legacy contracts remain readable; the runtime adds no dependency or service. Geometry diagnostics and local pairwise preference do not establish full E2E acceptance.
+
+[Interfaces](references/restore/interfaces.md#优化规格与准备检查) · [Asset layout](references/restore/asset-layout.md) · [Upgrade scope](docs/restore-vnext-upgrade.md) · [Acceptance](evals/vnext-acceptance.md)
+
 ## Showcase
 
 A reference reconstruction showing the progression from v1 to v28. For learning only; we respect the rights of the original website.

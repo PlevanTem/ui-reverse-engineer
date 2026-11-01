@@ -45,9 +45,12 @@
       "required": ["id", "kind", "uri", "sha256"],
       "properties": {
         "id": {"type": "string", "minLength": 1},
-        "kind": {"enum": ["screenshot", "sequence", "video", "checks", "source"]},
+        "kind": {"enum": ["screenshot", "sequence", "video", "audio", "checks", "source"]},
         "uri": {"type": "string", "minLength": 1},
-        "sha256": {"$ref": "#/$defs/sha256"}
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "state_id": {"type": "string", "minLength": 1},
+        "captured_at": {"type": "string", "format": "date-time"},
+        "artifact_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
       }
     },
     "check": {

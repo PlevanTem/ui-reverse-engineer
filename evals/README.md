@@ -35,7 +35,7 @@ evals/
 
 1. 只比较冻结输入、视口、状态和交互要求一致的 case。
 2. `cases.yaml` 是 case 元数据的事实源；未冻结 fixture 的 `draft` case 不进入正式评测。
-   `technology_stack`、`technology_stack_source`、`technology_stack_evidence` 及源码类输入只属于评测数据面，用于数据集分析、分层统计和事后审计。它们不得进入 Restore 生成上下文；生成只接收合同投影出的 `RestoreGenerationInput/v1` 白名单。
+   `technology_stack`、`technology_stack_source`、`technology_stack_evidence` 及源码类输入只属于评测数据面，用于数据集分析、分层统计和事后审计。它们不得进入 Restore 生成上下文；生成只接收合同投影出的 `RestoreGenerationInput/v1` / `v2` 白名单。
 3. manifest 记录 dataset/case 版本、fixture 和产物哈希、Skill commit、模型/effort、环境和运行设置。
 4. Loop 的 C1/C2/C3 只用于修复；最终交付使用五维 E2E 和六类红线。
 5. Judge 未校准时结果为探索性；未知项不得补造分数。
@@ -74,3 +74,5 @@ npm run test:sites
 `capture.test.mjs` 包含手势、采样时序、模型依赖、提前停止与进度回归；设置 `RESTORE_CAPTURE_PYTHON` 为已安装 Playwright 的 Python 可执行文件后，还运行临时目录与 localhost 中的真实浏览器采集。提供 `RESTORE_PLAYWRIGHT_MODULE` 时同样验证 Node 采集器与 Python 的冻结绑定一致。该集成检查不安装依赖，不访问外站，不代表真实站点的视觉 E2E 通过。
 
 本次能力审计、已修复项与剩余验证见 [交互场景 Restore 审计](audits/2026-10-16-restore-interactive-scenes.md)。
+
+版本增量与 Firewood 诊断试验使用 [vNext 验收协议](vnext-acceptance.md)。运行 `node --test scripts/restore/tests/*.test.mjs` 覆盖规格、几何、匿名输入、音频和旧记录回放。浏览器压力较大时串行执行；Node/Python 的浏览器版本不同会按设计拒绝比较，不得用关闭环境门禁解决。
