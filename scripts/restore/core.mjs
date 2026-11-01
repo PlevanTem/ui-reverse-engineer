@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, readFile, writeFile, rename, readdir, lstat, cp, open, unlink } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rename, readdir, lstat, cp, open, unlink, link } from 'node:fs/promises';
 import { resolve, relative, sep, join, isAbsolute, dirname } from 'node:path';
 import { validateRedlineProfile, validateRedlineAssessments } from '../../evals/pipeline/redline-contract.mjs';
 import { validateCaptureStep, validateCaptureReadiness } from './capture-actions.mjs';
@@ -424,17 +424,40 @@ function target(c,a) {
   return a.assessor.role==='independent' && a.gates.every(g=>g.status==='pass') && !a.findings.some(f=>f.severity!=='minor') && c.obligations.filter(o=>o.required).every(o=>{const u=a.units.find(x=>x.obligation_id===o.id); return u && (o.applicability==='not_applicable'?u.status==='not_applicable':u.status==='scored'&&u.score>=o.target);});
 }
 async function observation(root,a) { const name=`observations/${digest(a)}.json`; await writeJSON(local(root,name),a); return name; }
+function evidenceExtension(bytes) {
+  if(bytes.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')))return 'png';
+  if(bytes.subarray(0,3).equals(Buffer.from('ffd8ff','hex')))return 'jpg';
+  if(['GIF87a','GIF89a'].includes(bytes.subarray(0,6).toString('ascii')))return 'gif';
+  if(bytes.subarray(0,4).toString('ascii')==='RIFF'&&bytes.subarray(8,12).toString('ascii')==='WEBP')return 'webp';
+  if(bytes.subarray(0,4).equals(Buffer.from('1a45dfa3','hex')))return 'webm';
+  if(bytes.subarray(4,8).toString('ascii')==='ftyp') {
+    const brand=bytes.subarray(8,12).toString('ascii');return ['avif','avis'].includes(brand)?'avif':'mp4';
+  }
+  let content;
+  try { content=new TextDecoder('utf-8',{fatal:true}).decode(bytes); } catch { return 'bin'; }
+  try { JSON.parse(content);return 'json'; } catch { /* Other text evidence is not JSON. */ }
+  if(/^\s*(?:<\?xml[^>]*>\s*)?<svg(?:\s|>)/i.test(content))return 'svg';
+  return 'txt';
+}
 async function archiveAssessmentEvidence(root,a) {
   const evidence=[];
   for(const item of a.evidence) {
     const bytes=await readFile(await safeFile(root,item.uri));
     const actual=sha(bytes);assert(actual===item.sha256,`Evidence changed: ${item.id}`);
-    const originalName=item.uri.replaceAll('\\','/').split('/').at(-1).replace(/[^a-zA-Z0-9._-]/g,'_')||'evidence';
-    const evidenceId=item.id.replace(/[^a-zA-Z0-9._-]/g,'_')||'evidence';
-    const uri=`observations/evidence-archive/${item.sha256}/${evidenceId}-${originalName}`;
-    const destination=local(root,uri);await mkdir(dirname(destination),{recursive:true});
-    try { await writeFile(destination,bytes,{flag:'wx'}); }
-    catch(error) { if(error.code!=='EEXIST')throw error;assert(sha(await readFile(destination))===item.sha256,`Archived evidence changed: ${item.id}`); }
+    const uri=`observations/evidence-archive/${item.sha256}/content.${evidenceExtension(bytes)}`;
+    const destination=local(root,uri);
+    await safeFile(root,'observations');
+    for(const path of ['observations/evidence-archive',`observations/evidence-archive/${item.sha256}`]) {
+      try { await mkdir(local(root,path)); } catch(error) { if(error.code!=='EEXIST')throw error; }
+      await safeFile(root,path);
+    }
+    const temp=join(dirname(destination),`.${randomUUID()}.tmp`);
+    try {
+      await writeFile(temp,bytes,{flag:'wx'});
+      try { await link(temp,destination); }
+      catch(error) { if(error.code!=='EEXIST')throw error; }
+      assert(sha(await readFile(await safeFile(root,uri)))===item.sha256,`Archived evidence changed: ${item.id}`);
+    } finally { await unlink(temp).catch(error=>{if(error.code!=='ENOENT')throw error;}); }
     evidence.push({...item,uri});
   }
   return {...a,evidence};

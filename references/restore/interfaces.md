@@ -63,7 +63,11 @@ E2E 的评测对象始终是最终交付产物。原始运行过程可能在 `ru
 
 ### 证据不可变性与历史报告重放
 
-`freeze`、`assessment-input`、`initial-record`、`record`、`static-check-record`、`eval-record` 等运行期路径继续对证据文件做 SHA-256 校验；缺失或哈希漂移必须 fail-closed，不能用当前同名文件替代历史内容。`initial-record` 与 `record` 在严格校验通过后，将 `LoopAssessment/v0.2.evidence[]` 逐项复制到 `observations/evidence-archive/<evidence_sha256>/...`，并让持久化 assessment 引用归档 URI。归档已存在时必须再次核对内容哈希。这样后续版本即使复用并覆盖 `evidence/foo.png`，已记录版本仍引用不可变副本。历史 run 不迁移，原 URI 保持可读。
+`freeze`、`assessment-input`、`initial-record`、`record`、`static-check-record`、`eval-record` 等运行期路径继续对证据文件做 SHA-256 校验；缺失或哈希漂移必须 fail-closed，不能用当前同名文件替代历史内容。`initial-record` 与 `record` 在严格校验通过后，将 `LoopAssessment/v0.2.evidence[]` 归档至本 run 的 `observations/evidence-archive/<evidence_sha256>/content.<格式>`，并让持久化 assessment 引用归档 URI。同字节内容复用同一文件，证据 ID、时间、状态和其他事件元数据仍分别保留；格式根据内容识别，未知二进制为 `.bin`。归档已有目标时再次核对内容哈希；写入通过同目录临时文件及原子链接发布，文件系统不支持时明确失败。这样后续版本即使覆盖 `evidence/foo.png`，已记录版本仍引用不可变副本。历史 URI 不迁移，原样读取；新旧 URI 可共存。
+
+临时诊断截图、录屏和请求放在对应 run 的 `scratch/` 或系统临时目录；进入合同或评估的证据按正式 URI 保存。收尾前核对引用，未知与未覆盖范围保留，不自动删除历史文件。运行 `node scripts/restore/archive-audit.mjs RUN` 可只读核验该 run 的归档哈希并列出相同内容的重复路径；其字节数是逻辑冗余量，不等于实际磁盘占用。引用扫描仅查本 run 指定文本文件中的字面 URI，发现引用记为 `observed`，其余记为 `unknown`，不覆盖其他 run、动态引用及过大或不可读文件，不能作为删除许可；归档缺失、不可读或不支持的条目使归档扫描标为 incomplete，引用扫描缺口另列。
+
+收尾时运行 `node scripts/restore/scratch-audit.mjs RUN` 生成 `scratch/` 的只读清单；目录尚未创建时返回 `not_created`。工具只查本 run 指定文本文件中的字面路径；发现引用为 `observed`，未发现为 `unknown`。链接、不可读目录或超过 16 MiB 的文本等扫描缺口使 `complete: false`。无论结果如何都不推断可删除，也不移动或删除文件；其他 run、动态引用和系统临时目录不在扫描范围。
 
 哈希口径分两类，不能混用。`run.json` 内指向结构化 JSON 记录的引用（包括 `static_checks[].sha256`）保存 `digest(value)`，即对键排序后的 canonical JSON 做 SHA-256；对应 `static-check-<digest>.json` 文件名也使用这个规范化摘要。因此它不要求等于 pretty-printed JSON 文件的逐字节 SHA-256。`evidence[].sha256` 始终校验 URI 指向文件的原始字节；当一份静态检查 JSON 又被评估记录作为 `kind: checks` 的证据引用时，必须重新读取该文件并计算字节 SHA-256，通常会与 `run.static_checks[].sha256` 不同。前者保护结构化事实的语义内容，后者保护证据文件的实际字节；两值不同不是漂移。v0.2 保留现有字段以兼容历史 run，未来如更名为 `canonical_digest` / `file_sha256` 需通过版本化 Schema 迁移。
 
@@ -92,15 +96,15 @@ node scripts/restore/cli.mjs init reverse_output/example_20261014 https://exampl
 # 编辑 run 内的 contract.json，保存参考证据到 evidence/；填写 observed_url、环境、状态、视觉 QA、启动命令、最终 E2E 版本。
 node scripts/restore/cli.mjs freeze reverse_output/example_20261014
 # 只把白名单输入交给实现者；cases.yaml 的源码/技术栈证据不进入该文件。
-node scripts/restore/cli.mjs generation-input reverse_output/example_20261014 generation-input.json
+node scripts/restore/cli.mjs generation-input reverse_output/example_20261014 reverse_output/example_20261014/generation-input.json
 # 在 restored/ 生成 v0 初始版本；由独立诊断器从 assessment-input 生成 LoopAssessment/v0.2。
-node scripts/restore/cli.mjs assessment-input reverse_output/example_20261014 request.json
-node scripts/restore/cli.mjs initial-record reverse_output/example_20261014 initial-assessment.json
+node scripts/restore/cli.mjs assessment-input reverse_output/example_20261014 reverse_output/example_20261014/request.json
+node scripts/restore/cli.mjs initial-record reverse_output/example_20261014 reverse_output/example_20261014/initial-assessment.json
 # 每个版本可录入一个或多个规范化检查套件；summary 由控制器重算。
-node scripts/restore/cli.mjs static-check-record reverse_output/example_20261014 static-check-suite.json
-node scripts/restore/cli.mjs begin reverse_output/example_20261014 hypothesis.json
-# 修改 restored/，采集受影响状态和哨兵；独立绝对评委生成 candidate-assessment.json。
-node scripts/restore/cli.mjs verify reverse_output/example_20261014 candidate-assessment.json pairwise-adapter.mjs
+node scripts/restore/cli.mjs static-check-record reverse_output/example_20261014 reverse_output/example_20261014/static-check-suite.json
+node scripts/restore/cli.mjs begin reverse_output/example_20261014 reverse_output/example_20261014/hypothesis.json
+# 修改 restored/，采集受影响状态和哨兵；独立绝对评委生成 reverse_output/example_20261014/candidate-assessment.json。
+node scripts/restore/cli.mjs verify reverse_output/example_20261014 reverse_output/example_20261014/candidate-assessment.json pairwise-adapter.mjs
 # verify 返回带 A/B 双顺序证据的 assessment 与 verification 路径：
 node scripts/restore/cli.mjs record reverse_output/example_20261014 <verify-assessment.json> <verify-verification.json>
 node scripts/restore/cli.mjs next reverse_output/example_20261014
@@ -113,8 +117,8 @@ node scripts/restore/cli.mjs report reverse_output/example_20261014
 
 ```powershell
 node scripts/restore/cli.mjs continue reverse_output/old_run reverse_output/new_run complex
-node scripts/restore/cli.mjs assessment-input reverse_output/new_run continuation-v0-request.json
-node scripts/restore/cli.mjs initial-record reverse_output/new_run continuation-v0-assessment.json
+node scripts/restore/cli.mjs assessment-input reverse_output/new_run reverse_output/new_run/continuation-v0-request.json
+node scripts/restore/cli.mjs initial-record reverse_output/new_run reverse_output/new_run/continuation-v0-assessment.json
 ```
 
 `continue OLD_RUN NEW_RUN [TIER]` 要求父 run 已冻结且存在 `best` 快照，并要求父子 run 位于可建立相对链接的同一文件系统。命令复制冻结的 `contract.json`、其 `reference_evidence` 文件和父 `restored/` 当前工作树，创建全新的 `run_id`、起始时间、预算和事件账本，并写入 [`RestoreLineage/v1`](lineage.schema.json)。若父工作树等于 `best`，`artifact_source` 为 `best_snapshot`；若父 run 在预算耗尽时仍有未验证候选，当前工作树按 `working_tree_unverified` 继承。两者都只作为新 run 待重新测量的 `v0`，不会继承父评分、keep 结论、轮次、E2E 或审批。生成策略原样继承，因此 `source_assisted` 不会被降级或扩权，`cases.yaml` 的评测侧源码证据仍不得进入生成输入。
@@ -127,8 +131,8 @@ node scripts/restore/cli.mjs initial-record reverse_output/new_run continuation-
 node scripts/restore/cli.mjs refreeze reverse_output/old_run reverse_output/new_run staging/new-contract complex
 # 审阅新 run 内的 contract.json；如需可继续在 prepare 阶段修正。
 node scripts/restore/cli.mjs freeze reverse_output/new_run
-node scripts/restore/cli.mjs assessment-input reverse_output/new_run refreeze-v0-request.json
-node scripts/restore/cli.mjs initial-record reverse_output/new_run refreeze-v0-assessment.json
+node scripts/restore/cli.mjs assessment-input reverse_output/new_run reverse_output/new_run/refreeze-v0-request.json
+node scripts/restore/cli.mjs initial-record reverse_output/new_run reverse_output/new_run/refreeze-v0-assessment.json
 ```
 
 `CONTRACT_SOURCE` 可为含 `contract.json` 的目录，或直接指向 JSON 文件；`reference_evidence[].uri` 都相对该来源根目录解析。`refreeze` 要求父 run 已冻结且存在可校验 `best`，并要求显式新合同与父冻结合同不同。它只复制父 `best` 快照到新 `restored/` 和 `snapshots/`，不复制父工作树中未验证候选，不继承评分、轮次、E2E 或审批。新 run 以 `phase: prepare` 开始，必须再调用 `freeze` 锁定最终合同，再将继承产物作为全新 `v0` 重测。

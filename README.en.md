@@ -12,38 +12,67 @@
 
 Review results per case and input policy; a source-assisted showcase is not a clean-room benchmark or proof of full E2E success.
 
-## When to use it
+## Showcase
 
-- **You have a reference and want to reproduce it:** use `--restore` to reconstruct its available assets, visual details, motion, and interactions as a runnable project.
-- **You want to infer the product request behind a finished interface:** use `--query` to produce requirements JSON.
-- **You want to reuse a brand's visual language:** use `--design-md` to create a `DESIGN.md` and index entry.
-- **You want to restyle an existing page while keeping its content and behavior:** use `--transfer` with a local HTML target.
-- **You want both inferred requirements and a page draft:** the default is `--query --restore`.
+A reference reconstruction showing the progression from v1 to v28. For learning only; we respect the rights of the original website.
 
-## What you get
+### Tiny Skies: reconstruction from v1 to v28
 
-| Mode | Question it answers | Main output |
-| --- | --- | --- |
-| `--query` | What request could have produced this interface? | `query_instruction.json` |
-| `--design-md` | How can this visual system be reused? | `design_assets/{brand}/DESIGN.md`, `design_assets/index.csv` |
-| `--transfer` | How can I apply a new style and keep the existing content and interactions? | `{target}_transferred.html` |
-| `--restore` | How can I reproduce the reference's assets, appearance, and behavior? | `design_brief.md` and a runnable `restored/` project |
+Reconstructing the [original Tiny Skies website](https://tinyskies.vercel.app/) through a **generate → independently evaluate → fix the gaps** loop. The 88-second landscape film opens with the original versus v28, then shows the evolving versions, the Agent's Observe/Plan/Fix decisions, and the automatically compiled evaluation report.
 
-Case outputs go to `reverse_output/{case_name}_{YYYYMMDD}/`; design assets go to `design_assets/`. See [`SKILL.md`](SKILL.md) for the complete specification.
+[![Tiny Skies English landscape demo: original comparison, v1–v28 iterations, and evaluation report](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/poster-landscape-en.jpg)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4)
 
-To review multiple Restore runs under one standard, run `node scripts/restore/challenge-report.mjs OUTPUT_DIR RUN_DIR...`. It produces `challenge-report.json` and `challenge-report.html` using the deterministic `RestoreChallengeReport/v2` provenance projection. The DAG preserves nodes, hashes, and edges for runs, versions, candidate artifacts, assessments, verifications, diffs, static checks, and Final E2E; large evidence stays in its source run and is reached through relative links, which keeps generation and agent-context costs low. Final E2E, Loop Assessment, and the StaticCheckSuite bound to `run.best` remain separate, and direct comparison is allowed only inside the same contract, rubric, and scorer group. Missing results carry structured reasons and recoverability and are never converted to zero.
+[Watch/download the English landscape video (88 seconds, 1080p)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4) · [中文版](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4) · [Showcase media and checksums](https://github.com/PlevanTem/ui-reverse-engineer/releases/tag/tiny-skies-v28-showcase)
 
-The single-run report template wraps verification hashes on narrow screens. See [report presentation checks](evals/README.md#检查); these checks do not establish game or page E2E success.
+- **Implementation scope:** this is a source-assisted reconstruction, not a clean-room benchmark. Public code may inform frontend styling and interaction implementation; the 3D scene and art assets are rebuilt in code, without mirroring the original art assets or using a 3D-generation MCP.
+- **Reviewing the result:** the closing frame shows the latest independent evaluation summary. The full local report supports review of state evidence, key iteration traces, and unresolved issues. The film is not a complete test recording; the media Release does not include the full case outputs.
+- **Result limits:** the evaluation remains `fail / provisional`, with interaction differences and unverified long-chain gameplay; the Judge is not calibrated. Visible improvement is neither a complete E2E pass nor evidence that model RL training has been performed.
+
+## Why use it
+
+- **Keep developing:** turn a reference into a runnable, editable local project.
+- **Review the result:** record reference states, evidence, and known gaps to inspect differences.
+- **Trace iterations:** retain versions and evaluation results to review changes and unresolved issues.
 
 ## How to start
 
-### Project website and design system
+### 1. Install the Skill
 
-[Project website](https://plevantem.github.io/ui-reverse-engineer/) · [Design system](https://plevantem.github.io/ui-reverse-engineer/design-system.html)
+Run the matching command from your project root. These remote install commands point to the repository root and have not yet been verified in a clean environment; private repositories require account access.
 
-The local presentation site includes a landing page, case catalogue, Tiny Skies details, getting-started guide and component specimens. Audit visual and component decisions in [DESIGN.md](DESIGN.md), then follow [website/README.md](website/README.md) to build and preview. Case metadata is generated from `evals/cases.yaml`; draft status and public showcase availability remain distinct. The site is built and deployed by the GitHub Pages workflow.
+**Codex**
+```bash
+npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer --skill ui-reverse-engineer --agent codex
+```
 
-Section 04 compares capabilities and mechanisms with Screenshot to Code and Open Lovable. Cells link official sources; undocumented does not mean unsupported, and the matrix is not a controlled performance ranking.
+<details>
+<summary>Installation for other agents</summary>
+
+**Claude Code**
+```bash
+npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer --skill ui-reverse-engineer --agent claude-code
+```
+
+**Grok Build**
+```bash
+npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer --skill ui-reverse-engineer --agent grok
+```
+
+**Gemini CLI**
+```bash
+npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer --skill ui-reverse-engineer --agent gemini-cli
+```
+
+**WorkBuddy**
+
+WorkBuddy currently imports a local Skill package; `vercel-labs/skills` does not have a WorkBuddy install target. In WorkBuddy, choose **Add Skill / Upload Skill** and select the `ui-reverse-engineer` Skill package.
+
+> The `npx` commands require this Skill directory to be published on the GitHub default branch. If the repository is private, your account must have access. If you already have the skill locally, run `npx --yes skills add <local-skill-path> --skill ui-reverse-engineer --agent <identifier>` from the target project root, replacing the path and identifier with your values.
+
+
+</details>
+
+### 2. Give the agent a task
 
 After installation, describe the task in plain language and provide the reference:
 
@@ -65,37 +94,46 @@ Reconstruct this website, including available assets, responsive layout, scroll 
 
 You can also specify `--query`, `--design-md`, `--transfer`, or `--restore` directly, and combine modes. With no mode specified, the default is `--query --restore`.
 
-## Quick install
+### 3. Find the result
 
-Run the matching command from your project root. The commands install from this repository after the skill directory is published on its GitHub default branch. This repository is private, so your account must have access.
+Task outputs default to `reverse_output/{case_name}_{YYYYMMDD}/`. For Restore, `restored/` contains the runnable project and `design_brief.md` records its scope and evidence.
 
-**Codex**
-```bash
-npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer/tree/main/ui-reverse-engineer --skill ui-reverse-engineer --agent codex
-```
+See the [output directory convention](SKILL.md#输出目录规范) for intermediate files, the [Restore completion checks](references/restore.md#完成检查), and the [Restore interfaces](references/restore/interfaces.md#证据不可变性与历史报告重放) for read-only archive and scratch inventories.
 
-**Claude Code**
-```bash
-npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer/tree/main/ui-reverse-engineer --skill ui-reverse-engineer --agent claude-code
-```
+For related-run reviews and scoring fields, see the [Restore interfaces](references/restore/interfaces.md) and [cross-run report schema](references/restore/challenge-report.schema.json).
 
-**Grok Build**
-```bash
-npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer/tree/main/ui-reverse-engineer --skill ui-reverse-engineer --agent grok
-```
+## Use cases and outputs
 
-**Gemini CLI**
-```bash
-npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer/tree/main/ui-reverse-engineer --skill ui-reverse-engineer --agent gemini-cli
-```
+| Your goal | What you get | Mode |
+| --- | --- | --- |
+| Reconstruct a reference page | Runnable project, reconstruction brief, and comparison results | `--restore` |
+| Infer requirements behind an interface | Requirements JSON | `--query` |
+| Extract a reusable visual system | `DESIGN.md` and an index | `--design-md` |
+| Apply a reference style to an existing page | A restyled page with its content and interactions retained | `--transfer` |
 
-**WorkBuddy**
+Modes can be combined; the default is `--query --restore`. Task outputs are saved under `reverse_output/{case_name}_{YYYYMMDD}/` and design assets under `design_assets/`. See the [Skill specification](SKILL.md) for exact paths.
 
-WorkBuddy currently imports a local Skill package; `vercel-labs/skills` does not have a WorkBuddy install target. In WorkBuddy, choose **Add Skill / Upload Skill** and select the `ui-reverse-engineer` Skill package.
+## Inputs and limits
 
-> The `npx` commands require this Skill directory to be published on the GitHub default branch. This repository is private, so your account must have access. If you already have the skill locally, run `npx --yes skills add <local-skill-path> --skill ui-reverse-engineer --agent <identifier>` from the target project root, replacing the path and identifier with your values.
+| Input | What it supports | Limit |
+| --- | --- | --- |
+| Website URL | Inspect structure, layout, visual states, responsive behavior, and key interactions; actively inspect publicly loaded source and runtime assets | Requires an available browser/page-reading capability; cross-origin, login, or tool limits may block some source checks and should be recorded |
+| Screenshot / Figma | Extract layout, colors, typography, spacing, and component style | Invisible behavior must be labeled as inference |
+| Video / recording | Reconstruct action sequences, state changes, and motion from key frames | Requires video/visual input support; fast transitions may only support inference |
+| Source URL / HTML, CSS, JS | Infer information architecture, tokens, and state logic from implementation | Source inspection does not verify the live appearance |
+| Local HTML | Target page for `--transfer` | `--transfer` requires a local HTML target |
+| `DESIGN.md` | Style source for `--transfer` | Uses design tokens defined in the file |
 
-## Restore browser-capture environment
+A website URL is enough to start source discovery for technology-stack analysis; users do not need to provide a separate code-hosting link. Restore evaluations and clean-room runs use only frozen fixtures by default: they do not search extra public material or read case source evidence. Source reuse is permitted only when the user task and frozen policy explicitly select `source_assisted`. The inspectable scope depends on the browser and page-reading capabilities available in the client. Installing the Skill does not install browser MCP or add video understanding or local-file access that the client lacks. `--transfer` presents a migration plan before changing the page; `--restore` creates the brief and completes the reconstruction unless the user explicitly asks to review the brief first.
+
+## Advanced use
+
+Restore can summarize multiple runs of a case; direct comparisons require matching evaluation criteria. See the [Restore interfaces](references/restore/interfaces.md). Configure a browser as follows only when you need the local capture scripts.
+
+<details>
+<summary>Browser capture environment</summary>
+
+### Restore browser-capture environment
 
 The repository capture scripts use Playwright for frozen screenshots, interaction sequences, runtime resources, and console checks. The default Python entry point is `scripts/restore/capture.py`; a host browser with equivalent evidence capabilities is also usable. The Node and Python entry points freeze page time while each screenshot is serialized, so an expensive PNG capture cannot advance a game or animation state. This requires the Playwright/Chromium version pinned in `requirements-dev.txt`, or a host with equivalent Clock and CDP lifecycle support. Install the local dependencies only when those scripts are needed and the dependencies are absent:
 
@@ -119,34 +157,15 @@ npx playwright install chromium
 
 Playwright supplies automated browser control. It does not add browser MCP access, video understanding, or permission to access a page. When login, anti-bot, or network restrictions apply, record the observable evidence and failure reason and leave unavailable states unverified.
 
-## Inputs and limits
+</details>
 
-| Input | What it supports | Limit |
-| --- | --- | --- |
-| Website URL | Inspect structure, layout, visual states, responsive behavior, and key interactions; actively inspect publicly loaded source and runtime assets | Requires an available browser/page-reading capability; cross-origin, login, or tool limits may block some source checks and should be recorded |
-| Screenshot / Figma | Extract layout, colors, typography, spacing, and component style | Invisible behavior must be labeled as inference |
-| Video / recording | Reconstruct action sequences, state changes, and motion from key frames | Requires video/visual input support; fast transitions may only support inference |
-| Source URL / HTML, CSS, JS | Infer information architecture, tokens, and state logic from implementation | Source inspection does not verify the live appearance |
-| Local HTML | Target page for `--transfer` | `--transfer` requires a local HTML target |
-| `DESIGN.md` | Style source for `--transfer` | Uses design tokens defined in the file |
+### Project website and design system
 
-A website URL is enough to start source discovery for technology-stack analysis; users do not need to provide a separate code-hosting link. Restore evaluations and clean-room runs use only frozen fixtures by default: they do not search extra public material or read case source evidence. Source reuse is permitted only when the user task and frozen policy explicitly select `source_assisted`. The inspectable scope depends on the browser and page-reading capabilities available in the client. Installing the Skill does not install browser MCP or add video understanding or local-file access that the client lacks. `--transfer` presents a migration plan before changing the page; `--restore` creates the brief and completes the reconstruction unless the user explicitly asks to review the brief first.
+[Project website](https://plevantem.github.io/ui-reverse-engineer/) · [Design system](https://plevantem.github.io/ui-reverse-engineer/design-system.html)
 
-## Showcase
+The local presentation site includes a landing page, case catalogue, Tiny Skies details, getting-started guide and component specimens. The local fixture-only Firewood reconstruction is not published; its latest final E2E is incomplete; an earlier completed independent evaluation was fail / provisional. Its case page records the known gaps and unknowns. Audit visual and component decisions in [DESIGN.md](DESIGN.md), then follow [website/README.md](website/README.md) to build and preview. Case metadata is generated from `evals/cases.yaml`; draft status and public showcase availability remain distinct. The site is built and deployed by the GitHub Pages workflow. Mosby’s Files has a local generated restoration. Its landing-page cover uses one candidate screenshot from the evaluation record as a preview. The latest independent post-run review is fail / provisional; the final total is uncomputed and calibration is unmeasured. The case remains draft, and its full report and restoration artifacts are not published.
 
-Cases in the showcase and test case library are provided solely for learning, research, and technical evaluation; rights to the referenced designs, trademarks, and assets remain with their respective rights holders, and inclusion does not grant permission for commercial use.
-
-### Tiny Skies: reconstruction from v1 to v28
-
-Reconstructing the [original Tiny Skies website](https://tinyskies.vercel.app/) through a **generate → independently evaluate → fix the gaps** loop. The 88-second landscape film opens with the original versus v28, then shows the evolving versions, the Agent's Observe/Plan/Fix decisions, and the automatically compiled evaluation report.
-
-[![Tiny Skies English landscape demo: original comparison, v1–v28 iterations, and evaluation report](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/poster-landscape-en.jpg)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4)
-
-[Watch/download the English landscape video (88 seconds, 1080p)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4) · [中文版](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4) · [Showcase media and checksums](https://github.com/PlevanTem/ui-reverse-engineer/releases/tag/tiny-skies-v28-showcase)
-
-- **Implementation scope:** this is a source-assisted reconstruction, not a clean-room benchmark. Public code may inform frontend styling and interaction implementation; the 3D scene and art assets are rebuilt in code, without mirroring the original art assets or using a 3D-generation MCP.
-- **Reviewing the result:** the closing frame shows the latest independent evaluation summary. The full local report supports review of state evidence, key iteration traces, and unresolved issues. The film is not a complete test recording; the media Release does not include the full case outputs.
-- **Result limits:** the evaluation remains `fail / provisional`, with interaction differences and unverified long-chain gameplay; the Judge is not calibrated. Visible improvement is neither a complete E2E pass nor evidence that model RL training has been performed.
+Section 04 compares capabilities and mechanisms with Screenshot to Code and Open Lovable. Cells link official sources; undocumented does not mean unsupported, and the matrix is not a controlled performance ranking.
 
 ## Project structure
 

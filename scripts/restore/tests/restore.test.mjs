@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, rm, mkdir, cp } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, rm, mkdir, cp, readdir, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -429,6 +429,15 @@ test('historical reused evidence URI degrades report replay without rendering a 
   assert.equal(data.baseline.units.find(unit=>unit.obligation_id==='layout').status,'unknown');
   assert.ok(html.includes('INTEGRITY DEGRADED'));assert.ok(html.includes(sharedUri));assert.ok(!html.includes(`src="${sharedUri}"`));
 });
+test('legacy archived evidence URI remains readable without migration',async t=>{
+  const {root}=await workspace(t);await act(root,'freeze',r=>core.freeze(root,r));
+  const base=await assessment(root,await core.readJSON(join(root,'run.json')),[2,2]);await act(root,'baseline',r=>core.baseline(root,r,base));
+  const run=await core.readJSON(join(root,'run.json')),stored=await core.readJSON(join(root,run.baseline_assessment));
+  const legacy=`observations/evidence-archive/${core.sha(png)}/old-id-original.png`;
+  await writeFile(join(root,legacy),png);stored.evidence[0].uri=legacy;await core.writeJSON(join(root,run.baseline_assessment),stored);
+  await report(root,run);assert.equal((await core.readJSON(join(root,'report.json'))).integrity.status,'valid');
+  assert.ok((await readFile(join(root,'report.html'),'utf8')).includes(`src="${legacy}"`));
+});
 test('new assessment records archive evidence by content hash before a reused path is overwritten',async t=>{
   const {root}=await workspace(t);await act(root,'freeze',r=>core.freeze(root,r));
   const run=await core.readJSON(join(root,'run.json')),base=await assessment(root,run,[2,2]);
@@ -440,6 +449,64 @@ test('new assessment records archive evidence by content hash before a reused pa
   assert.deepEqual(await readFile(join(root,stored.evidence[0].uri)),png);
   await report(root,recordedRun);
   assert.equal((await core.readJSON(join(root,'report.json'))).integrity.status,'valid');
+});
+test('same bytes share one archived file while distinct evidence events and report media remain intact',async t=>{
+  const {root}=await workspace(t);await act(root,'freeze',r=>core.freeze(root,r));
+  const base=await assessment(root,await core.readJSON(join(root,'run.json')),[2,2],[['gap','layout']]);
+  const second='evidence/same-image-different-name.jpg';await writeFile(join(root,second),png);
+  base.evidence[0]={...base.evidence[0],state_id:'home',captured_at:'2026-10-31T00:00:00Z'};
+  base.evidence.push({id:'second-observation',kind:'screenshot',uri:second,sha256:core.sha(png),state_id:'home',captured_at:'2026-10-31T00:01:00Z'});
+  await act(root,'baseline',r=>core.baseline(root,r,base));
+  const run=await core.readJSON(join(root,'run.json')),stored=await core.readJSON(join(root,run.baseline_assessment));
+  assert.equal(stored.evidence.length,2);assert.notEqual(stored.evidence[0].id,stored.evidence[1].id);
+  assert.notEqual(stored.evidence[0].captured_at,stored.evidence[1].captured_at);
+  assert.equal(stored.evidence[0].uri,stored.evidence[1].uri);assert.match(stored.evidence[0].uri,/\/content\.png$/);
+  assert.deepEqual(await readdir(join(root,'observations','evidence-archive',core.sha(png))),['content.png']);
+  await report(root,run);const html=await readFile(join(root,'report.html'),'utf8');assert.ok(html.includes(`src="${stored.evidence[0].uri}"`));
+  assert.equal((await core.readJSON(join(root,'report.json'))).integrity.status,'valid');
+  await act(root,'begin',r=>core.begin(root,r,{issue_id:'gap',hypothesis:'adjust layout',strategy:'css',scope:'local',affected_states:['home'],expected_change:'closer',preserve:'style'}));
+  await writeFile(join(root,'restored','index.html'),'<h1>candidate</h1>');
+  const candidate=await assessment(root,await core.readJSON(join(root,'run.json')),[3,2]);
+  candidate.evidence[0]={...candidate.evidence[0],uri:stored.evidence[0].uri,id:'reused-archive'};
+  for(const unit of candidate.units)unit.evidence=['reused-archive'];for(const gate of candidate.gates)gate.evidence=['reused-archive'];candidate.stability.evidence=['reused-archive'];
+  const verdict=await pairDecision(root,candidate,'gap');await act(root,'record',r=>core.record(root,r,candidate,verdict));
+  const updated=await core.readJSON(join(root,'run.json')),round=await core.readJSON(join(root,updated.rounds[0].assessment));
+  assert.equal(round.evidence.find(e=>e.id==='reused-archive').uri,stored.evidence[0].uri);
+  assert.deepEqual(await readdir(join(root,'observations','evidence-archive',core.sha(png))),['content.png']);
+  await report(root,updated);assert.equal((await core.readJSON(join(root,'report.json'))).integrity.status,'valid');
+});
+test('an existing content archive is verified and never overwritten',async t=>{
+  const {root}=await workspace(t);await act(root,'freeze',r=>core.freeze(root,r));
+  const base=await assessment(root,await core.readJSON(join(root,'run.json')),[2,2]);
+  const dir=join(root,'observations','evidence-archive',core.sha(png));await mkdir(dir,{recursive:true});
+  const target=join(dir,'content.png');await writeFile(target,'corrupt archive');
+  await assert.rejects(()=>act(root,'baseline',r=>core.baseline(root,r,base)),/Archived evidence changed/);
+  assert.equal(await readFile(target,'utf8'),'corrupt archive');
+});
+test('archive symlink is rejected before creating any external directories',async t=>{
+  const {root}=await workspace(t);await act(root,'freeze',r=>core.freeze(root,r));
+  const outside=await mkdtemp(join(tmpdir(),'restore-external-'));t.after(()=>rm(outside,{recursive:true,force:true}));
+  try { await symlink(outside,join(root,'observations','evidence-archive'),process.platform==='win32'?'junction':'dir'); }
+  catch(error) { if(['EPERM','EACCES'].includes(error.code)){t.skip(`Symlink unavailable: ${error.code}`);return;}throw error; }
+  const base=await assessment(root,await core.readJSON(join(root,'run.json')),[2,2]);
+  await assert.rejects(()=>act(root,'baseline',r=>core.baseline(root,r,base)),/Symlinks are not supported/);
+  assert.deepEqual(await readdir(outside),[]);
+});
+test('archived media and sequence JSON retain usable deterministic extensions',async t=>{
+  const {root}=await workspace(t);await act(root,'freeze',r=>core.freeze(root,r));
+  const base=await assessment(root,await core.readJSON(join(root,'run.json')),[2,2]);
+  const video=process.env.RESTORE_TEST_WEBM?await readFile(process.env.RESTORE_TEST_WEBM):Buffer.from('1a45dfa39f42868101','hex');
+  const sequence=Buffer.from('{"states":{}}');
+  for(const [id,kind,uri,bytes] of [['clip','video','evidence/clip.mp4',video],['clip-again','video','evidence/clip.webm',video],['sequence','sequence','evidence/sequence.txt',sequence]]) {
+    await writeFile(join(root,uri),bytes);base.evidence.push({id,kind,uri,sha256:core.sha(bytes),state_id:'home'});
+  }
+  await act(root,'baseline',r=>core.baseline(root,r,base));
+  const run=await core.readJSON(join(root,'run.json')),stored=await core.readJSON(join(root,run.baseline_assessment));
+  assert.equal(stored.evidence.find(e=>e.id==='clip').uri,stored.evidence.find(e=>e.id==='clip-again').uri);
+  assert.match(stored.evidence.find(e=>e.id==='clip').uri,/\/content\.webm$/);
+  assert.match(stored.evidence.find(e=>e.id==='sequence').uri,/\/content\.json$/);
+  await report(root,run);assert.equal((await core.readJSON(join(root,'report.json'))).integrity.status,'valid');
+  if(process.env.RESTORE_MEDIA_TEST_DIR)await cp(root,resolve(process.env.RESTORE_MEDIA_TEST_DIR),{recursive:true,errorOnExist:true,force:false});
 });
 test('frozen reference cannot be changed after baseline',async t=>{
   const {root}=await workspace(t);await act(root,'freeze',r=>core.freeze(root,r));

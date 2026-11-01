@@ -60,6 +60,8 @@ evals/
 ```powershell
 node scripts/restore/tests/restore.test.mjs
 node scripts/restore/tests/capture.test.mjs
+node scripts/restore/tests/archive-audit.test.mjs
+node scripts/restore/tests/scratch-audit.test.mjs
 cd evals/case-manager
 npm run build
 npm run test:sites

@@ -20,6 +20,7 @@
 2. 修改后同步更新中英文 README、相关参考和评测案例。
 3. 按 `evals/README.md` 检查触发与任务结果；可用时运行 `skills-ref validate .`。
 4. 大量修改迭代或完成推送后，记录范围、原因、验证结果和推送状态到 `CHANGE_LOG.md`。
+5. 运行过程文件写入对应案例目录或系统临时目录；任务收尾运行 `git status --short --untracked-files=normal`，分类检查新增文件和既有改动。涉及 Restore run 时执行其[完成检查](references/restore.md#完成检查)。若目录权限导致状态不完整，记录缺口；先核对报告、证据和跨运行引用，再清理过程产物。
 
 ## 不允许做的事
 

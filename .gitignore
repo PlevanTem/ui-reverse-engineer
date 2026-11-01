@@ -1,4 +1,9 @@
 /evals/results/
 /reverse_output/
+/output/
+/.playwright-cli/
+/node_modules/
+__pycache__/
+*.pyc
 /evals/case-manager/node_modules/
 /evals/case-manager/dist/
