@@ -2,6 +2,8 @@
 
 This file owns collection, storage, transport, and automatic-run semantics. The [evaluation guide](../../evals/trajectory/README.md) owns judgment and calibration. Restore's [controller interface](../restore/interfaces.md) continues to own website runs.
 
+Module ownership, dependencies and local ESM reuse are mapped in the [architecture guide](../../docs/architecture.md). Shared HTTP/OTLP helpers live in `scripts/trajectory/langfuse.mjs`; `langfuse-pilot.mjs` is the Firewood-only adapter with compatibility re-exports. Generic auto/transport code does not depend on that case adapter. There is no separately published SDK or new Langfuse SDK dependency.
+
 ## Capture boundary
 
 `collector.mjs` reads exported Codex JSONL records, not reconstructed stories. Starting from an explicit root thread, it follows actual `thread_spawn.parent_thread_id` links recursively. Internal approval/guardian sessions and unrelated threads are excluded. All matching transcript segments are considered; the task window controls included records.
@@ -54,7 +56,7 @@ Create ignored `reverse_output/trajectory/auto-settings.json` after explicitly a
 {"enabled":true,"config_path":"reverse_output/langfuse/.env.local","watch_ms":14400000,"poll_ms":5000}
 ```
 
-Connection variables in that ignored file are `LANGFUSE_BASE_URL`, `LANGFUSE_PUBLIC_KEY`, and `LANGFUSE_SECRET_KEY`. No keys belong in checked-in configuration. Existing process environment is not copied into bindings or cloud payloads.
+Connection variables in the referenced ignored `.env.local` file are `LANGFUSE_BASE_URL`, `LANGFUSE_PUBLIC_KEY`, and `LANGFUSE_SECRET_KEY`. `auto-settings.json` contains the configuration path, not these keys. No keys belong in checked-in configuration. Existing process environment is not copied into bindings or cloud payloads.
 
 The Restore CLI invokes `afterRestoreCommand()` automatically. On `init`/`init-vnext` it binds `CODEX_THREAD_ID`/`CODEX_SESSION_ID` and starts a hidden, detached, bounded **per-run process**, without a global daemon. Subsequent commands recover/check the same binding. `continue`/`refreeze` bind the child run. Unrelated workspaces are skipped; missing session identity never selects the latest unrelated transcript. An owner mismatch cannot rebind a run.
 

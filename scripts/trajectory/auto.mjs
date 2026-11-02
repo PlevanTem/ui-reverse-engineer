@@ -9,7 +9,7 @@ import {collectSessions,collectInstructionHistory,discoverSessions,projectTraces
 import {createViews} from './views.mjs';
 import {buildEvidencePayload} from './evidence.mjs';
 import {loadDelegationSpecs} from './delegation.mjs';
-import {configFrom} from './langfuse-pilot.mjs';
+import {configFrom} from './langfuse.mjs';
 import {buildPayload,loadRubrics,runCodexJudge,validateJudgment,dimensionScores} from './judge.mjs';
 import {sendTraces,registerEvaluators,judgeTrace,judgeFailureTrace,verifyCloudScores} from './transport.mjs';
 export const workspaceRoot=fileURLToPath(new URL('../../',import.meta.url));
@@ -41,6 +41,8 @@ export async function armAutomatic(runRoot,{workspace=workspaceRoot,settings,env
 export async function afterRestoreCommand(runRoot,options={}){const rel=relative(options.workspace??workspaceRoot,resolve(runRoot));if(rel.startsWith('..')||isAbsolute(rel))return null;try{return await armAutomatic(runRoot,options);}catch(e){return {status:'automatic_error',reason:redactText(e.message),completion:'Trajectory not verified; website result remains separate'};}}
 async function sessionDirectories(home){const dirs=[];async function visit(path,depth){if(depth===3){dirs.push(path);return;}for(const e of await readdir(path,{withFileTypes:true}))if(e.isDirectory()&&!e.isSymbolicLink()&&/^\d+$/.test(e.name))await visit(join(path,e.name),depth+1);}await visit(home,0);return dirs;}
 
+// Side-effect boundary: reconcile capture before spending on Judges; only a complete
+// run proceeds. Injected dependencies support fixture checks without network/model I/O.
 export async function executePrepared({projection,outRoot,config,run,sessions,contract,facts=[],binding={},views=null},deps={}){
  const send=deps.send??sendTraces,register=deps.register??registerEvaluators,judge=deps.judge??runCodexJudge;
  const capture=await send(projection.traces,join(outRoot,'capture-delivery'),config);if(capture.status!=='pass')return {status:'incomplete',stage:'capture_readback',capture};

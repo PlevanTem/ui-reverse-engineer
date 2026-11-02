@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
-import {request,postJSON,getAll,reconcile,otlp,toUnixNano} from './langfuse-pilot.mjs';
+import {request,postJSON,getAll,reconcile,otlp,toUnixNano} from './langfuse.mjs';
+// Shared protocol helpers have no Firewood dependency. This module owns durable delivery.
 import {cloudEvaluatorSource,loadRubrics} from './judge.mjs';
 const hash=x=>createHash('sha256').update(typeof x==='string'?x:JSON.stringify(x)).digest('hex');
 const read=p=>readFile(p,'utf8').then(JSON.parse);

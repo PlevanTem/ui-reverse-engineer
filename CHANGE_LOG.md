@@ -1,5 +1,12 @@
 # 变更日志
 
+### 2026-11-02 — 模块沉淀、依赖说明与统一工程检查
+
+- **范围：** 补齐整体架构、四项优化的代码接入/状态所有权/能力边界与本地 ESM 复用说明；将通用配置、HTTP、分页、OTLP 和字段比较从 Firewood 试点抽为 langfuse.mjs，auto/transport 直接依赖共享模块，旧试点重导出保持兼容。共享校验器补齐真实 agent envelope 支持，未知类型仍拒绝。补充 CLI/库调用的观测编排差异注释与 reverse-motion 主流程入口。
+- **检查入口：** 新增可预览的 local/full 工程检查器、新目录不可覆盖的 plan/log/result 回执及离线 Schema/显式实例校验脚本。full 缺少必要选择器时先阻断，跳过/缺依赖保留 incomplete/unavailable；不调用模型、不上传、不安装包。同步 AGENTS、双语 README、Restore/trajectory 接口、升级说明及评测流程；不新增 SDK 包或服务。
+- **验证：** 最小失败测试后实现；统一 full 实跑完整回归 172/172、0 跳过，26 个 Schema 通过，Case Manager 构建/打包与 4/4 通过。另用新脚本复核真实 v2 视图及 F/T 输出三份实例，Skill 格式通过；10 份文档的 190 个本地链接目标存在，未验证远程 URL/锚点。无依赖 full 预检真实返回 blocked，未执行测试。旧 Firewood 账本试点的模拟发送/查询恢复回归通过；本次不重新调用语义 Judge 或远端上报。
+- **边界与发布：** 已接入与自动激活分别记录；原生 hook 仍 unverified，Judge 仍未校准，现有 ESM 不是独立发布 SDK。真实产物和检查回执保留忽略目录；追加到既有 PR #8 的同名分支，实际推送结果以远端为准。
+
 ### 2026-11-02 — Restore vNext 整体版本提交与 PR 准备
 
 - **范围：** 汇总本 worktree 的准备规格/资产与状态覆盖、几何/匿名比较/音频证据、reverse-motion 子 Skill、任务级连续性、宿主轨迹与 Langfuse 四维评估、v2 角色/上下文和逐项 finding；同时包含基线快照内的中英文 README 导航与来源说明调整。已在 main 的证据归档功能以同步 main 保留，不作为本版新增能力重复计入。

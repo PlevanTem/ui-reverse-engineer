@@ -69,6 +69,32 @@ npm run test:sites
 
 若环境提供 `skills-ref`，再运行 `skills-ref validate .`。无法运行的检查必须如实记录。
 
+### 统一工程检查
+
+模块依赖与复用入口见[整体架构](../docs/architecture.md)。使用 Node 24+ 运行维护检查器；运行端的既有版本约定不变。先预览，再执行：
+
+```powershell
+node scripts/check.mjs local --plan
+node scripts/check.mjs local
+node scripts/check.mjs full --plan
+node scripts/check.mjs full
+```
+
+`local` 运行完整 Restore/trajectory/检查器回归与 Schema 校验；浏览器选择器缺失时回归可以运行，但跳过测试会使总状态为 incomplete。`full` 要求设置 `RESTORE_CAPTURE_PYTHON`、`RESTORE_PLAYWRIGHT_MODULE`、`RESTORE_SCHEMA_PYTHON`，并加入 Case Manager 构建、打包与测试；缺少选择器在启动测试前阻断，已有依赖缺失或命令失败按实际失败记录。它不安装包、读取真实会话、调用模型或上报 Langfuse。Schema Python 必须已有 jsonschema；可用既有虚拟环境或明确的 PYTHONPATH，不写死本机依赖目录。
+
+默认在新的 `reverse_output/checks/` 子目录保存 plan、逐项日志与 result，`--output NEW_DIRECTORY` 可指定新目录；已有目录不覆盖。failed、blocked、incomplete 都返回非零。passed 仅表示本次定义的工程检查成功；不能替代 skills-ref（可用时单独运行）、文档/展示审阅、真实云端回读、宿主激活、Judge 校准或页面质量/效率验收。
+
+缺少最终 result 回执的中断执行也不能视为完成；保留现有日志，在新目录重跑工程检查。真实轨迹发送与 Judge 的恢复另按其唯一接口执行，不套用这个重跑规则。
+
+Schema 检查也可以单独复用；只有显式提供的实例会被校验，不把 meta-schema 通过说成所有案例数据均有效：
+
+```powershell
+python -X utf8 scripts/validate-schemas.py
+python -X utf8 scripts/validate-schemas.py --instance references/trajectory/view.schema.json path/to/views.json
+```
+
+该脚本仅加载仓库 Schema 与指定 JSON，拒绝未加载的远程引用；结果不表示语义正确。具体实例路径使用本次案例自己的忽略目录。
+
 报告模板变更须检查桌面及窄屏渲染、资源链接、脚本错误和完整 SHA-256 页脚的换行；表格或证据对比容器内部滚动不等于整页溢出。折叠区尚未请求的 lazy 图片应与加载失败分开记录。以上仅验证报告呈现，不增加被测产物的 E2E 覆盖或质量分。
 
 `capture.test.mjs` 包含手势、采样时序、模型依赖、提前停止与进度回归；设置 `RESTORE_CAPTURE_PYTHON` 为已安装 Playwright 的 Python 可执行文件后，还运行临时目录与 localhost 中的真实浏览器采集。提供 `RESTORE_PLAYWRIGHT_MODULE` 时同样验证 Node 采集器与 Python 的冻结绑定一致。该集成检查不安装依赖，不访问外站，不代表真实站点的视觉 E2E 通过。

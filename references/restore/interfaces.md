@@ -2,6 +2,8 @@
 
 适用于实现者和工具接入者；日常执行先看 [Restore 执行流程](../restore.md)。运行工具位于 `scripts/restore/`，最终 E2E grader 位于 `evals/pipeline/grader.mjs`。Node 20+，仅浏览器采集需要宿主提供 Playwright。CLI 不自行安装依赖、不猜测模型 API。
 
+四个优化项的依赖、状态所有权与本地 ESM 复用见[整体架构](../../docs/architecture.md)。本文件继续独立控制运行接口；观测与上报由[轨迹接口](../trajectory/interfaces.md)控制。直接调用 core/task 不会自动执行 CLI 的可选观测编排。
+
 ## 职责边界
 
 | 模块 | 契约 | 决策 |

@@ -67,6 +67,7 @@ try {
         default: throw new Error(usage);
       }
     });
+    // CLI owns optional telemetry orchestration. Direct core/task imports do not arm workers.
     if(!command.startsWith('task-')){const target=['continue','refreeze'].includes(command)?resolve(args[0]):root;const telemetry=await afterRestoreCommand(target);if(telemetry&&result&&typeof result==='object'&&!Array.isArray(result))result.trajectory=telemetry;}
     console.log(JSON.stringify(result,null,2));
   }

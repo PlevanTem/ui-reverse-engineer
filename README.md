@@ -19,6 +19,8 @@
 
 [Interfaces](references/restore/interfaces.md#优化规格与准备检查) · [Asset layout](references/restore/asset-layout.md) · [Upgrade scope](docs/restore-vnext-upgrade.md) · [Acceptance](evals/vnext-acceptance.md)
 
+[整体架构与模块复用](docs/architecture.md)说明四个优化项的接入、依赖与能力边界；[统一工程检查](evals/README.md#统一工程检查)提供可预览、可持久复核的本地校验入口。本地 ESM 接口可直接复用，目前没有独立发布的 SDK。
+
 可选[任务连续性](references/restore/interfaces.md#任务连续性)将网站目标与单次 run 分开：持久断点、会话绑定、累计预算和 Stop/压缩/中断 hook 支持有界续跑；开发 E2E 的缺口可形成下一 run 的证据计划。Skill 改进只输出提案。项目 hook 须经宿主信任和真实回调验收；脚本通过不等于已自动运行，文件不会唤醒已停止的应用。
 
 ## 效果展示
