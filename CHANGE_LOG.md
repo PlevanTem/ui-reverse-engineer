@@ -5,7 +5,7 @@
 - **范围：** 汇总本 worktree 的准备规格/资产与状态覆盖、几何/匿名比较/音频证据、reverse-motion 子 Skill、任务级连续性、宿主轨迹与 Langfuse 四维评估、v2 角色/上下文和逐项 finding；同时包含基线快照内的中英文 README 导航与来源说明调整。已在 main 的证据归档功能以同步 main 保留，不作为本版新增能力重复计入。
 - **验证：** 提交前完整 Restore + trajectory 回归 165/165，0 跳过，包含同 Chromium 的 Node/Python 本地浏览器检查；Case Manager 构建与 4/4 通过；26 个 Schema、904 条原始事件、派生视图和两份 v2 Judge 输出通过；Skill 格式与 diff 检查通过。复核最终 Firewood 批次 73 份产物无已配置凭据/受保护 token，原 run/账本/合同/best 未变。本次没有重新生成网站或重新执行语义 Judge。
 - **边界：** Desktop 原生 hook 激活与 Judge 校准仍未验证；历史委派正文和部分运行目标/产物绑定仍有缺口，F/T 保留 unknown，不宣称质量或效率提升。案例产物、凭据与云端私有链接不纳入 Git。
-- **发布：** 目标分支 `codex/restore-vnext-trajectory-evals`；本条写入时正在准备提交与推送，实际远端状态以 Git 和 PR 为准。未授权合并。
+- **发布：** 已将原 worktree 分支规范命名为 `codex/restore-vnext-trajectory-evals`，提交轨迹实现 `965dd71` 并同步 main（`6a50b4f`）；该分支已推送 origin，首次远端 SHA 与本地一致。完整改动清单、验证与限制已汇总到 PR [#8](https://github.com/PlevanTem/ui-reverse-engineer/pull/8)。本条发布结果另作文档提交推送；未合并、未部署。
 
 ### 2026-11-02 — 轨迹 v2 角色、上下文与逐项证据迭代
 
