@@ -75,3 +75,5 @@ import { sendTraces } from './scripts/trajectory/transport.mjs';
 ## 变更与验收入口
 
 统一工程检查见 [evals/README](../evals/README.md#统一工程检查)。修改模块时沿其依赖更新调用方、唯一契约和相应回归；真实上报、宿主激活、页面质量、效率与 Judge 校准各有独立验收，不能由统一检查器代替。未来只有出现多项目复用与稳定版本需求时，再决定是否提取可发布 SDK。
+
+后续[嵌入开发环境的评估套件设计](evaluation-suite-design.md)提出统一协调器、检查点/Job、Codex/Claude 适配与反馈路由；它是目标架构提案，不改变本页所列当前模块的实施状态。
