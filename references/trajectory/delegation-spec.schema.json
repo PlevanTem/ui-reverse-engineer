@@ -1,0 +1,8 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","title":"PublicDelegationSpec/v1",
+  "type":"object","additionalProperties":false,
+  "required":["schema_version","id","task_name","prompt","prompt_sha256","created_at","purpose","record_origin"],
+  "properties":{
+    "schema_version":{"const":"PublicDelegationSpec/v1"},"id":{"type":"string","format":"uuid"},"task_name":{"type":"string","pattern":"^[a-zA-Z0-9_/-]+$"},"prompt":{"type":"string","minLength":1},"prompt_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},"created_at":{"type":"string","format":"date-time"},"purpose":{"const":"initial_task"},"record_origin":{"const":"prepared_public_spec_not_proof_of_actual_delivery"}
+  }
+}

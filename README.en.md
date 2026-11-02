@@ -244,6 +244,9 @@ This is a test oracle problem: define what counts as a correct result and how th
 - [Loop Criteria](references/restore/criteria.md): local visual assessment and candidate decisions.
 - [Restore interfaces](references/restore/interfaces.md): commands, capture, evidence, and reports.
 - [Restore final E2E](evals/restore.md): final acceptance, scoring, and redlines.
+- [Firewood Langfuse pilot](evals/langfuse-firewood-pilot.md): actual control-event import, source checks, and observation/score readback without inventing missing Agent traces.
+- [Agent trajectories and four-dimensional evaluation](evals/trajectory/README.md): host records for the main agent and subagents, public reasoning summaries, Skill reads and tool feedback; optional automatic Restore CLI binding, batched delivery, external Codex judges and native Langfuse score readback. See the [interface](references/trajectory/interfaces.md) for configuration/recovery and the [Firewood protocol](evals/trajectory/firewood.md) for case acceptance. Hidden reasoning, missing context and uncalibrated results are never invented.
+  - [v2 iteration steps](evals/trajectory/iteration-plan.md): attributed message roles and deduplication, public instruction candidates, pre-delegation task specs, claim/evidence pairing and per-unit findings; new bindings use v2, old captures remain unchanged, and calibration is reported separately from coverage.
 - [Interactive scene reconstruction](references/restore/interactive-scenes.md): persistent interactions, 3D, and motion.
 - [Reconstruction brief template](references/restore-brief-template.md): scope, implementation, and evidence.
 - [DESIGN.md template](references/design-md-template.md): design asset structure.

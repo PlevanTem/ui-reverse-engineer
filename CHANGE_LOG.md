@@ -1,5 +1,35 @@
 # 变更日志
 
+### 2026-11-02 — Restore vNext 整体版本提交与 PR 准备
+
+- **范围：** 汇总本 worktree 的准备规格/资产与状态覆盖、几何/匿名比较/音频证据、reverse-motion 子 Skill、任务级连续性、宿主轨迹与 Langfuse 四维评估、v2 角色/上下文和逐项 finding；同时包含基线快照内的中英文 README 导航与来源说明调整。已在 main 的证据归档功能以同步 main 保留，不作为本版新增能力重复计入。
+- **验证：** 提交前完整 Restore + trajectory 回归 165/165，0 跳过，包含同 Chromium 的 Node/Python 本地浏览器检查；Case Manager 构建与 4/4 通过；26 个 Schema、904 条原始事件、派生视图和两份 v2 Judge 输出通过；Skill 格式与 diff 检查通过。复核最终 Firewood 批次 73 份产物无已配置凭据/受保护 token，原 run/账本/合同/best 未变。本次没有重新生成网站或重新执行语义 Judge。
+- **边界：** Desktop 原生 hook 激活与 Judge 校准仍未验证；历史委派正文和部分运行目标/产物绑定仍有缺口，F/T 保留 unknown，不宣称质量或效率提升。案例产物、凭据与云端私有链接不纳入 Git。
+- **发布：** 目标分支 `codex/restore-vnext-trajectory-evals`；本条写入时正在准备提交与推送，实际远端状态以 Git 和 PR 为准。未授权合并。
+
+### 2026-11-02 — 轨迹 v2 角色、上下文与逐项证据迭代
+
+- **范围：** 按分步方案新增有来源的角色/逻辑事件视图，合并 API/native 双份消息并分离用户、policy 与委派；恢复任务前公开用户要求作为候选上下文，增加公开委派规格的事前持久化与哈希入口。新 worker 绑定默认 v2，旧绑定和旧回执保留。新增输入 inspect、声明/先前结果候选配对、逐约束/逐声明 finding、时间约束与覆盖率；v2 rubric 通过增量文件继承原锚点，单独注册原生评估器和评分命名空间。同步中英文 README、Skill、接口、评测与迭代计划。
+- **事实纠正：** 验证发现发送端 message 参数也受保护，不能按字段长度推断存在可读原文。修复发送参数中 opaque token 的过滤缺口；初步调试批次隔离，不作最终分数/训练候选。历史缺口不猜写，公开任务规格也不冒充精确接收上下文。另将后来的诊断引用与当时的支持证据分开，避免既混用未来证明、又误拒绝合理的 unknown 解释。
+- **真实验证：** 新 Firewood 批次保留 904 个原始事件，形成 902 个逻辑事件；云端确认 2 条当前用户消息、18 条历史上下文、5 条 policy，1,023 个轨迹 observation 与 3 个 F/T Judge observation 字段一致，13 个 v2 source=EVAL 评分一致。runtime 10/10 与四项 Schema 声明现有成对证据并判 supported；F 共 11 条、T 共 22 条逐项检查。整体 F/T 仍为 unknown，总分 null，公开覆盖分别为 1/2、0/3。重复恢复未重评/重发，原 run、账本、合同和 best 绑定未变；没有新的网站生成、视觉 E2E 或效率提升结论。
+- **检查：** 受影响回归 82/82，无跳过；26 个 Schema、904 条真实事件、派生视图、两份 v2 Judge 输出和公开规格 smoke 产物校验通过。最终批次 73 份产物未发现已配置凭据或受保护委派 token；Skill 格式、文档链接/编码和 diff 检查通过，原 run 归档完整、0 hash mismatch，scratch 未创建。全新 v2 worker 采集分支用无远端 I/O fixture 验证，真实云端用已封存历史数据验收，两种证据分开。语义校准、T1/T2 可能的耦合及运行目标/匿名映射绑定仍待后续复核。
+- **状态：** 真实运行与试验产物仅在忽略目录；工作区改动，未提交、未合并、未推送。
+
+### 2026-11-02 — 宿主轨迹采集、自动上报与四维外部 Judge
+
+- **范围：** 新增主/子会话递归绑定与宿主 JSONL 适配器，采集内层命令、观察、文件变更、Skill 读取、公开思考摘要和可见 usage；提供 Schema、脱敏、大文本分块、分批 OTLP、不可变交付回执、评分归属核对和失败尝试记录。Restore CLI 可选启动每 run 限时后台观察器，持久完成/失败状态并恢复已接受批次和成功 Judge；不增加服务，不改变原生 hook 信任。
+- **评估：** 外部 Codex 使用隔离只读输入执行设计独立性、迭代质效、指令遵循、事实性各三个指标；四条 Langfuse 原生开发规则/Code evaluator 自动验证结果并写分。unknown/N/A 与数字分分开，Final E2E 不进过程输入；有界首轮判断、缺失上下文和未校准不产生正式总分。同步入口、SOP、中英文 README、单一接口与评测说明。
+- **真实验证：** Firewood 标准 CLI 自动批次覆盖 6 会话/904 事件，1,007 轨迹 observation 与 5 Judge observation 回读一致，31 个 source=EVAL 评分的 subject/type/value 一致；后台恢复及重复绑定未重发或重评。另保留手工调试批次及模型别名失败，失败预检独立补报 2 observation。核心运行时 full_runtime_reuse；暂定 D=1/4、I=3.33/4，F/T 为 unknown，总分 null。原 run/账本/合同/best 绑定未变，没有新增网站质量或效率提升结论。真实报告与所有案例产物、凭据、自动配置只在忽略目录。
+- **检查：** 受影响的轨迹、CLI 和任务连续性回归 63/63，无跳过；23 个 Schema、1,864 个实际事件、8 个 Judge 输出及自动配置校验通过；171 份产物未发现配置凭据泄漏或内联媒体，相关文档链接/编码和 diff 检查通过；原 run 归档完整、0 hash mismatch，未创建 scratch。Skill 快速校验首次因默认 GBK 解码失败，改为显式 UTF-8 重跑通过；skills-ref 不可用。
+- **边界与状态：** 仅导出公开摘要，不导出隐藏思维/密文/系统正文；原始媒体二进制、历史 Skill 版本与完整模型请求上下文仍有缺口。自动 CLI 路径已实测，不能据此声称 Desktop 原生 hooks 已信任激活。Judge 可靠性与新任务能力提升待人工校准及留出对照。工作区改动，未提交、未合并、未推送。
+
+### 2026-11-01 — Firewood Langfuse 上报与评测试点
+
+- **范围：** 新增本地 Firewood ledger/OTLP 投影、源码字节复用与产物/证据核验、既有独立 E2E 复算、显式发送、Observations v2 / Scores v3 读回核对和回执；同步中英文 README 与评测说明。不安装服务或依赖，不修改原 run、站点、冻结合同或已有评分。
+- **验证：** 12/12 检查通过，无跳过；含模拟 API 的写入→读回→Score 绑定、不确定回执恢复且不重复发送、部分成功和凭据脱敏。真实 Firewood 准备 2 条 Trace / 16 个 Observation / 8 个 Score，核心运行时归类 full_runtime_reuse，14 项 E2E 证据 hash 有效，历史 E2E 复算 95/100、未校准。控制事件不冒充完整宿主/模型/子代理轨迹，不生成四维过程总分。
+- **真实连接：** 用户补充项目配置后，US Cloud 项目鉴权通过；实际 OTLP 上报的 16/16 个 Observation 字段、时间和绑定读回一致，8/8 个 Score 的 subject/type/value 读回一致，delivery=confirmed。评估器在本地执行后通过 Score API 回写；不是平台托管 LLM Judge，也不表示历史完整 Agent 轨迹已恢复。凭据仅存忽略文件，真实回执和链接保留在忽略目录。
+- **状态：** 工作区改动，未提交、未合并、未推送。
+
 ### 2026-11-01 — Restore 任务连续性（网站闭环 + Skill 改进提案）
 
 - **范围：** 新增 `RestoreTask/v1` 持久任务与独立状态投影、累计预算、显式会话绑定、Stop/SessionStart/压缩/Interrupt 项目 hook；按事实恢复构建/测量/验证或过期候选处理。开发 E2E 未完成先修评测，失败后以证据绑定计划创建 continue/refreeze 子 run；计划/父账本/合同哈希及 staged 发布防止重复交接。Skill 只保存 proposed 记录，留出策略不接入。同步入口、中英文 README、SOP、接口与验收协议。

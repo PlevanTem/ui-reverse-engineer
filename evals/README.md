@@ -78,3 +78,9 @@ npm run test:sites
 版本增量与 Firewood 诊断试验使用 [vNext 验收协议](vnext-acceptance.md)。运行 `node --test scripts/restore/tests/*.test.mjs` 覆盖规格、几何、匿名输入、音频和旧记录回放。浏览器压力较大时串行执行；Node/Python 的浏览器版本不同会按设计拒绝比较，不得用关闭环境门禁解决。
 
 任务连续性包含 `task.test.mjs` 的状态、预算、锁竞争、崩溃恢复、会话隔离和真实 CLI/stdin 检查；宿主真实 hook 激活仍按 [vNext 验收协议](vnext-acceptance.md#continuity-activation)单独记录。
+
+可选 [Firewood Langfuse 试点](langfuse-firewood-pilot.md)负责真实控制事件导入、来源/版本代码核验、OTLP 上报与 Score 读回核对；它不等于完整 Agent 轨迹或正式四维过程评分。运行 `node scripts/trajectory/langfuse-pilot.test.mjs` 检查投影与模拟 API 流程；真实服务连接另行验收。
+
+[Agent 四维过程评估](trajectory/README.md)进一步采集宿主可导出的主/子代理事件，通过外部 Codex 执行 D/I/F/T 语义判断，Langfuse 原生开发规则自动生成评分并核对 `source=EVAL` 与 subject。它与前述 ledger 试点分别验收，仍不替代页面最终 E2E。采集 Schema、自动入口和持久恢复见[接口](../references/trajectory/interfaces.md)；案例验收见 [Firewood 协议](trajectory/firewood.md)，真实结果只写忽略目录。
+
+v2 的角色/去重、指令来源、委派加密、证据单元和覆盖率验收见[分步方案](trajectory/iteration-plan.md)。`views.test.mjs`、`evidence.test.mjs`、`delegation.test.mjs` 与扩展的 collector/judge/auto/transport 检查覆盖相应回归；真实云端回读与模型语义校准仍分别验收。

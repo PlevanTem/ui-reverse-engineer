@@ -471,6 +471,10 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 采集文件、评测请求和其他过程产物放在对应案例目录或系统临时目录；Restore 的临时文件和归档约定见 [Restore 接口](references/restore/interfaces.md#证据不可变性与历史报告重放)。
 
+若已授权过程观测，开始 Restore 时按[轨迹接口](references/trajectory/interfaces.md#automatic-restore-integration)确认自动配置、当前宿主会话绑定及文件/网络权限，使用 Restore CLI 初始化；收尾检查持久状态而非只看 worker 已启动。四维过程 Judge 按[评估方案](evals/trajectory/README.md)执行；采集缺口、未校准结果和页面 E2E 分开说明。
+
+启用 v2 观测并委派子任务时，先按[公开委派规格](references/trajectory/interfaces.md#public-task-specifications-before-delegation)持久化准备发出的公开任务说明，用返回的 handoff message 发起子任务并让子代理读取规格。历史加密正文不能事后猜写；公开规格、实际接收上下文及独立性证明分别记录。
+
 - `case_name` 规则：
   1. URL 域名主体（如 `notion`、`linear`、`stripe`）
   2. 图片/视频文件名去扩展名

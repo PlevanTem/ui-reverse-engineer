@@ -245,6 +245,9 @@ obligation 把“页面要还原得像”转化为可观察、可比较、可追
 - [Loop Criteria](references/restore/criteria.md)：局部视觉评估与候选决策。
 - [Restore 接口](references/restore/interfaces.md)：命令、采集、证据与报告。
 - [Restore 最终 E2E](evals/restore.md)：最终验收、评分与红线。
+- [Firewood Langfuse 试点](evals/langfuse-firewood-pilot.md)：真实控制事件导入、来源核验与轨迹/评分读回；缺失 Agent 轨迹不补造。
+- [Agent 轨迹与四维评估](evals/trajectory/README.md)：主 Agent/子代理宿主记录、公开思考摘要、Skill 读取和工具反馈；Restore CLI 可选自动绑定、批量上报、外部 Codex Judge 与 Langfuse 原生评分回读。配置与恢复见[接口](references/trajectory/interfaces.md)，案例验收见 [Firewood 协议](evals/trajectory/firewood.md)。隐藏思维、缺失上下文和未校准指标不补造。
+  - [v2 分步迭代](evals/trajectory/iteration-plan.md)：消息角色与去重、公开指令候选、事前委派规格、声明/证据配对和逐项 finding；新绑定使用 v2，旧批次保留，校准与数据覆盖分别报告。
 - [交互场景还原](references/restore/interactive-scenes.md)：持续交互、3D 与动态场景。
 - [还原 brief 模板](references/restore-brief-template.md)：记录范围、实现与证据。
 - [DESIGN.md 资产模板](references/design-md-template.md)：设计资产结构。

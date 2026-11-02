@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AutomaticTrajectorySettings/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["enabled"],
+  "properties": {
+    "enabled": {"type": "boolean"},
+    "config_path": {"type": "string"},
+    "root_session_id": {"type": "string", "minLength": 1},
+    "session_home": {"type": "string"},
+    "session_directories": {"type": "array", "items": {"type": "string"}},
+    "from": {"type": "string", "format": "date-time"},
+    "process_end": {"type": "string", "format": "date-time"},
+    "capture_id": {"type": "string"},
+    "task_id": {"type": "string"},
+    "watch_ms": {"type": "integer", "minimum": 0, "maximum": 14400000},
+    "poll_ms": {"type": "integer", "minimum": 1000, "maximum": 60000}
+  }
+}
