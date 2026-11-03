@@ -10,6 +10,7 @@ import { checkPreparation, createOptimizationTemplate, optimizationBrief } from 
 import * as task from './task.mjs';
 import {defaultRegistry} from './hooks.mjs';
 import {afterRestoreCommand} from '../trajectory/auto.mjs';
+import {afterCodexCommand} from '../evaluation/codex.mjs';
 
 const [command,directory,...args]=process.argv.slice(2), root=directory&&resolve(directory);
 const usage=`Restore v0.2 (Node 20+)\ninit RUN URL [ordinary|refined|complex]\ninit-vnext RUN URL [ordinary|refined|complex]\nprepare-check RUN\ngeometry-check RUN capture.json [suite.json]\nimplementation-brief RUN [output.md]\ncontinue OLD_RUN NEW_RUN [ordinary|refined|complex]\nrefreeze OLD_RUN NEW_RUN CONTRACT_SOURCE [ordinary|refined|complex]\nprofile RUN TIER\nfreeze RUN\nprogress RUN\ngeneration-input RUN [output.json]\nassessment-input RUN [output.json]\ninitial-record RUN assessment.json (baseline is a compatibility alias)\nnext RUN\nbegin RUN hypothesis.json\nrecord RUN assessment.json verification.json\nverify RUN candidate-assessment.json pairwise-adapter.mjs\nabort RUN reason\nstatic-check-record RUN suite.json\nstop RUN blocked reason blocker.json\nstop RUN failed reason\nmeasure RUN adapter.mjs output.json\neval-input RUN output.json\neval RUN evaluator.mjs [judge.mjs]\neval-record RUN result.json\npost-run-review-record RUN review.json\ntime-exclude RUN interval.json\nusage-record RUN token-usage.json\nreport RUN\napprove RUN approval.json\nAll evidence paths are relative to RUN. Read references/restore/interfaces.md.`;
@@ -68,7 +69,7 @@ try {
       }
     });
     // CLI owns optional telemetry orchestration. Direct core/task imports do not arm workers.
-    if(!command.startsWith('task-')){const target=['continue','refreeze'].includes(command)?resolve(args[0]):root;const telemetry=await afterRestoreCommand(target);if(telemetry&&result&&typeof result==='object'&&!Array.isArray(result))result.trajectory=telemetry;}
+    if(!command.startsWith('task-')){const target=['continue','refreeze'].includes(command)?resolve(args[0]):root;const telemetry=await afterRestoreCommand(target);if(telemetry&&result&&typeof result==='object'&&!Array.isArray(result))result.trajectory=telemetry;try{const evaluation=await afterCodexCommand(target,command);if(evaluation&&result&&typeof result==='object'&&!Array.isArray(result))result.evaluation=evaluation;}catch(error){if(result&&typeof result==='object')result.evaluation={status:'unverified',reason:error.message};}}
     console.log(JSON.stringify(result,null,2));
   }
 } catch(error) {console.error(error.message);process.exitCode=1;}

@@ -20,6 +20,8 @@ Optional preparation gates, durable section specifications, design tokens/region
 
 The [architecture and module reuse guide](docs/architecture.md) maps the four improvements, dependencies and capability boundaries. [Consolidated engineering checks](evals/README.md#统一工程检查) provide a previewable local runner with durable receipts. Existing ESM interfaces can be reused directly; no separate SDK package is published.
 
+The current implementation focuses on the [Codex development evaluation loop](references/evaluation/interfaces.md): explicit run/main-session binding connects Restore CLI and existing lifecycle entry points to checkpoints, durable jobs, existing evaluators, current-target feedback and optional Langfuse delivery. Development E2E and trajectory windows can run before run completion; missing independent adapters or public sources stay unavailable. Native hook activation requires separate acceptance. Claude integration is outside this release.
+
 Optional [task continuity](references/restore/interfaces.md#任务连续性) separates a website objective from an individual run: durable recovery, explicit session binding, shared budgets, and Stop/compaction/interrupt hooks support bounded continuation. Development E2E gaps can inform an evidence-bound linked run; Skill changes remain proposals. Hooks require host trust and a real callback acceptance check. Passing scripts does not prove automatic execution, and files cannot wake a stopped app.
 
 ## Showcase

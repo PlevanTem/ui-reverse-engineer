@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 1000" role="img" aria-labelledby="title"><title id="title">当前 Codex 开发评估闭环</title><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8195af"/></marker></defs><style>text{font-family:'Segoe UI','Microsoft YaHei',sans-serif;fill:#172b43}.title{font-size:29px;font-weight:700}.name{font-size:22px;font-weight:650}.sub{font-size:17px;fill:#506986}.tiny{font-size:15px;fill:#677d98}.box{fill:#eff6ff;stroke:#85abe0;stroke-width:1.7;rx:15}.optional{fill:#f5f1fc;stroke:#b299d6;stroke-width:1.7;rx:15}.edge{fill:none;stroke:#8195af;stroke-width:2;marker-end:url(#a)}.return{fill:none;stroke:#8d6bbf;stroke-width:2;stroke-dasharray:7 5;marker-end:url(#a)}</style><rect width="1360" height="1000" fill="white" rx="20"/><text x="42" y="47" class="title">当前 Codex 闭环</text><text x="42" y="78" class="sub">实现范围：本地开发评估 + 现有 Codex 入口 + Langfuse；本版无 Claude 适配</text>
+<rect x="42" y="126" width="600" height="110" class="box"/>
+<text x="62" y="160" class="name">Codex / Restore CLI</text>
+<text x="62" y="190" class="sub">主会话显式绑定 run · 成功命令匹配 triggers</text>
+<text x="62" y="215" class="sub">CLI → worker → status 反馈已实测</text>
+<rect x="704" y="126" width="600" height="110" class="optional"/>
+<text x="724" y="160" class="name">现有 Task / 生命周期入口</text>
+<text x="724" y="190" class="sub">Stop / SessionStart / 压缩 / Interrupt</text>
+<text x="724" y="215" class="sub">脚本桥接已测；原生 hook 激活仍 unverified</text>
+<path d="M342 236V275H675V301" class="edge"/>
+<path d="M1004 236V275H675" class="edge"/>
+<rect x="42" y="301" width="1262" height="110" class="box"/>
+<text x="62" y="335" class="name">检查点与持久评估任务</text>
+<text x="62" y="365" class="sub">产物 / 冻结合同 / 环境 / 实现 / 公开窗口 → Job</text>
+<text x="62" y="390" class="sub">相同输入去重 · 目标变化失效 · 累计预算 · 暂停恢复 · uncertain 不自动重评</text>
+<path d="M675 411V453H241V486" class="edge"/>
+<path d="M675 453V486" class="edge"/>
+<path d="M675 453H1109V486" class="edge"/>
+<rect x="42" y="486" width="398" height="139" class="box"/>
+<text x="62" y="520" class="name">工程与准备</text>
+<text x="62" y="550" class="sub">复用 check.mjs / checkPreparation</text>
+<text x="62" y="575" class="sub">工程检查通过 ≠ 页面质量通过</text>
+<text x="62" y="600" class="sub">CLI 真实任务已验证</text>
+<rect x="474" y="486" width="398" height="139" class="optional"/>
+<text x="494" y="520" class="name">开发 E2E</text>
+<text x="494" y="550" class="sub">复用 finalRequest / scoreFinal</text>
+<text x="494" y="575" class="sub">不等待 run.complete，不写原 E2E</text>
+<text x="494" y="600" class="sub">需显式独立 adapter；已做合成验证</text>
+<rect x="906" y="486" width="398" height="139" class="optional"/>
+<text x="926" y="520" class="name">检查点轨迹</text>
+<text x="926" y="550" class="sub">公开主/子会话 → v2 → D/I/F/T</text>
+<text x="926" y="575" class="sub">需显式来源与 Judge 预算</text>
+<text x="926" y="600" class="sub">窗口结果不冒充完整任务评分</text>
+<path d="M241 625V668H675V703" class="edge"/>
+<path d="M675 625V703" class="edge"/>
+<path d="M1109 625V668H675" class="edge"/>
+<rect x="42" y="703" width="600" height="110" class="box"/>
+<text x="62" y="737" class="name">当前版本反馈</text>
+<text x="62" y="767" class="sub">status 核验身份、结果摘要与快照</text>
+<text x="62" y="792" class="sub">暂停/过期结果不回注；任务续跑附检查提示</text>
+<rect x="704" y="703" width="600" height="110" class="box"/>
+<text x="724" y="737" class="name">Langfuse 检查点交付</text>
+<text x="724" y="767" class="sub">独立 namespace · observations + API Scores</text>
+<text x="724" y="792" class="sub">写入不明先查询；不重跑 Judge 来补交付</text>
+<path d="M642 757H704" class="edge"/>
+<path d="M42 757H17V110H342V126" class="return"/>
+<rect x="42" y="875" width="1262" height="86" class="optional"/>
+<text x="62" y="909" class="name">保持独立的最终验收</text>
+<text x="62" y="939" class="sub">原五维 E2E / 红线 / 完整轨迹原生 EVAL 路径不变；留出详情不进入开发反馈</text>
+<text x="42" y="984" class="tiny">蓝色：已实现并有实际工程链路证据。紫色：已接入口，但需要相应配置、独立证据或原生激活。</text></svg>

@@ -4,6 +4,8 @@ This file owns collection, storage, transport, and automatic-run semantics. The 
 
 Module ownership, dependencies and local ESM reuse are mapped in the [architecture guide](../../docs/architecture.md). Shared HTTP/OTLP helpers live in `scripts/trajectory/langfuse.mjs`; `langfuse-pilot.mjs` is the Firewood-only adapter with compatibility re-exports. Generic auto/transport code does not depend on that case adapter. There is no separately published SDK or new Langfuse SDK dependency.
 
+The [Codex development coordinator](../evaluation/interfaces.md) can additionally evaluate an explicitly bounded public trajectory window before run completion. Its `restore.checkpoint.*` API scores and role=evaluator observations are distinct from full-task native EVAL scores. The existing completed-run worker, schemas, immutable receipts and semantic definitions remain unchanged.
+
 ## Capture boundary
 
 `collector.mjs` reads exported Codex JSONL records, not reconstructed stories. Starting from an explicit root thread, it follows actual `thread_spawn.parent_thread_id` links recursively. Internal approval/guardian sessions and unrelated threads are excluded. All matching transcript segments are considered; the task window controls included records.

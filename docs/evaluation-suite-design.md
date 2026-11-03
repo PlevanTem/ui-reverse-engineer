@@ -2,6 +2,8 @@
 
 日期：2026-11-02。状态：设计提案，未实现新的协调器、宿主适配器、SDK 或 hook 配置。沿用现有五维 E2E、六类红线、C1/C2/C3 和 D/I/F/T；不增加混合总分。当前实现见[模块架构](architecture.md)，评分定义仍由[最终 E2E](../evals/restore.md)、[Loop Criteria](../references/restore/criteria.md)和[轨迹评测](../evals/trajectory/README.md)分别控制。
 
+**2026-11-03 范围更新：** 用户将本版收敛为当前 Codex 闭环。协调器、检查点/Job、现有评估器适配、CLI/生命周期桥接与检查点 Langfuse 交付已按[当前接口](../references/evaluation/interfaces.md)落地；下文 Claude/跨宿主 SDK 仍仅是历史提案，不属于当前工作范围。原生 hook 激活、真实站点的新增开发 E2E、窗口 Judge 语义校准分别保留实际证据边界。
+
 ## 1. 结论与设计视角
 
 推荐“项目内的本地评估套件 + 宿主适配器 + 既有 Langfuse”。把评估嵌入需求确认、代码变更、可运行候选、任务检查点和 PR 验收。E2E 需要可运行候选与受控浏览器，不需要网站公开部署；发布后的真实流量监测可继续复用同一套结果模型。

@@ -4,6 +4,8 @@
 
 四个优化项的依赖、状态所有权与本地 ESM 复用见[整体架构](../../docs/architecture.md)。本文件继续独立控制运行接口；观测与上报由[轨迹接口](../trajectory/interfaces.md)控制。直接调用 core/task 不会自动执行 CLI 的可选观测编排。
 
+[Codex 开发评估接口](../evaluation/interfaces.md)在已有 CLI/生命周期入口外增加可选协调器。core.finalRequest 复用最终请求的纯投影；finalInput 与 recordE2E 的停止点、冻结与验收写入门禁不变。开发结果只写独立评估目录。
+
 ## 职责边界
 
 | 模块 | 契约 | 决策 |

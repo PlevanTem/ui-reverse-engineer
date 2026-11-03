@@ -110,3 +110,5 @@ python -X utf8 scripts/validate-schemas.py --instance references/trajectory/view
 [Agent 四维过程评估](trajectory/README.md)进一步采集宿主可导出的主/子代理事件，通过外部 Codex 执行 D/I/F/T 语义判断，Langfuse 原生开发规则自动生成评分并核对 `source=EVAL` 与 subject。它与前述 ledger 试点分别验收，仍不替代页面最终 E2E。采集 Schema、自动入口和持久恢复见[接口](../references/trajectory/interfaces.md)；案例验收见 [Firewood 协议](trajectory/firewood.md)，真实结果只写忽略目录。
 
 v2 的角色/去重、指令来源、委派加密、证据单元和覆盖率验收见[分步方案](trajectory/iteration-plan.md)。`views.test.mjs`、`evidence.test.mjs`、`delegation.test.mjs` 与扩展的 collector/judge/auto/transport 检查覆盖相应回归；真实云端回读与模型语义校准仍分别验收。
+
+[Codex 开发评估闭环](../references/evaluation/interfaces.md)复用现有工程、准备、开发 E2E 和轨迹评估器；统一 local/full 自动包含 `scripts/evaluation/*.test.mjs`。新增回归检查重复/并发、过期目标、快照/结果/适配器篡改、预算与暂停、主会话归属、公开轨迹窗口和 run 完成前的真实 grader 调用。合成 E2E 只验接口；当前没有新的 Firewood 视觉或全任务过程评分结果。

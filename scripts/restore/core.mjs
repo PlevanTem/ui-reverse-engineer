@@ -617,7 +617,11 @@ export async function finalInput(root,run) {
   if(!run.best) return {schema_version:'FinalEvalRequest/v0.2',status:'incomplete',reason:'No runnable artifact'};
   assert(await treeHash(local(root,'restored'))===run.best,'Final artifact changed');
   const effectiveDeadline=Date.parse(run.started_at)+TIERS[run.tier].minutes*60000+(run.time_exclusions??[]).reduce((sum,x)=>sum+Date.parse(x.end_at)-Date.parse(x.start_at),0);
-  return {schema_version:'FinalEvalRequest/v0.2',case_id:c.case_source?.case_id??run.run_id,binding:binding(run,c,run.best),reference_evidence:c.reference_evidence,states:c.states,resources:c.resources??[],interactive_scene:c.interactive_scene??null,obligations:c.obligations.map(({id,state_id,region_id,expected,reference_evidence})=>({id,state_id,region_id,expected,reference_evidence})),redline_profile:c.redline_profile??null,start_command:c.start_command,project_path:'restored/',...(c.optimization?{optimization:c.optimization}:{}),deadline:new Date(effectiveDeadline).toISOString()};
+  return finalRequest(run,c,run.best,new Date(effectiveDeadline).toISOString());
+}
+// Shared projection only; finalInput/recordE2E retain final-stage authorization.
+export function finalRequest(run,c,artifact,deadline,project_path='restored/') {
+  return {schema_version:'FinalEvalRequest/v0.2',case_id:c.case_source?.case_id??run.run_id,binding:binding(run,c,artifact),reference_evidence:c.reference_evidence,states:c.states,resources:c.resources??[],interactive_scene:c.interactive_scene??null,obligations:c.obligations.map(({id,state_id,region_id,expected,reference_evidence})=>({id,state_id,region_id,expected,reference_evidence})),redline_profile:c.redline_profile??null,start_command:c.start_command,project_path,...(c.optimization?{optimization:c.optimization}:{}),deadline};
 }
 export async function recordE2E(root,run,result) {
   assert(run.phase==='final'&&!run.e2e,'Final E2E can be recorded once after loop stop');

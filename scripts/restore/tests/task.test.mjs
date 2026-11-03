@@ -225,6 +225,8 @@ test('configured command resolves git root from subdirectory and drives a bound 
  const {root,run,base}=await fixture(t),task=await api();await task.initTask(root,run,policy,'Restore');
  const repo=join(base,'repo');await mkdir(join(repo,'scripts'),{recursive:true});await mkdir(join(repo,'evals'),{recursive:true});
  await cp(new URL('../',import.meta.url),join(repo,'scripts','restore'),{recursive:true});await cp(new URL('../../../evals/pipeline/',import.meta.url),join(repo,'evals','pipeline'),{recursive:true});
+ // The hook's optional evaluator shares the installed Skill modules; package its real dependencies.
+ for(const name of ['evaluation','trajectory'])await cp(new URL(`../../${name}/`,import.meta.url),join(repo,'scripts',name),{recursive:true});await cp(new URL('../../check.mjs',import.meta.url),join(repo,'scripts','check.mjs'));
  await execute('git',['init','--quiet',repo]);const registry=join(repo,'reverse_output','restore-task-bindings');await task.armTask(root,'owner',registry);
  const config=await core.readJSON(new URL('../../../.codex/hooks.json',import.meta.url)),handler=config.hooks.Stop[0].hooks[0];
  const {spawn}=await import('node:child_process');

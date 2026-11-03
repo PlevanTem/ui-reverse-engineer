@@ -11,6 +11,10 @@
 | 持久迭代闭环 | [task.mjs](../scripts/restore/task.mjs) 拥有任务状态/预算/交接；[hooks.mjs](../scripts/restore/hooks.mjs) 是宿主适配器；CLI 的 task-* 为显式入口；项目 [hooks 配置](../.codex/hooks.json) 连接宿主事件 | [task Schema](../references/restore/task.schema.json)、[任务接口](../references/restore/interfaces.md#任务连续性)、[激活验收](../evals/vnext-acceptance.md#continuity-activation) | 原 run.complete 语义不变；宿主激活仍 unverified；Skill 只输出提案 |
 | 轨迹可观测与过程评估 | CLI 在 run 命令后调用 [auto.mjs](../scripts/trajectory/auto.mjs)；collector → views → evidence → judge → transport；[langfuse.mjs](../scripts/trajectory/langfuse.mjs) 提供共享协议适配器 | [轨迹接口](../references/trajectory/interfaces.md)、[过程评测](../evals/trajectory/README.md)、[rubric v2 增量](../evals/trajectory/rubrics-v2.json) | 需显式授权/配置/会话绑定；隐藏内容不可恢复；语义校准仍 unmeasured |
 
+2026-11-03 当前实施收敛为 [Codex 开发评估闭环](../references/evaluation/interfaces.md)：`scripts/evaluation/` 提供 coordinator/checkpoint/jobs、四种既有 runner 适配、Codex CLI/生命周期桥接和 Langfuse 检查点交付。开发 E2E 与有界轨迹窗口不再必须等 run.complete；完整任务后评估仍沿用原 worker。CLI 信号→后台任务→status 反馈已实测；原生 hook 激活仍 unverified。没有 Claude 适配或独立 SDK 包。
+
+![当前 Codex 闭环与验证边界](diagrams/codex-evaluation-loop.svg)
+
 ## 依赖与数据流
 
 ```mermaid
@@ -76,4 +80,4 @@ import { sendTraces } from './scripts/trajectory/transport.mjs';
 
 统一工程检查见 [evals/README](../evals/README.md#统一工程检查)。修改模块时沿其依赖更新调用方、唯一契约和相应回归；真实上报、宿主激活、页面质量、效率与 Judge 校准各有独立验收，不能由统一检查器代替。未来只有出现多项目复用与稳定版本需求时，再决定是否提取可发布 SDK。
 
-后续[嵌入开发环境的评估套件设计](evaluation-suite-design.md)提出统一协调器、检查点/Job、Codex/Claude 适配与反馈路由；它是目标架构提案，不改变本页所列当前模块的实施状态。
+[原套件设计](evaluation-suite-design.md)保留完整目标与历史对照；当前实现与范围以 [Codex 闭环接口](../references/evaluation/interfaces.md)为准，跨宿主部分不进入本版。

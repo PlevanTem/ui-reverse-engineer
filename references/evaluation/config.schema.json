@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:restore:codex-evaluation-config:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "suites", "budget"],
+  "properties": {
+    "schema_version": {"const": "CodexEvaluationConfig/v1"},
+    "langfuse_config": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object", "additionalProperties": false, "required": ["from", "session_directories"],
+      "properties": {"from": {"type": "string", "format": "date-time"}, "session_directories": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "delegation_root": {"type": "string", "minLength": 1}}
+    },
+    "budget": {
+      "type": "object", "additionalProperties": false, "required": ["max_jobs", "max_wall_ms", "max_job_ms", "max_judge_calls"],
+      "properties": {"max_jobs": {"type": "integer", "minimum": 1}, "max_wall_ms": {"type": "integer", "minimum": 1}, "max_job_ms": {"type": "integer", "minimum": 1}, "max_judge_calls": {"type": "integer", "minimum": 1}}
+    },
+    "suites": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "runner", "triggers"],
+        "properties": {"id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"}, "runner": {"enum": ["engineering", "preparation", "development_e2e", "trajectory"]}, "triggers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "feedback": {"const": "developer"}, "profile": {"enum": ["local", "full"]}, "adapter": {"type": "string", "minLength": 1}, "dimensions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["D", "I", "F", "T"]}}}
+      }
+    }
+  }
+}
