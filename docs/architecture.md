@@ -1,6 +1,6 @@
 ---
 doc_id: RESTORE-ARCHITECTURE
-doc_version: "1.0.0"
+doc_version: "1.1.0"
 doc_set: "restore-vnext-codex-2026.11.03"
 status: current-with-pending-acceptance
 created_at: "2026-11-02"
@@ -9,7 +9,7 @@ evidence_as_of: "2026-11-03"
 timezone: Asia/Shanghai
 owner: project-maintainer
 implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
-review_baseline: d410f11f18a7fbcf253db1a912d717c6d327d08a
+review_baseline: b107ffdea15f503b9d341f54c7d5e9c3fe959475
 iteration_items: [IT-01, IT-02, IT-03, IT-04, IT-05, IT-06]
 ---
 
@@ -33,6 +33,18 @@ iteration_items: [IT-01, IT-02, IT-03, IT-04, IT-05, IT-06]
 ![当前 Codex 闭环与验证边界](diagrams/codex-evaluation-loop.svg)
 
 ## 依赖与数据流
+
+### OpenBoard 总体实施流程快照
+
+来源看板“UI 逆向还原｜总体优化数据流”，采集日期 2026-11-03（Asia/Shanghai），图形快照版本 1.0.0。同页两张图共 80 个图形、90 条连接绑定；在线图形未修改。该设计视图区分取证、持久规格、行为/呈现/声音制作、验证和离线 Skill 迭代，配色不表示能力已激活；实际实现/验收状态以前述 Codex 闭环图和模块表为准。
+
+![OpenBoard 还原实施流程快照](diagrams/ui-restore-workflow-board-20261103.png)
+
+[完整 SVG](diagrams/ui-restore-workflow-board-20261103.svg) · [同页系统数据流 SVG](diagrams/ui-restore-dataflow-board-20261103.svg) · [图形源数据](diagrams/ui-restore-board-20261103.snapshot.json) · [版本/来源/哈希清单](diagrams/ui-restore-board-20261103.manifest.json)。系统数据流预览亦嵌入[评测方案](evaluation-plan.md)。
+
+SVG 导出器将富文本容器的隐藏样式带入文件，归档时仅将 47 处 visibility:hidden 归一化为 visible，文字与几何结构不变；PNG 为兼容预览。源 JSON 是过滤用户/会话记录后的 TLStoreSnapshot（schema + store），可供同版本 SDK 的 editor.loadSnapshot 使用，不是 .tldr 文件；未向在线板回导测试。原始导出和在线访问地址保留本地忽略回执。离线 Skill 迭代仍须审阅，图中的“后续新任务”不表示自动改写 Skill 或回送本轮留出详情。
+
+### 当前代码依赖
 
 ```mermaid
 flowchart TD
@@ -124,3 +136,4 @@ import { sendTraces } from './scripts/trajectory/transport.mjs';
 | 时间 | 文档版本 | 迭代项 | 变化 |
 | --- | --- | --- | --- |
 | 2026-11-03 | 1.0.0 | IT-01～IT-06 | 首次引入文档版本；补齐 Codex 调度/反馈/交付数据流、状态所有权和待验收边界 |
+| 2026-11-03 | 1.1.0 | IT-06 | 加入 OpenBoard 实施流程与数据映射的静态归档、来源、显示归一化及源文件说明 |

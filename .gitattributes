@@ -1,0 +1,4 @@
+# Keep raw-byte hashes of archived board exports stable across checkouts.
+docs/diagrams/ui-restore-*-board-*.svg text eol=lf
+docs/diagrams/ui-restore-board-*.json text eol=lf
+docs/diagrams/ui-restore-*-board-*.png binary

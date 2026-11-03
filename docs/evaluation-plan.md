@@ -1,6 +1,6 @@
 ---
 doc_id: RESTORE-EVALUATION-PLAN
-doc_version: "1.0.0"
+doc_version: "1.1.0"
 doc_set: "restore-vnext-codex-2026.11.03"
 status: current-with-pending-acceptance
 created_at: "2026-11-03"
@@ -9,7 +9,7 @@ evidence_as_of: "2026-11-03"
 timezone: Asia/Shanghai
 owner: project-maintainer
 implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
-review_baseline: d410f11f18a7fbcf253db1a912d717c6d327d08a
+review_baseline: b107ffdea15f503b9d341f54c7d5e9c3fe959475
 iteration_items: [IT-03, IT-04, IT-05, IT-06]
 ---
 
@@ -43,6 +43,14 @@ iteration_items: [IT-03, IT-04, IT-05, IT-06]
 实际字段由 [config Schema](../references/evaluation/config.schema.json)、[records Schema](../references/evaluation/records.schema.json)与[接口](../references/evaluation/interfaces.md)控制。网站任务、开发检查点、完整过程评分和独立验收不是同一个评测单元。
 
 检查点结果只描述当前开发窗口；完整任务轨迹仍走既有结束后评估。轻量信号唤起 worker，status 核对目标后提供反馈，现有 Task 控制有界续跑。显式 CLI 已实测，不能据此推导 Desktop 已接管全部生命周期。
+
+## OpenBoard 系统数据流快照
+
+下图来自 2026-11-03 的同页系统映射，记录评测数据面、生成白名单、冻结规格、产物、observations 与离线迭代的关系。它是设计视图，不替代上文的当前调度/状态契约；取证、来源、可编辑快照、显示归一化与版本说明统一见[架构中的看板归档](architecture.md)。
+
+![OpenBoard 系统数据流映射快照](diagrams/ui-restore-dataflow-board-20261103.png)
+
+[完整 SVG](diagrams/ui-restore-dataflow-board-20261103.svg) · [归档元信息与文件哈希](diagrams/ui-restore-board-20261103.manifest.json)。图中独立对照、整站 E2E 与离线 Skill 迭代是不同环节；图本身不是这些环节已执行、Judge 已校准或提效已测定的证据。
 
 ## 四维 Judge 的证据视角
 
@@ -108,3 +116,4 @@ iteration_items: [IT-03, IT-04, IT-05, IT-06]
 | 时间 | 文档版本 | 迭代项 | 变化 |
 | --- | --- | --- | --- |
 | 2026-11-03 | 1.0.0 | IT-03～IT-06 | 固化 Codex-only 评测分层、证据/交付关系、验证快照和后续验收；评分口径不变 |
+| 2026-11-03 | 1.1.0 | IT-06 | 嵌入 OpenBoard 数据流映射并引用同一归档清单；不改变评分或验收状态 |

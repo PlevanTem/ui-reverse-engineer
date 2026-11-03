@@ -21,6 +21,8 @@
 
 [整体架构与模块复用](docs/architecture.md)说明四个优化项的接入、依赖与能力边界；[统一工程检查](evals/README.md#统一工程检查)提供可预览、可持久复核的本地校验入口。本地 ESM 接口可直接复用，目前没有独立发布的 SDK。
 
+[文档审阅入口](docs/README.md)同时保存 OpenBoard 实施流程与系统数据流图的 PNG/SVG、可编辑源数据和版本/哈希清单，便于离线沟通与后续迭代。
+
 当前优先落地 [Codex 开发评估闭环](references/evaluation/interfaces.md)：显式绑定 run/主会话后，Restore CLI 与现有生命周期入口连接检查点、持久 Job、现有评估器、当前版本反馈和可选 Langfuse 交付。开发 E2E 与轨迹窗口可在 run 完成前评估；独立适配器/公开来源缺失时如实保留 unavailable，原生 hook 激活仍需单独验收。本版不包含 Claude 适配。
 
 可选[任务连续性](references/restore/interfaces.md#任务连续性)将网站目标与单次 run 分开：持久断点、会话绑定、累计预算和 Stop/压缩/中断 hook 支持有界续跑；开发 E2E 的缺口可形成下一 run 的证据计划。Skill 改进只输出提案。项目 hook 须经宿主信任和真实回调验收；脚本通过不等于已自动运行，文件不会唤醒已停止的应用。

@@ -1,6 +1,6 @@
 ---
 doc_id: RESTORE-DOCS
-doc_version: "1.0.0"
+doc_version: "1.1.0"
 doc_set: "restore-vnext-codex-2026.11.03"
 status: current
 created_at: "2026-11-03"
@@ -8,7 +8,7 @@ updated_at: "2026-11-03"
 timezone: Asia/Shanghai
 owner: project-maintainer
 implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
-review_baseline: d410f11f18a7fbcf253db1a912d717c6d327d08a
+review_baseline: b107ffdea15f503b9d341f54c7d5e9c3fe959475
 ---
 
 # 项目架构与评测审阅入口
@@ -20,6 +20,7 @@ review_baseline: d410f11f18a7fbcf253db1a912d717c6d327d08a
 | 阅读目的 | 文档 | 职责 |
 | --- | --- | --- |
 | 了解当前系统 | [架构说明](architecture.md)与[当前全览图](diagrams/codex-evaluation-loop.svg) | 模块、数据流、状态所有权、实际边界 |
+| 审阅 OpenBoard 原图 | [实施流程 PNG](diagrams/ui-restore-workflow-board-20261103.png)、[数据流 PNG](diagrams/ui-restore-dataflow-board-20261103.png)、[快照清单](diagrams/ui-restore-board-20261103.manifest.json)、[可编辑源数据](diagrams/ui-restore-board-20261103.snapshot.json) | 2026-11-03 看板设计快照；SVG 原图在架构/评测正文链接，非激活或质量证据 |
 | 审阅评测与后续实验 | [当前评测方案](evaluation-plan.md) | 评测分层、证据关系、验证快照、验收路线 |
 | 启用与调用闭环 | [Codex 评估接口](../references/evaluation/interfaces.md) | 唯一执行接口；字段以其链接的 Schema 为准 |
 | 查看页面评分定义 | [最终 E2E](../evals/restore.md)、[Loop Criteria](../references/restore/criteria.md) | 分别控制最终评分、局部判断 |
@@ -56,3 +57,4 @@ implementation_ref 指说明所依据的代码提交，review_baseline 指本次
 | 时间 | 文档版本 | 迭代项 | 变化 |
 | --- | --- | --- | --- |
 | 2026-11-03 | 1.0.0 | IT-06，关联 IT-01～IT-05 | 建立审阅入口、元信息与版本；按当前 Codex 范围整理架构及评测 |
+| 2026-11-03 | 1.1.0 | IT-06 | 保存 OpenBoard 双图、可编辑图形快照与哈希清单，接入架构/评测正文 |
