@@ -8,7 +8,7 @@
 
 **把网页、截图和录屏，转成可执行需求、可复用设计规范与可运行的还原项目。**
 
-[项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [快速上手](#如何开始) · [案例库](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [执行与评测](evals/README.md) · [English](README.en.md)
+[项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [快速上手](#如何开始) · [案例库](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [架构与评测方案](docs/README.md) · [执行与评测](evals/README.md) · [English](README.en.md)
 
 还原结果按案例与输入策略审阅；源码辅助展示不等于 clean-room 基准或完整 E2E 通过。
 

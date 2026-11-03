@@ -6,6 +6,8 @@ Showcase 与测试样例库中的案例仅供学习、研究与技术评测，�
 
 ## Single source of control
 
+项目沟通与审阅先读[文档索引](../docs/README.md)、[当前架构](../docs/architecture.md)和[当前评测方案](../docs/evaluation-plan.md)。其中时间/文档版本、迭代项、实测快照和后续路线便于追踪，不替代下表控制文件。
+
 | 控制面 | 唯一来源 | 不负责 |
 | --- | --- | --- |
 | Restore 最终评测 | [`restore.md`](restore.md) | 运行命令、Loop 修复策略 |

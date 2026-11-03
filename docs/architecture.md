@@ -1,4 +1,21 @@
+---
+doc_id: RESTORE-ARCHITECTURE
+doc_version: "1.0.0"
+doc_set: "restore-vnext-codex-2026.11.03"
+status: current-with-pending-acceptance
+created_at: "2026-11-02"
+updated_at: "2026-11-03"
+evidence_as_of: "2026-11-03"
+timezone: Asia/Shanghai
+owner: project-maintainer
+implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
+review_baseline: d410f11f18a7fbcf253db1a912d717c6d327d08a
+iteration_items: [IT-01, IT-02, IT-03, IT-04, IT-05, IT-06]
+---
+
 # Restore vNext 模块与架构
+
+[文档索引与版本约定](README.md) · [当前评测方案](evaluation-plan.md)。本页描述当前架构；验证状态为 evidence_as_of 的快照，不表示文档更新时重新执行验收。
 
 本项目仍是个人维护的离线 Skill：冻结文件提供数据契约，本地 ESM 模块提供可复用函数，CLI 负责显式编排。四个优化项均有实现入口，但自动化激活、工程正确性和网站质量分别验收。架构不依赖本机 Firewood 路径、常驻服务或新 SDK 包。
 
@@ -26,9 +43,18 @@ flowchart TD
     B --> V[几何与匿名比较]
     V --> R
     R --> E[独立 Final E2E]
-    H[宿主 hook 或 task CLI] --> T[task 状态与预算]
+    H[宿主 hook] --> T[task 状态与预算]
+    TC[task CLI] --> T
     E --> T
     T --> R
+    C --> K[可选 Codex 评估信号]
+    H --> K
+    K --> D[Checkpoint / 持久 Job / 累计预算]
+    D --> Q[工程 / 准备 / 开发 E2E / 轨迹窗口]
+    Q --> U[当前目标 status 反馈]
+    U --> S
+    Q --> Y[检查点交付与 API Scores]
+    Y --> L
     C --> A[可选 auto worker]
     J[公开宿主记录] --> O[collector 与 views]
     A --> O
@@ -47,6 +73,7 @@ flowchart TD
 | --- | --- | --- |
 | core / optimization | run、冻结合同、候选、账本、资源完整性与生成白名单 | 不拥有模型隐藏上下文，不自动配置遥测 |
 | task / hooks | task、session binding、累计预算、恢复决策与 Skill 提案 | 不改变 Final E2E 规则，不自动安装或信任宿主 hook |
+| evaluation / codex / runners / delivery | 检查点与 Job、主会话/run 绑定、评估层额度、现有 runner 编排、当前目标反馈、独立检查点交付 | 不拥有网站验收状态，不复制 rubric，不唤醒停止应用，不把检查点分当完整过程分 |
 | collector / views / delegation | 规范化公开事件、有来源的逻辑视图、事前公开委派规格 | 不解密，不证明收到的完整模型上下文 |
 | evidence / judge | 按维输入、预算/缺口、外部判断与结构/时间校验 | 不用规则匹配代替语义评分，不宣告自身已校准 |
 | transport / auto | 不可变交付、查询恢复、worker 锁与持久状态 | 不重生成网站，不把 worker 启动或 HTTP 成功当成验收 |
@@ -81,3 +108,19 @@ import { sendTraces } from './scripts/trajectory/transport.mjs';
 统一工程检查见 [evals/README](../evals/README.md#统一工程检查)。修改模块时沿其依赖更新调用方、唯一契约和相应回归；真实上报、宿主激活、页面质量、效率与 Judge 校准各有独立验收，不能由统一检查器代替。未来只有出现多项目复用与稳定版本需求时，再决定是否提取可发布 SDK。
 
 [原套件设计](evaluation-suite-design.md)保留完整目标与历史对照；当前实现与范围以 [Codex 闭环接口](../references/evaluation/interfaces.md)为准，跨宿主部分不进入本版。
+
+## 当前取舍与后续验证
+
+| 取舍 | 原因 | 重新审议条件 |
+| --- | --- | --- |
+| 当前只接 Codex、本地文件/ESM 与限时 worker | 适配既有 Skill，复用成熟评分/传输，降低改造成本 | 先证明当前闭环与收益，再依据实际复用需求扩展 |
+| Task、评估 Job、完整过程评分分别拥有状态 | 网站完成、评估执行结束与质量通过不同 | 不因方便显示而合并状态/评分 |
+| 开发反馈与独立最终验收分离 | 防止开发样例、已见结果冒充留出效果 | 具体实验按既有验收协议审阅 |
+
+原生 hook、真实新增开发 E2E、Judge 校准及项目级提效仍需对应验收，顺序与资源见[当前评测方案](evaluation-plan.md#后续迭代与验收顺序)。设计视角沿用[历史提案中的端口/适配器与持续反馈取舍](evaluation-suite-design.md#1-结论与设计视角)，不因此扩展本版宿主边界。
+
+## 文档迭代记录
+
+| 时间 | 文档版本 | 迭代项 | 变化 |
+| --- | --- | --- | --- |
+| 2026-11-03 | 1.0.0 | IT-01～IT-06 | 首次引入文档版本；补齐 Codex 调度/反馈/交付数据流、状态所有权和待验收边界 |

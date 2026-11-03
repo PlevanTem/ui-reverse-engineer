@@ -1,4 +1,20 @@
+---
+doc_id: CODEX-EVALUATION-INTERFACE
+doc_version: "1.0.0"
+doc_set: "restore-vnext-codex-2026.11.03"
+status: current
+created_at: "2026-11-03"
+updated_at: "2026-11-03"
+timezone: Asia/Shanghai
+owner: project-maintainer
+implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
+review_baseline: d410f11f18a7fbcf253db1a912d717c6d327d08a
+iteration_items: [IT-05, IT-06]
+---
+
 # Codex 开发评估闭环 v1
+
+[项目审阅索引](../../docs/README.md) · [评测方案](../../docs/evaluation-plan.md)。doc_version 是文档版本，运行 Schema 的 v1 标识不变。
 
 当前范围只覆盖 Codex；没有 Claude 适配、独立发布 SDK、平台服务或留出结果自动反馈。原 [Restore 接口](../restore/interfaces.md)、[最终 E2E](../../evals/restore.md)、[轨迹接口](../trajectory/interfaces.md)继续拥有各自语义。
 

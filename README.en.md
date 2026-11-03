@@ -8,7 +8,7 @@
 
 **Turn websites, screenshots and recordings into actionable requirements, reusable design rules and runnable reconstructions.**
 
-[Website](https://plevantem.github.io/ui-reverse-engineer/) · [Get started](#how-to-start) · [Cases](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [Execution & evaluation](evals/README.md) · [中文](README.md)
+[Website](https://plevantem.github.io/ui-reverse-engineer/) · [Get started](#how-to-start) · [Cases](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [Architecture & evaluation plan](docs/README.md) · [Execution & evaluation](evals/README.md) · [中文](README.md)
 
 Review results per case and input policy; a source-assisted showcase is not a clean-room benchmark or proof of full E2E success.
 

@@ -1,4 +1,22 @@
-# 嵌入开发环境的评估套件：系统设计提案
+---
+doc_id: RESTORE-EVALUATION-DESIGN-HISTORY
+doc_version: "1.0.0"
+doc_set: "restore-vnext-codex-2026.11.03"
+status: historical-proposal
+created_at: "2026-11-02"
+updated_at: "2026-11-03"
+timezone: Asia/Shanghai
+owner: project-maintainer
+implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
+review_baseline: d410f11f18a7fbcf253db1a912d717c6d327d08a
+superseded_by: evaluation-plan.md
+proposal_source_ref: d0c2fea3ef1901e6f273b5028d8c64f5fa26d765
+iteration_items: [IT-06]
+---
+
+# 嵌入开发环境的评估套件：历史系统设计提案
+
+**阅读边界：下文保留 2026-11-02 的设计背景；其中“当前”“未实现”“拟新增”均指原提案时点。最新能力以[当前架构](architecture.md)、[当前评测方案](evaluation-plan.md)及[Codex 接口](../references/evaluation/interfaces.md)为准。本文不是当前功能清单。**
 
 日期：2026-11-02。状态：设计提案，未实现新的协调器、宿主适配器、SDK 或 hook 配置。沿用现有五维 E2E、六类红线、C1/C2/C3 和 D/I/F/T；不增加混合总分。当前实现见[模块架构](architecture.md)，评分定义仍由[最终 E2E](../evals/restore.md)、[Loop Criteria](../references/restore/criteria.md)和[轨迹评测](../evals/trajectory/README.md)分别控制。
 
