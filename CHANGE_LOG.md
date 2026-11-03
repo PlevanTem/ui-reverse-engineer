@@ -7,7 +7,7 @@
 - **兼容与文档：** 抽取纯 finalRequest 投影，原 finalInput/recordE2E 最终阶段守卫保持不变。新增 config/records Schema、配置示例、唯一接口与当前架构图；同步中英文 README、Restore/trajectory 接口、主流程、工程检查与历史设计范围。开发反馈和独立最终验收保持分离。
 - **验证：** 最终 full 回归 186/186、0 跳过，Case Manager 构建/打包及 4/4 通过；28 个 Schema 和 28 个真实配置/检查点/Job/结果实例通过离线校验；Skill 格式通过，9 份文档 215 个本地链接目标存在，未验证锚点/远程 URL。架构图桌面/390px 无整页溢出或脚本错误。合成开发 E2E 使用真实 grader 验证完成前评估与原 run 隔离，不作为 Firewood 视觉证据。
 - **Firewood 实链：** 原历史 run 只读。初始真实 Restore CLI → 后台 worker → 当前反馈已跑通；开发中的 8 项版本验证已保留并暂停，429 后通过查询恢复，未重评 Judge。最终实现另用未替换自动绑定的显式验收目录执行 2 项 Job：工程 passed、准备 limited，2 observation/2 个 source=API 检查点状态评分回读一致；同目标再次触发新增执行 0。原 run/账本/合同/best 不变，归档扫描完整且 0 hash mismatch，scratch 未创建。
-- **边界与发布准备：** 本轮未重新生成网站或调用语义 Judge，不宣称还原度/效率提升；原生 hook 仍 unverified，真实新增开发 E2E 需独立适配器，Judge 校准仍 unmeasured。真实产物、回执与凭据保留忽略目录。实现和验证准备提交原分支及更新 PR #8，推送结果另记；未合并或部署。
+- **边界与发布：** 本轮未重新生成网站或调用语义 Judge，不宣称还原度/效率提升；原生 hook 仍 unverified，真实新增开发 E2E 需独立适配器，Judge 校准仍 unmeasured。真实产物、回执与凭据保留忽略目录。实现提交 `d6e3b03` 已推送 `codex/restore-vnext-trajectory-evals`，PR [#8](https://github.com/PlevanTem/ui-reverse-engineer/pull/8) 元数据核对 head 一致，标题、Codex 实现范围及最新验证已更新。本条发布记录另作文档提交；未合并或部署。
 
 ### 2026-11-02 — 开发内嵌评估套件系统设计
 
