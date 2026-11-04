@@ -8,42 +8,86 @@
 
 **把网页、截图和录屏，转成可执行需求、可复用设计规范与可运行的还原项目。**
 
-[项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [快速上手](#如何开始) · [案例库](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [执行与评测](evals/README.md) · [English](README.en.md)
+[项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [快速上手](#如何开始) · [案例库](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [架构与评测方案](docs/README.md) · [执行与评测](evals/README.md) · [English](README.en.md)
 
 还原结果按案例与输入策略审阅；源码辅助展示不等于 clean-room 基准或完整 E2E 通过。
 
-## 什么时候用
 
-- **手上有参考页面，想尽可能还原**：`--restore` 逆向页面资源、视觉细节、动效和交互，交付可运行项目。
-- **想知道一个界面背后的产品需求是什么**：`--query` 反推用户需求、核心功能和风格偏好，输出 JSON。
-- **想把品牌风格沉淀下来复用**：`--design-md` 提取设计 token，生成 `DESIGN.md` 和索引。
-- **已有页面要换视觉风格，但保留内容和功能**：`--transfer` 将参考风格迁移到本地 HTML。
-- **既要分析需求又要生成页面**：默认流程是 `--query --restore`。
+## Restore vNext（兼容增量）
 
-## 你会得到什么
+新增可选准备门禁、持久化分块规格、设计 token/区域框、状态与动效/声音 cue、灵活资产布局、匿名视觉比较及音频证据播放器。旧合同保持可读，运行端不新增依赖或服务。几何诊断与局部盲比不等于完整 E2E。
 
-| 模式 | 适合的问题 | 主要产物 |
-| --- | --- | --- |
-| `--query` | 这个成品界面可能对应什么需求？ | `query_instruction.json` |
-| `--design-md` | 如何把这套视觉规则复用到其他页面？ | `design_assets/{brand}/DESIGN.md`、`design_assets/index.csv` |
-| `--transfer` | 如何在保留原页面内容与交互的同时换风格？ | `{target}_transferred.html` |
-| `--restore` | 如何复现参考页面的资源、视觉和交互？ | `design_brief.md` 与可运行的 `restored/` 项目 |
+[Interfaces](references/restore/interfaces.md#优化规格与准备检查) · [Asset layout](references/restore/asset-layout.md) · [Upgrade scope](docs/restore-vnext-upgrade.md) · [Acceptance](evals/vnext-acceptance.md)
 
-所有案例产物默认写入 `reverse_output/{case_name}_{YYYYMMDD}/`；设计资产写入 `design_assets/`。细节见 [`SKILL.md`](SKILL.md)。 Restore 的[收尾检查](references/restore.md#完成检查)及[归档与临时文件只读清单](references/restore/interfaces.md#证据不可变性与历史报告重放)可用于核对过程产物。
+[整体架构与模块复用](docs/architecture.md)说明四个优化项的接入、依赖与能力边界；[统一工程检查](evals/README.md#统一工程检查)提供可预览、可持久复核的本地校验入口。本地 ESM 接口可直接复用，目前没有独立发布的 SDK。
 
-多个 Restore run 需要统一复盘时，使用 `node scripts/restore/challenge-report.mjs OUTPUT_DIR RUN_DIR...` 生成 `RestoreChallengeReport/v2` 的 `challenge-report.json` 与 `challenge-report.html`。聚合器从各 run 的事实源确定性投影 provenance DAG，保留 run、版本、候选 artifact、assessment、verification、diff、static-check 和 Final E2E 的节点、哈希与边；大证据仍留在原 run，通过相对链接访问，以控制生成成本和 Agent 上下文。Final E2E、Loop Assessment 与绑定 `run.best` 的 StaticCheckSuite 分开呈现，只在相同合同、Rubric 和 scorer 组内允许横向比较；缺失结果带结构化原因与可恢复性，不按零分处理。
+[文档审阅入口](docs/README.md)同时保存 OpenBoard 实施流程与系统数据流图的 PNG/SVG、可编辑源数据和版本/哈希清单，便于离线沟通与后续迭代。
 
-单次报告模板支持窄屏校验值换行；报告展示检查见 [`evals/README.md`](evals/README.md#检查)，不等同于游戏或页面的 E2E 通过。
+当前优先落地 [Codex 开发评估闭环](references/evaluation/interfaces.md)：显式绑定 run/主会话后，Restore CLI 与现有生命周期入口连接检查点、持久 Job、现有评估器、当前版本反馈和可选 Langfuse 交付。开发 E2E 与轨迹窗口可在 run 完成前评估；独立适配器/公开来源缺失时如实保留 unavailable，原生 hook 激活仍需单独验收。本版不包含 Claude 适配。
+
+可选[任务连续性](references/restore/interfaces.md#任务连续性)将网站目标与单次 run 分开：持久断点、会话绑定、累计预算和 Stop/压缩/中断 hook 支持有界续跑；开发 E2E 的缺口可形成下一 run 的证据计划。Skill 改进只输出提案。项目 hook 须经宿主信任和真实回调验收；脚本通过不等于已自动运行，文件不会唤醒已停止的应用。
+
+## 效果展示
+
+参考还原案例，展示从 v1 到 v28 的迭代效果。仅供学习，尊重源网站版权。
+
+### Tiny Skies：从 v1 到 v28 的自迭代还原
+
+对标 [Tiny Skies 原网站](https://tinyskies.vercel.app/)，用 **生成 → 独立评估 → 差异修复** 的循环推进 3D 网页游戏还原。88 秒横屏视频先对比原站与 v28，再展示版本变化、Agent 的观察/计划/修复，以及自动汇总的评测报告。
+
+[![Tiny Skies 中文横屏演示：原站对比、v1–v28 迭代与评测报告](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/poster-landscape-zh.jpg)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4)
+
+[观看/下载中文横屏视频（88 秒，1080p）](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4) · [English version](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4) · [展示媒体与校验信息](https://github.com/PlevanTem/ui-reverse-engineer/releases/tag/tiny-skies-v28-showcase)
+
+- **实现边界：** 本案例为源码辅助还原（source-assisted），不是 clean-room 基准。前端样式与交互实现可参考公开代码；3D 场景和美术资产用代码重建，不镜像原站美术资产，未接入 3D 生成 MCP。
+- **审阅方式：** 视频尾帧展示最新独立评测摘要；本地完整报告用于审阅状态证据、核心迭代轨迹和未解决问题。展示片不是全流程测试录像，媒体 Release 不包含完整案例输出。
+- **结果边界：** 当前评测仍为 `fail / provisional`，存在交互差异与未验证的长链玩法，Judge 尚未校准。版本改善不等于完整 E2E 通过，也不是模型已完成 RL 训练的证明。
+
+## 为什么使用
+
+- **交付可继续开发：** 从参考生成可运行、可修改的本地项目。
+- **结果可对照：** 记录参考状态、证据和已知缺口，帮助审阅还原差异。
+- **迭代有记录：** 保存版本和评测结果，方便回顾改动和未解决的问题。
 
 ## 如何开始
 
-### 项目展示网站与设计系统
+### 1. 安装 Skill
 
-[访问项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [设计系统](https://plevantem.github.io/ui-reverse-engineer/design-system.html)
+在目标项目根目录运行对应命令。以下远程安装命令使用当前仓库根目录，尚未在干净环境验证；如果仓库为私有，账号需要访问权限。
 
-本地展示站包含首页、案例库、Tiny Skies 详情、快速上手和设计系统预览。先阅读 [DESIGN.md](DESIGN.md) 审计视觉与组件约定，再按 [website/README.md](website/README.md) 构建和预览。案例元数据由 `evals/cases.yaml` 生成，草稿状态与公开展示分开；网站由 GitHub Pages 工作流构建部署。
+**Codex**
+```bash
+npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer --skill ui-reverse-engineer --agent codex
+```
 
-首页 04 按能力与机制对比 Screenshot to Code、Open Lovable 与本项目；单元格附官方来源，未见说明不等于不支持，不作为同条件效果排名。
+<details>
+<summary>其他 Agent 的安装方式</summary>
+
+**Claude Code**
+```bash
+npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer --skill ui-reverse-engineer --agent claude-code
+```
+
+**Grok Build**
+```bash
+npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer --skill ui-reverse-engineer --agent grok
+```
+
+**Gemini CLI**
+```bash
+npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer --skill ui-reverse-engineer --agent gemini-cli
+```
+
+**WorkBuddy**
+
+WorkBuddy 当前通过本地 Skill 包导入；`vercel-labs/skills` CLI 暂无 WorkBuddy 安装目标。在 WorkBuddy 选择「添加 Skill / 上传 Skill」→ 选择 `ui-reverse-engineer` 技能包。
+
+> 上述 `npx` 命令要求技能目录已提交到 GitHub 默认分支；如仓库为私有，账号还需有访问权限。若技能已在本地，先进入目标项目根目录运行 `npx --yes skills add <本地技能目录> --skill ui-reverse-engineer --agent <标识>`，将 `<本地技能目录>` 替换为实际路径。
+
+
+</details>
+
+### 2. 给 Agent 任务
 
 安装后直接用自然语言给任务和参考资料，例如：
 
@@ -65,37 +109,46 @@
 
 也可以显式指定模式，如 `--query`、`--design-md`、`--transfer`、`--restore`；多个模式可组合。未指定时默认 `--query --restore`。
 
-## 快速安装
+### 3. 查看结果
 
-在项目根目录运行对应命令。从 GitHub 默认分支安装；当前仓库为私有仓库，且该目录需先发布到默认分支。
+任务产物默认位于 `reverse_output/{case_name}_{YYYYMMDD}/`；Restore 的 `restored/` 包含可运行项目，`design_brief.md` 记录范围和证据。
 
-**Codex**
-```bash
-npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer/tree/main/ui-reverse-engineer --skill ui-reverse-engineer --agent codex
-```
+过程产物与清理约定见 [输出目录规范](SKILL.md#输出目录规范)；Restore 收尾检查见 [执行流程](references/restore.md#完成检查)，归档与临时文件只读清单见 [接口说明](references/restore/interfaces.md#证据不可变性与历史报告重放)。
 
-**Claude Code**
-```bash
-npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer/tree/main/ui-reverse-engineer --skill ui-reverse-engineer --agent claude-code
-```
+关联运行的复盘与评分字段见 [Restore 接口](references/restore/interfaces.md)和 [跨运行报告 Schema](references/restore/challenge-report.schema.json)。
 
-**Grok Build**
-```bash
-npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer/tree/main/ui-reverse-engineer --skill ui-reverse-engineer --agent grok
-```
+## 适用场景与产物
 
-**Gemini CLI**
-```bash
-npx --yes skills add https://github.com/PlevanTem/ui-reverse-engineer/tree/main/ui-reverse-engineer --skill ui-reverse-engineer --agent gemini-cli
-```
+| 你的目标 | 交付结果 | 模式 |
+| --- | --- | --- |
+| 还原参考页面 | 可运行项目、还原说明和对照结果 | `--restore` |
+| 反推界面背后的产品需求 | 需求 JSON | `--query` |
+| 提炼可复用的视觉规范 | `DESIGN.md` 和索引 | `--design-md` |
+| 将参考风格迁移到已有页面 | 保留内容和交互的页面 | `--transfer` |
 
-**WorkBuddy**
+可组合多个模式；未指定时默认 `--query --restore`。任务产物默认保存在 `reverse_output/{case_name}_{YYYYMMDD}/`，设计资产保存在 `design_assets/`。具体路径见 [Skill 完整说明](SKILL.md)。
 
-WorkBuddy 当前通过本地 Skill 包导入；`vercel-labs/skills` CLI 暂无 WorkBuddy 安装目标。在 WorkBuddy 选择「添加 Skill / 上传 Skill」→ 选择 `ui-reverse-engineer` 技能包。
+## 输入与边界
 
-> 上述 `npx` 命令要求技能目录已提交到 GitHub 默认分支；私有仓库还要求当前账号有访问权限。若技能已在本地，先进入目标项目根目录运行 `npx --yes skills add <本地技能目录> --skill ui-reverse-engineer --agent <标识>`，将 `<本地技能目录>` 替换为实际路径。
+| 输入 | 能做什么 | 边界 |
+| --- | --- | --- |
+| 网站 URL | 检查结构、布局、视觉状态、响应式和主要交互；主动检查页面公开加载的源码与运行时资源 | 需要可用浏览器/网页读取能力；跨域、登录或工具限制可能阻止部分源码核验，需记录缺口 |
+| 截图 / Figma | 提取布局、颜色、字体、间距和组件风格 | 静态图看不到的交互需标为推断 |
+| 视频 / 录屏 | 从关键帧整理操作顺序、状态变化和动效 | 需要客户端支持视频/视觉输入；快速变化的细节可能只能推测 |
+| 源码 URL / HTML、CSS、JS | 从结构与实现推断信息架构、token 和状态逻辑 | 读到源码不等于核实了页面的实时外观 |
+| 本地 HTML | 作为 `--transfer` 的迁移目标 | `--transfer` 需要本地 HTML 目标 |
+| `DESIGN.md` | 作为 `--transfer` 的风格来源 | 使用文件内定义的设计 token |
 
-## Restore 浏览器采集环境
+普通网站 URL 即可启动技术栈分析的源码发现，不要求用户另提供代码托管链接；实际可检查范围取决于当前客户端的浏览器和网页读取能力。但 Restore 评测和 clean-room run 默认只使用冻结 fixture，不额外搜索公开资料或读取 case 源码证据；只有用户任务与冻结策略明确允许 `source_assisted` 时才可复用源码。安装 Skill 不会自动安装浏览器 MCP，也不会增加客户端原本没有的视频理解或本地文件访问能力。`--transfer` 会先给出迁移方案，确认后再改页面；`--restore` 会生成 brief 并直接完成还原，只有用户明确要求先审 brief 时才暂停。
+
+## 进阶使用
+
+Restore 支持汇总同一案例的多次运行；只有评测口径一致的结果才能直接比较。详见 [Restore 接口](references/restore/interfaces.md)。仅需本地采集脚本时，按以下说明配置浏览器。
+
+<details>
+<summary>浏览器采集环境</summary>
+
+### Restore 浏览器采集环境
 
 仓库自动采集脚本使用 Playwright 获取冻结截图、交互序列、运行时资源与控制台检查。默认 Python 入口为 `scripts/restore/capture.py`；宿主浏览器提供等价能力时也可用其取证。Node/Python 入口会在截图序列化期间冻结页面时钟，避免昂贵截图推进游戏或动画状态；该能力要求 `requirements-dev.txt` 固定的 Playwright/Chromium 或提供等价 Clock + CDP lifecycle 能力的宿主版本。需要本地脚本且尚无依赖时安装一次：
 
@@ -119,34 +172,15 @@ npx playwright install chromium
 
 Playwright 提供自动化浏览器，不能代替宿主提供的浏览器 MCP、视频理解或页面访问权限。遇到登录、反爬或网络限制时，继续记录可观察证据与失败原因，不把缺失状态标为已核实。
 
-## 输入与边界
+</details>
 
-| 输入 | 能做什么 | 边界 |
-| --- | --- | --- |
-| 网站 URL | 检查结构、布局、视觉状态、响应式和主要交互；主动检查页面公开加载的源码与运行时资源 | 需要可用浏览器/网页读取能力；跨域、登录或工具限制可能阻止部分源码核验，需记录缺口 |
-| 截图 / Figma | 提取布局、颜色、字体、间距和组件风格 | 静态图看不到的交互需标为推断 |
-| 视频 / 录屏 | 从关键帧整理操作顺序、状态变化和动效 | 需要客户端支持视频/视觉输入；快速变化的细节可能只能推测 |
-| 源码 URL / HTML、CSS、JS | 从结构与实现推断信息架构、token 和状态逻辑 | 读到源码不等于核实了页面的实时外观 |
-| 本地 HTML | 作为 `--transfer` 的迁移目标 | `--transfer` 需要本地 HTML 目标 |
-| `DESIGN.md` | 作为 `--transfer` 的风格来源 | 使用文件内定义的设计 token |
+### 项目展示网站与设计系统
 
-普通网站 URL 即可启动技术栈分析的源码发现，不要求用户另提供代码托管链接；实际可检查范围取决于当前客户端的浏览器和网页读取能力。但 Restore 评测和 clean-room run 默认只使用冻结 fixture，不额外搜索公开资料或读取 case 源码证据；只有用户任务与冻结策略明确允许 `source_assisted` 时才可复用源码。安装 Skill 不会自动安装浏览器 MCP，也不会增加客户端原本没有的视频理解或本地文件访问能力。`--transfer` 会先给出迁移方案，确认后再改页面；`--restore` 会生成 brief 并直接完成还原，只有用户明确要求先审 brief 时才暂停。
+[访问项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [设计系统](https://plevantem.github.io/ui-reverse-engineer/design-system.html)
 
-## 效果展示
+本地展示站包含首页、案例库、Tiny Skies 详情、快速上手和设计系统预览。 Firewood 的 fixture-only 本地还原尚未公开；最近一轮最终 E2E 为 incomplete；此前完整独立评测为 fail / provisional，案例页记录已知差异与未知项。先阅读 [DESIGN.md](DESIGN.md) 审计视觉与组件约定，再按 [website/README.md](website/README.md) 构建和预览。案例元数据由 `evals/cases.yaml` 生成，草稿状态与公开展示分开；网站由 GitHub Pages 工作流构建部署。Mosby’s Files 已在本地生成；落地页封面使用一张评测记录中的候选首页截图作预览。最新独立运行后评测为 fail / provisional，最终总分未计算、校准未测量；案例仍为 draft，完整报告与还原产物未发布。
 
-Showcase 与测试样例库中的案例仅供学习、研究与技术评测，相关设计、商标及素材的权利归原权利人所有，展示不代表商业使用授权。
-
-### Tiny Skies：从 v1 到 v28 的自迭代还原
-
-对标 [Tiny Skies 原网站](https://tinyskies.vercel.app/)，用 **生成 → 独立评估 → 差异修复** 的循环推进 3D 网页游戏还原。88 秒横屏视频先对比原站与 v28，再展示版本变化、Agent 的观察/计划/修复，以及自动汇总的评测报告。
-
-[![Tiny Skies 中文横屏演示：原站对比、v1–v28 迭代与评测报告](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/poster-landscape-zh.jpg)](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4)
-
-[观看/下载中文横屏视频（88 秒，1080p）](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape.mp4) · [English version](https://github.com/PlevanTem/ui-reverse-engineer/releases/download/tiny-skies-v28-showcase/tiny-skies-social-landscape-en.mp4) · [展示媒体与校验信息](https://github.com/PlevanTem/ui-reverse-engineer/releases/tag/tiny-skies-v28-showcase)
-
-- **实现边界：** 本案例为源码辅助还原（source-assisted），不是 clean-room 基准。前端样式与交互实现可参考公开代码；3D 场景和美术资产用代码重建，不镜像原站美术资产，未接入 3D 生成 MCP。
-- **审阅方式：** 视频尾帧展示最新独立评测摘要；本地完整报告用于审阅状态证据、核心迭代轨迹和未解决问题。展示片不是全流程测试录像，媒体 Release 不包含完整案例输出。
-- **结果边界：** 当前评测仍为 `fail / provisional`，存在交互差异与未验证的长链玩法，Judge 尚未校准。版本改善不等于完整 E2E 通过，也不是模型已完成 RL 训练的证明。
+首页 04 按能力与机制对比 Screenshot to Code、Open Lovable 与本项目；单元格附官方来源，未见说明不等于不支持，不作为同条件效果排名。
 
 ## 项目结构
 
@@ -217,6 +251,9 @@ obligation 把“页面要还原得像”转化为可观察、可比较、可追
 - [Loop Criteria](references/restore/criteria.md)：局部视觉评估与候选决策。
 - [Restore 接口](references/restore/interfaces.md)：命令、采集、证据与报告。
 - [Restore 最终 E2E](evals/restore.md)：最终验收、评分与红线。
+- [Firewood Langfuse 试点](evals/langfuse-firewood-pilot.md)：真实控制事件导入、来源核验与轨迹/评分读回；缺失 Agent 轨迹不补造。
+- [Agent 轨迹与四维评估](evals/trajectory/README.md)：主 Agent/子代理宿主记录、公开思考摘要、Skill 读取和工具反馈；Restore CLI 可选自动绑定、批量上报、外部 Codex Judge 与 Langfuse 原生评分回读。配置与恢复见[接口](references/trajectory/interfaces.md)，案例验收见 [Firewood 协议](evals/trajectory/firewood.md)。隐藏思维、缺失上下文和未校准指标不补造。
+  - [v2 分步迭代](evals/trajectory/iteration-plan.md)：消息角色与去重、公开指令候选、事前委派规格、声明/证据配对和逐项 finding；新绑定使用 v2，旧批次保留，校准与数据覆盖分别报告。
 - [交互场景还原](references/restore/interactive-scenes.md)：持续交互、3D 与动态场景。
 - [还原 brief 模板](references/restore-brief-template.md)：记录范围、实现与证据。
 - [DESIGN.md 资产模板](references/design-md-template.md)：设计资产结构。

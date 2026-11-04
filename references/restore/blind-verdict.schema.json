@@ -1,0 +1,55 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "BlindPairwiseVerdict/v1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "const": "independent"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "role",
+        "id"
+      ]
+    },
+    "choice": {
+      "enum": [
+        "A",
+        "B",
+        "same",
+        "uncertain"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "visible_improvement": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "request_id",
+    "assessor",
+    "choice",
+    "reason",
+    "visible_improvement"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:BlindPairwiseVerdict:v1"
+}

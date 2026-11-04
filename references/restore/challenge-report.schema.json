@@ -167,7 +167,7 @@
           "properties": {
             "status": { "enum": ["pass", "fail", "incomplete", "unavailable"] },
             "status_detail": { "$ref": "#/$defs/statusDetail" },
-            "score_100": { "type": ["number", "null"] },
+            "score_100": { "type": ["number", "null"], "description": "Final E2E total_100 only; null when no final total exists, including when a normalized subtotal is available." },
             "provisional": { "type": ["boolean", "null"] },
             "dimensions": { "type": "array", "items": { "type": "object" } },
             "coverage_percent": { "type": ["number", "null"] }

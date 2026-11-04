@@ -1,0 +1,94 @@
+{
+  "doc_id": "RESTORE-BOARD-SNAPSHOT",
+  "doc_version": "1.0.0",
+  "doc_set": "restore-vnext-codex-2026.11.03",
+  "status": "design-board-snapshot-not-implementation-acceptance",
+  "captured_on": "2026-11-03",
+  "timezone": "Asia/Shanghai",
+  "owner": "project-maintainer",
+  "implementation_ref": "d6e3b03202c66069cd0ff33fa0d58d0d3fef468c",
+  "review_baseline": "b107ffdea15f503b9d341f54c7d5e9c3fe959475",
+  "iteration_items": [
+    "IT-06"
+  ],
+  "source": {
+    "provider": "tldraw",
+    "board_name": "UI 逆向还原｜总体优化数据流",
+    "board_id_sha256": "c0a36a6d3971be03d02b34e2709a72b1eec95a9723ac5b3a4cc0f64515c14517",
+    "page_scope": "two root diagrams, all 80 page shapes",
+    "board_changes": {
+      "added": 0,
+      "updated": 0,
+      "removed": 0
+    }
+  },
+  "diagrams": [
+    {
+      "id": "workflow",
+      "shape_count": 40,
+      "rich_text_label_count": 22,
+      "svg": {
+        "file": "ui-restore-workflow-board-20261103.svg",
+        "bytes": 196216,
+        "sha256": "57648a96c00b80fb74622f72dd34e5deb962c3755cd580a4ae1ee4d8dfc5020f"
+      },
+      "preview": {
+        "file": "ui-restore-workflow-board-20261103.png",
+        "bytes": 302871,
+        "sha256": "5400bdb7e575e6f5fb9a71e23a1e89c7fd1c558266953ab93e823a7376c5e802",
+        "width": 1200,
+        "height": 3857
+      },
+      "export_normalization": {
+        "visibility_hidden_to_visible": 22,
+        "text_and_geometry_changed": false
+      }
+    },
+    {
+      "id": "dataflow",
+      "shape_count": 40,
+      "rich_text_label_count": 25,
+      "svg": {
+        "file": "ui-restore-dataflow-board-20261103.svg",
+        "bytes": 214813,
+        "sha256": "421d544d21b875247b78d20140f23c6c321bc699037132855719d98ae409b55e"
+      },
+      "preview": {
+        "file": "ui-restore-dataflow-board-20261103.png",
+        "bytes": 240098,
+        "sha256": "ed43b73eb43f40517e0e5c29bf18f601dac05a961917921a2dc3373a728479b5",
+        "width": 1200,
+        "height": 2617
+      },
+      "export_normalization": {
+        "visibility_hidden_to_visible": 25,
+        "text_and_geometry_changed": false
+      }
+    }
+  ],
+  "editable_source": {
+    "file": "ui-restore-board-20261103.snapshot.json",
+    "bytes": 132189,
+    "sha256": "b0219f7ce0fb86824bfbf27a50e282eae72d42a2c3ebd55597975f24a310b5ad",
+    "format": "TLStoreSnapshot document: schema + store",
+    "records": 172,
+    "shapes": 80,
+    "bindings": 90,
+    "excluded_record_types": [
+      "user"
+    ],
+    "session_exported": false,
+    "restore_api": "editor.loadSnapshot(snapshot)",
+    "online_reimport_tested": false
+  },
+  "preview_rendering": {
+    "method": "local browser rendering of visibility-normalized SVG",
+    "external_requests": 0,
+    "manual_visual_review": "both previews checked for text and complete diagrams"
+  },
+  "limitations": [
+    "Conceptual design workflow and data mapping, not proof that every tool, hook or acceptance path is active.",
+    "Source URL and unmodified raw exports stay in ignored local export receipts.",
+    "SVG rich text uses foreignObject; PNG is the portable document preview."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "scope":"website_and_skill_proposals",
+  "evaluation":"development",
+  "max_wall_ms":3600000,
+  "max_runs":3,
+  "max_total_rounds":8,
+  "max_stop_requests":12,
+  "max_stalled_stops":2
+}

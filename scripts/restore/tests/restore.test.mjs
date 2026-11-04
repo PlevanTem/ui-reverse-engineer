@@ -609,3 +609,23 @@ test('report preserves the scoped blocker and rejects changed stop evidence',asy
   await core.writeJSON(join(root,run.stop.blocker.uri),{...blocker,reason:'rewritten'});
   await assert.rejects(()=>report(root,run),/Blocker record changed/);
 });
+
+test('opted-in verification sends anonymous media and binds the returned request identity',async t=>{
+ const {root,c}=await workspace(t);await writeFile(join(root,'evidence','wood.glb'),'asset');c.resources=[{id:'wood',kind:'model',uri:'evidence/wood.glb',sha256:core.sha('asset')}];
+ c.optimization={schema_version:'RestoreOptimization/v1',preparation:{coverage:[{id:'home-covered',kind:'state',state_id:'home',required:true,status:'observed',evidence:['ref']}],unknowns:[],resource_layout:{profile:'content_site',asset_root:'asset/',category_paths:{ui:'ui/'}}},design:{tokens:[],regions:[{id:'hero',state_id:'home',coordinate_space:'viewport',reference_box:{x:0,y:0,width:800,height:600},status:'observed',evidence:['ref']}]},plan:[{id:'hero',summary:'Synthetic visual check',state_ids:['home'],region_ids:['hero'],resource_ids:['wood'],depends_on:[],priority:'P1',acceptance_refs:['layout','style']}],behavior:{variables:[],transitions:[],tracks:[],invariants:[]},audio:{required:false,cues:[]},verification:{protocol:'blind/v1'}};
+ await core.writeJSON(join(root,'contract.json'),c);await act(root,'freeze',r=>core.freeze(root,r));
+ await act(root,'baseline',async r=>core.baseline(root,r,await assessment(root,r,[2,2],[['gap','layout']])));
+ const child=root+'-child';t.after(()=>rm(child,{recursive:true,force:true}));await core.continueRun(root,child);assert.equal((await core.generationInput(child,await core.readJSON(join(child,'run.json')))).schema_version,'RestoreGenerationInput/v2');
+ await act(root,'begin',r=>core.begin(root,r,{issue_id:'gap',hypothesis:'Synthetic candidate',strategy:'fixture',scope:'local',affected_states:['home'],expected_change:'No actual pixel improvement',preserve:'All other content'}));
+ await writeFile(join(root,'restored','index.html'),'<h1>new code, same synthetic PNG</h1>');
+ const a=await assessment(root,await core.readJSON(join(root,'run.json')),[2,2],[['gap','layout']]);const path=join(root,'candidate.json');await core.writeJSON(path,a);
+ const paired=await compare(root,await core.readJSON(join(root,'run.json')),path,fileURLToPath(new URL('./mock-adapter.mjs',import.meta.url)));
+ assert.equal(paired.forward,'same');assert.equal(paired.reverse,'same');
+ const assessed=await core.readJSON(paired.assessment);for(const e of assessed.evidence.filter(e=>e.id.startsWith('pairwise-'))){const v=await core.readJSON(core.local(root,e.uri));assert.equal(v.verification_protocol,'blind/v1');assert.ok(v.request_id);}
+});
+test('synthetic audio evidence is hash-bound, archived as WAV and playable in the report without a visual-audio score',async t=>{
+ const {root,c}=await workspace(t);const wav=Buffer.alloc(52,128);wav.write('RIFF',0);wav.writeUInt32LE(44,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(8000,24);wav.writeUInt32LE(8000,28);wav.writeUInt16LE(1,32);wav.writeUInt16LE(8,34);wav.write('data',36);wav.writeUInt32LE(8,40);
+ const audio={id:'audio-fixture',kind:'audio',uri:'evidence/fixture.wav',sha256:core.sha(wav),state_id:'home'};await writeFile(join(root,audio.uri),wav);c.reference_evidence.push(audio);await core.writeJSON(join(root,'contract.json'),c);await act(root,'freeze',r=>core.freeze(root,r));
+ const a=await assessment(root,await core.readJSON(join(root,'run.json')),[3,3]);a.evidence.push({...audio,id:'candidate-audio-fixture'});await act(root,'baseline',r=>core.baseline(root,r,a));const run=await core.readJSON(join(root,'run.json'));const saved=await core.readJSON(core.local(root,run.best_assessment));assert.match(saved.evidence.find(e=>e.kind==='audio').uri,/content\.wav$/);
+ await report(root,run);assert.match(await readFile(join(root,'report.html'),'utf8'),/<audio controls preload="none"/);assert.equal((await core.readJSON(join(root,'report.json'))).e2e,null);
+});

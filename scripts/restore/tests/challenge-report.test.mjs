@@ -47,6 +47,24 @@ async function fixture(root, name, { phase, contractHash, e2e = null, report = t
   return runRoot;
 }
 
+test('challenge report never presents a normalized partial score as the final total', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'restore-challenge-total-'));
+  const partial = await fixture(root, 'partial', { phase: 'complete', contractHash: 'c'.repeat(64), e2e: { status: 'fail', total_100: null, dimensions: [{ id: 'interaction', status: 'scored', score: 2 }, { id: 'layout', status: 'unknown', score: null }] } });
+  const partialReport = JSON.parse(await readFile(join(partial, 'report.json'), 'utf8'));
+  partialReport.e2e_scoring_summary = { score_100: 50, score_type: 'partial_normalized', coverage_percent: 20 };
+  await json(join(partial, 'report.json'), partialReport);
+  const complete = await fixture(root, 'complete', { phase: 'complete', contractHash: 'c'.repeat(64), e2e: { status: 'pass', total_100: 75, dimensions: [{ id: 'layout', status: 'scored', score: 3 }] } });
+  const result = await buildChallengeReport(join(root, 'out'), [partial, complete]);
+  const data = JSON.parse(await readFile(result.json, 'utf8'));
+  assert.equal(data.runs.find(run => run.label === 'partial').e2e.score_100, null);
+  assert.equal(data.runs.find(run => run.label === 'partial').e2e.coverage_percent, 20);
+  assert.equal(data.runs.find(run => run.label === 'complete').e2e.score_100, 75);
+  const html = await readFile(result.html, 'utf8');
+  assert.ok(!html.includes('50.0</td>'));
+  assert.ok(html.includes('75.0'));
+  assert.match(html, /\.mono\{[^}]*overflow-wrap:anywhere/);
+});
+
 test('challenge report preserves missing and unknown evaluation state', async () => {
   const root = await mkdtemp(join(tmpdir(), 'restore-challenge-'));
   const a = await fixture(root, 'v1', { phase: 'complete', contractHash: 'c'.repeat(64), e2e: { status: 'fail', total_100: 60, dimensions: [{ id: 'layout', score: 2 }] } });

@@ -6,6 +6,7 @@
   "additionalProperties": false,
   "required": ["schema_version", "binding", "reference_evidence", "states", "resources", "obligations", "start_command", "project_path", "deadline"],
   "properties": {
+    "optimization": {"$ref": "urn:ui-reverse-engineer:RestoreOptimization:v1"},
     "schema_version": { "const": "FinalEvalRequest/v0.2" },
     "case_id": { "type": "string", "minLength": 1 },
     "binding": {
@@ -44,7 +45,7 @@
       "required": ["id", "kind", "uri", "sha256"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
-        "kind": { "enum": ["screenshot", "sequence", "video", "checks", "source"] },
+        "kind": { "enum": ["screenshot", "sequence", "video", "audio", "checks", "source"] },
         "uri": { "type": "string", "minLength": 1 },
         "sha256": { "$ref": "#/$defs/sha256" }
       },

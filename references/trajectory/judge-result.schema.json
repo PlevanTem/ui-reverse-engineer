@@ -1,0 +1,20 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"External Codex trajectory judgment",
+  "type":"object","additionalProperties":false,
+  "required":["dimension","scope","metrics"],
+  "properties":{
+    "dimension":{"type":"string","enum":["D","I","F","T"]},
+    "scope":{"type":"string"},
+    "metrics":{"type":"array","minItems":3,"maxItems":3,"items":{
+      "type":"object","additionalProperties":false,
+      "required":["id","status","score","reason","evidence_refs","missing","confidence"],
+      "properties":{
+        "id":{"type":"string"},"status":{"type":"string","enum":["scored","unknown","not_applicable"]},
+        "score":{"type":["integer","null"],"minimum":0,"maximum":4},"reason":{"type":"string"},
+        "evidence_refs":{"type":"array","items":{"type":"string"}},"missing":{"type":"array","items":{"type":"string"}},
+        "confidence":{"type":"string","enum":["high","medium","low","unknown"]}
+      }
+    }}
+  }
+}

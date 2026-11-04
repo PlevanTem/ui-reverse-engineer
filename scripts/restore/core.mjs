@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile, rename, readdir, lstat, cp, open, unlink, l
 import { resolve, relative, sep, join, isAbsolute, dirname } from 'node:path';
 import { validateRedlineProfile, validateRedlineAssessments } from '../../evals/pipeline/redline-contract.mjs';
 import { validateCaptureStep, validateCaptureReadiness } from './capture-actions.mjs';
+import { checkPreparation, projectOptimization, copyOptimizationResources, generationResources } from './optimization.mjs';
 
 export const VERSION = 'restore/v0.2';
 export const TIERS = Object.freeze({ ordinary: { minutes:30, rounds:3, reserve:3 }, refined: { minutes:60, rounds:6, reserve:6 }, complex: { minutes:120, rounds:9, reserve:12 } });
@@ -72,7 +73,7 @@ export async function verifyEvidence(root,items,{artifact_sha256=null}={}) {
   const ids=new Set();
   for(const e of items) {
     assert(text(e.id)&&!ids.has(e.id),'Evidence IDs must be unique'); ids.add(e.id);
-    assert(['screenshot','sequence','video','checks','source'].includes(e.kind),'Invalid evidence kind');
+    assert(['screenshot','sequence','video','audio','checks','source'].includes(e.kind),'Invalid evidence kind');
     const normalized=e.uri.replaceAll('\\','/');
     const path=artifactRoot&&normalized.startsWith('restored/')?await safeFile(artifactRoot,normalized.slice('restored/'.length)):await safeFile(root,e.uri);
     assert(sha(await readFile(path))===e.sha256,`Evidence changed: ${e.id}`);
@@ -137,6 +138,7 @@ export async function validateContract(root,c) {
   }
   for(const id of criteria) assert(c.obligations.some(o=>o.criterion_id===id&&o.required),`Declare required ${id}, including explicit N/A`);
   for(const g of c.runtime_gates) assert(text(g.id)&&text(g.description),'Gate description required');
+  if(c.optimization){const preparation=await checkPreparation(root,c);assert(preparation.status!=='blocked',`Preparation blocked: ${JSON.stringify(preparation.issues)}`);}
 }
 function validateRefreezeEvidencePaths(root,c) {
   assert(Array.isArray(c.reference_evidence),'Refreeze reference evidence is required');
@@ -200,6 +202,7 @@ export async function continueRun(parentRoot,newRoot,tier=null) {
     assert(sha(await readFile(source))===evidence.sha256,`Evidence changed: ${evidence.id}`);
     await mkdir(dirname(destination),{recursive:true});await cp(source,destination);
   }
+  await copyOptimizationResources(parentRoot,newRoot,parentContract);
   const briefBytes=parentBriefBytes??Buffer.from(linkedBrief(parentContract,parentRun.run_id));
   await writeFile(join(newRoot,'design_brief.md'),briefBytes);
   const briefSource=parentBriefBytes?'parent_copy':'contract_projection';
@@ -259,6 +262,7 @@ export async function refreezeRun(parentRoot,newRoot,contractSource,tier=null) {
     assert(sha(await readFile(source))===evidence.sha256,`Evidence changed: ${evidence.id}`);
     await mkdir(dirname(destination),{recursive:true});await cp(source,destination);
   }
+  await copyOptimizationResources(sourceRoot,newRoot,sourceContract);
   await validateContract(newRoot,sourceContract);
   const sourceArchiveUri='refreeze-contract-source.json';
   await writeFile(local(newRoot,sourceArchiveUri),sourceBytes);
@@ -337,7 +341,9 @@ export async function recordTokenUsage(root,run,data) {
 }
 export async function contract(root,run) {
   const c=await readJSON(join(root,'contract.json')); assert(digest(c)===run.contract_sha256,'Frozen contract changed; start an explicitly linked new run with remaining budget');
-  await verifyEvidence(root,c.reference_evidence); return c;
+  await verifyEvidence(root,c.reference_evidence);
+  if(c.optimization){const preparation=await checkPreparation(root,c);assert(preparation.status!=='blocked',`Frozen preparation/resource integrity failed: ${JSON.stringify(preparation.issues)}`);}
+  return c;
 }
 export async function generationInput(root,run) {
   const c=await contract(root,run),fixtureOnly=c.generation_policy.mode==='fixture_only';
@@ -349,8 +355,8 @@ export async function generationInput(root,run) {
     transitions:c.interactive_scene.transitions.map(item=>({...item,evidence:item.evidence.filter(id=>allowedIds.has(id))})),
     rendering:c.interactive_scene.rendering.map(item=>({...item,evidence:item.evidence.filter(id=>allowedIds.has(id))}))
   }:null;
-  const resources=(c.resources??[]).filter(item=>item.evaluation_only!==true&&!['source','source_code','repository'].includes(item.kind??item.type));
-  return {schema_version:'RestoreGenerationInput/v1',run_id:run.run_id,case_id:c.case_source?.case_id??null,generation_policy:c.generation_policy,binding:{contract_sha256:run.contract_sha256,reference_sha256:digest(referenceEvidence)},requested_url:c.requested_url,observed_url:c.observed_url,states:c.states,obligations,interactive_scene:scene,reference_evidence:referenceEvidence,resources,unknowns:c.unknowns??[],output:{project_path:'restored/',start_command:c.start_command}};
+  const resources=generationResources(c);
+  return {schema_version:c.optimization?'RestoreGenerationInput/v2':'RestoreGenerationInput/v1',...(c.optimization?{optimization:projectOptimization(c)}:{}),run_id:run.run_id,case_id:c.case_source?.case_id??null,generation_policy:c.generation_policy,binding:{contract_sha256:run.contract_sha256,reference_sha256:digest(referenceEvidence)},requested_url:c.requested_url,observed_url:c.observed_url,states:c.states,obligations,interactive_scene:scene,reference_evidence:referenceEvidence,resources,unknowns:c.unknowns??[],output:{project_path:'restored/',start_command:c.start_command}};
 }
 export function summarizeStaticChecks(checks) {
   const count=status=>checks.filter(check=>check.status===status).length,total=checks.length,skipped=count('skipped'),applicable=total-skipped,assessed=count('pass')+count('fail');
@@ -425,6 +431,10 @@ function target(c,a) {
 }
 async function observation(root,a) { const name=`observations/${digest(a)}.json`; await writeJSON(local(root,name),a); return name; }
 function evidenceExtension(bytes) {
+  if(bytes.subarray(0,4).toString('ascii')==='RIFF'&&bytes.subarray(8,12).toString('ascii')==='WAVE')return 'wav';
+  if(bytes.subarray(0,3).toString('ascii')==='ID3'||(bytes.length>1&&bytes[0]===255&&(bytes[1]&224)===224&&(bytes[1]&6)!==0))return 'mp3';
+  if(bytes.subarray(0,4).toString('ascii')==='OggS')return 'ogg';
+  if(bytes.subarray(0,4).toString('ascii')==='fLaC')return 'flac';
   if(bytes.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')))return 'png';
   if(bytes.subarray(0,3).equals(Buffer.from('ffd8ff','hex')))return 'jpg';
   if(['GIF87a','GIF89a'].includes(bytes.subarray(0,6).toString('ascii')))return 'gif';
@@ -607,7 +617,11 @@ export async function finalInput(root,run) {
   if(!run.best) return {schema_version:'FinalEvalRequest/v0.2',status:'incomplete',reason:'No runnable artifact'};
   assert(await treeHash(local(root,'restored'))===run.best,'Final artifact changed');
   const effectiveDeadline=Date.parse(run.started_at)+TIERS[run.tier].minutes*60000+(run.time_exclusions??[]).reduce((sum,x)=>sum+Date.parse(x.end_at)-Date.parse(x.start_at),0);
-  return {schema_version:'FinalEvalRequest/v0.2',case_id:c.case_source?.case_id??run.run_id,binding:binding(run,c,run.best),reference_evidence:c.reference_evidence,states:c.states,resources:c.resources??[],interactive_scene:c.interactive_scene??null,obligations:c.obligations.map(({id,state_id,region_id,expected,reference_evidence})=>({id,state_id,region_id,expected,reference_evidence})),redline_profile:c.redline_profile??null,start_command:c.start_command,project_path:'restored/',deadline:new Date(effectiveDeadline).toISOString()};
+  return finalRequest(run,c,run.best,new Date(effectiveDeadline).toISOString());
+}
+// Shared projection only; finalInput/recordE2E retain final-stage authorization.
+export function finalRequest(run,c,artifact,deadline,project_path='restored/') {
+  return {schema_version:'FinalEvalRequest/v0.2',case_id:c.case_source?.case_id??run.run_id,binding:binding(run,c,artifact),reference_evidence:c.reference_evidence,states:c.states,resources:c.resources??[],interactive_scene:c.interactive_scene??null,obligations:c.obligations.map(({id,state_id,region_id,expected,reference_evidence})=>({id,state_id,region_id,expected,reference_evidence})),redline_profile:c.redline_profile??null,start_command:c.start_command,project_path,...(c.optimization?{optimization:c.optimization}:{}),deadline};
 }
 export async function recordE2E(root,run,result) {
   assert(run.phase==='final'&&!run.e2e,'Final E2E can be recorded once after loop stop');

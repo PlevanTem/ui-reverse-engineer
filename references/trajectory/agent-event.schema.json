@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:AgentTrajectoryEvent:v1",
+  "title": "AgentTrajectoryEvent/v1",
+  "type": "object",
+  "required": ["schema_version", "event_id", "thread_id", "parent_thread_id", "agent_path", "turn_id", "kind", "track", "started_at", "completed_at", "status", "input", "output", "model", "effort", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "AgentTrajectoryEvent/v1"},
+    "event_id": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "thread_id": {"type": "string", "minLength": 1},
+    "parent_thread_id": {"type": ["string", "null"]},
+    "agent_path": {"type": "string"},
+    "turn_id": {"type": ["string", "null"]},
+    "kind": {"type": "string", "minLength": 1},
+    "track": {"enum": ["agent_process", "final_acceptance"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "status": {"type": "string"},
+    "input": {}, "output": {},
+    "model": {"type": ["string", "null"]},
+    "effort": {"type": ["string", "null"]},
+    "native_id": {"type": ["string", "null"]},
+    "layer": {"enum": ["orchestration", "host_execution"]},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "line", "record_sha256"],
+      "properties": {"source_id": {"type": "string"}, "line": {"type": "integer", "minimum": 1}, "record_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+    }
+  }
+}

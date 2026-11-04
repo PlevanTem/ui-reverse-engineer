@@ -2,6 +2,10 @@
 
 适用于实现者和工具接入者；日常执行先看 [Restore 执行流程](../restore.md)。运行工具位于 `scripts/restore/`，最终 E2E grader 位于 `evals/pipeline/grader.mjs`。Node 20+，仅浏览器采集需要宿主提供 Playwright。CLI 不自行安装依赖、不猜测模型 API。
 
+四个优化项的依赖、状态所有权与本地 ESM 复用见[整体架构](../../docs/architecture.md)。本文件继续独立控制运行接口；观测与上报由[轨迹接口](../trajectory/interfaces.md)控制。直接调用 core/task 不会自动执行 CLI 的可选观测编排。
+
+[Codex 开发评估接口](../evaluation/interfaces.md)在已有 CLI/生命周期入口外增加可选协调器。core.finalRequest 复用最终请求的纯投影；finalInput 与 recordE2E 的停止点、冻结与验收写入门禁不变。开发结果只写独立评估目录。
+
 ## 职责边界
 
 | 模块 | 契约 | 决策 |
@@ -89,7 +93,40 @@ E2E 维度 ID 采用英文并与 `evals/pipeline/grader.mjs` 保持一致；文�
 
 报告证据区按页面状态分行、按冻结参考/`v0` 初始版本/逐轮候选分列；最佳快照在其对应版本列标记，独立 E2E 证据并入该最佳版本。报告同时用 `trajectory[]` 展示每个版本的产物哈希、文件 Diff、义务分数变化、gate 状态变化、finding 增减、自动检查、验证和决策；revert 与 inconclusive 版本不得省略。截图依次依据显式 `state_id`、采集序列清单中的截图 URI/状态键、obligation 的证据引用对齐；采集状态键按与冻结状态 ID 的最长前缀匹配。采集状态优先于 obligation 引用，避免同一张输入截图因被多个评分义务引用而跨状态重复；缺少可确认关联时才放入“未关联状态”，不按数组顺序猜配。跨版本继承的相同 evidence ID 只在首次来源列显示，避免证据重复。检查 JSON、视频和其他非截图证据放在可展开的补充区。
 
-## 最短运行链
+## 任务连续性
+
+`RestoreTask/v1` 的结构由 [task.schema.json](task.schema.json)定义；适用范围与执行顺序只维护在 [SOP](../restore.md#可选的任务连续性)。命令的 `TASK` 是独立任务目录，`RUN` 是已有 run。启动示例：
+
+```powershell
+node scripts/restore/cli.mjs task-init TASK RUN references/restore/task-policy.example.json "还原必需页面、状态与交互"
+node scripts/restore/cli.mjs task-status TASK
+node scripts/restore/cli.mjs task-arm TASK ACTUAL_SESSION_ID
+```
+
+| 命令 | 输入 / 输出 |
+| --- | --- |
+| `task-init TASK RUN policy.json OBJECTIVE` | 排他创建 task，不重置既有记录；策略示例须按任务预算选择 |
+| `task-status TASK` | 核对 run 身份、冻结合同、最终产物/评估的绑定、摘要和证据；重用既有 grader 重算结果，返回 status/action/累计预算；会原子更新任务状态 |
+| `task-arm TASK SESSION_ID` | 绑定明确的宿主会话；不会建立宿主信任，暂停/等待须用 resume |
+| `task-resume TASK SESSION_ID` | 用户明确继续后恢复/转交；清除停滞与中断标记，不重置累计成本/次数 |
+| `task-pause TASK REASON` / `task-wait TASK REASON` | 暂停 / 记录需外部输入或资源的等待；不冒充 accepted |
+| `task-plan TASK plan.json` | 已结束开发 E2E 的下一轮假设；必需 `mode: continue|refreeze`、`hypothesis`、`expected_change`、原 run 相对 URI 的 `evidence[]`；refreeze 另需显式 `contract_source`；Incomplete 不接受 continue |
+| `task-handoff TASK` | 核验计划与父评估未改变，创建确定标识的 staged 子 run，校验 lineage 后发布；重试采用同一子 run；部分复制不自动清除 |
+| `task-propose TASK proposal.json` | 必需 `problem/hypothesis/proposed_change`、非空 `regression_cases[]`、当前 run `evidence[]`；保存为 proposed，不写 Skill 源文件 |
+
+`TASK/task.json` 是目标、会话、累计预算和子 run 游标的唯一所有者。run 事实仍归原 `run.json/events.jsonl/observations/`；计划与提案以 canonical digest 引用 `TASK/plans/`、`TASK/proposals/`。生成者的恢复投影仅含开发任务 ID、阶段、路径和剩余预算，不导入其他案例历史、留出结果或原始 transcript。此工具不是操作系统级隔离，正式盲测仍须控制可读资源与上下文。
+
+`task-init/task-status/task-handoff` 返回 `RestoreTaskStatus/v1` 投影，结构见 [status_view](task.schema.json#/$defs/status_view)，不与完整的持久化 `RestoreTask/v1` 文件混用。
+
+`max_wall_ms` 包含任务创建后的暂停和评测时间，不因子 run 重置；`max_runs` 含初始 run；`max_total_rounds` 累加所有子 run 已结束的轮次；`max_stop_requests` 限制累计续跑请求；`max_stalled_stops` 限制相同事实指纹的连续无进展回调。指纹不依赖 hook 时间或助手结束语。达到任一上限可以如实停止，pending 候选仍保留，不能伪造 E2E 通过。
+
+计划记录另保存控制器派生的 `source_run_id/source_result_sha256`；refreeze 保存 `source_contract_sha256`。子 run 发布同时核对父账本、计划合同与继承产物的哈希；在途计划不可替换。此边界属于协作式 harness：它限制任务入口和续跑请求，不是对所有独立命令的操作系统级硬限时，单次工具调用仍可能超时。
+
+`.codex/hooks.json` 调用 `scripts/restore/hooks.mjs`，由 git root 定位；配置只影响已绑定会话。绑定索引在 `reverse_output/restore-task-bindings/<sha256(session_id)>.json`，不提交。Stop 的 `decision:block` 请求宿主继续，Interrupt 独立写 `TASK/interrupt.json`，即使任务锁被占用也能留痕。Pre/PostCompact 重算并持久化状态；SessionStart 的 compact/resume 重新注入最小投影。`TASK/hook-events.jsonl` 只证明适配器收到输入，`source: stdin_unverified` 不能单独证明宿主触发。原 `run.phase=complete` 仍表示该 run 已归档完成，只有 `task.status=accepted` 表示其当前网站目标通过独立最终规则。
+
+Hook 定义必须由用户在宿主审阅并信任；项目层也须可信。见 [官方 hooks 文档](https://learn.chatgpt.com/docs/hooks)。不覆盖全局 notify、不绕过信任、不启动常驻服务。大证据集的哈希核查可能超过宿主 hook 超时，此时报告未验证，不能视为成功；后续可在真实案例测量后优化。`.task-lock` / 原 `.lock` 的未知或崩溃持有者须人工核对，不自动接管。
+
+## 最短运行链（run）
 
 ```powershell
 node scripts/restore/cli.mjs init reverse_output/example_20261014 https://example.com ordinary
@@ -162,7 +199,7 @@ Codex 宿主可用 `node scripts/restore/extract-codex-usage.mjs manifest.json t
 - `contract.json`：记录 URL、浏览器环境、states、obligations、运行门禁、原站参考证据及其哈希。每个 state 有 `id/page_id/viewport_id/path/viewport/ready_selector/regions/steps/sentinel`，可选 `session_id`。每项 obligation 对应有效区域、状态与 C1/C2/C3；C3 `not_applicable` 必须说明参考确无对应动态。
 - `contract.generation_policy`：冻结 `mode:fixture_only|source_assisted`、`case_metadata_visibility:id_only` 和 `source_reuse:forbidden|allowed`。可选 `case_source` 只允许 `case_id` 与 `dataset_sha256`。`technology_stack*`、`source_code_evidence`、`source_repository` 等评测字段进入合同会被拒绝。生成投影按 [`RestoreGenerationInput/v1`](generation-input.schema.json) 输出；顶层采用 allowlist，新增字段默认不能穿透。
 - `contract.interactive_scene`：可选 [InteractiveScene/v1](interactive-scene.schema.json)，保存冻结的 transitions 和 rendering 观察，每项明确 observed/inferred/unknown 与证据引用。转换绑定有效 state_id；模型、相机、光照、材质、动画/命中等按实际需要记录。该字段原样进入 measure、pairwise verify、最终 E2E 请求及报告/brief，不另存一份可手改的玩法事实。实现后的残差归 assessment。
-- 证据项：`{id,kind,uri,sha256}`，`uri` 为 run 内相对路径；支持 screenshot、sequence、video、checks、source。冻结后不得替换参考素材；改变任务契约需关联新 run 并保留原预算口径。
+- 证据项：`{id,kind,uri,sha256}`，`uri` 为 run 内相对路径；支持 screenshot、sequence、video、audio、checks、source。audio 文件按字节哈希绑定，报告提供播放器；不能替代 C1/C2 截图或 C3 序列/视频。冻结后不得替换参考素材；改变任务契约需关联新 run 并保留原预算口径。
 - `LoopAssessment/v0.2`：`binding` 必须等于 assessment request；`assessor:{role:'independent'|'implementer',id}`；`evidence`；`covered_states`；`units:[{obligation_id,status:'scored'|'unknown'|'not_applicable',score:0..4|null,reason,evidence:[id]}]`；`gates:[{id,status:'pass'|'fail'|'unknown',evidence:[id]}]`；`findings:[{id,obligation_id,severity:'blocking'|'obvious'|'minor',description,evidence:[id]}]`。基线另需 `stability:{status:'stable'|'variable',reason,evidence:[id]}`。
 - `hypothesis.json`：`{issue_id,hypothesis,strategy,scope:'local'|'global',affected_states:[id],expected_change,preserve}`。每轮只处理一个偏差簇；复用同一失败假设触发停滞保护。
 - `IterationDecision/v0.2`：`{schema_version,issue_id,binding,verifier:{role:'independent',id},evidence:[id],forward,reverse,visible_improvement,reason}`。前后两次比较均把结果归一为 `candidate / best / same / uncertain`；增量 keep/revert/inconclusive 的唯一判定规则见 [Loop Criteria](criteria.md#measure--verify)。
@@ -224,3 +261,32 @@ Codex 宿主可用 `node scripts/restore/extract-codex-usage.mjs manifest.json t
 | complex | 120 分钟 | 9 | 12 分钟 |
 
 取证最多六分之一；`v0` 初始版本目标在总时间一半前。控制器在下一动作前检查剩余**有效执行时间**；报告同时保留墙钟跨度、已证实外部暂停和有效耗时。超时或达到轮次上限时交付最佳已有版本，但报告仍保留全部候选。`target_reached / plateau / cycle_detected / budget_exhausted / blocked / failed` 是 Loop 停止原因；`pass / fail / incomplete` 是 E2E 结果；审批状态单独记录。调用中强制停止依赖宿主的 deadline/cancel 支持，单纯 Skill 编排是协作式限时。
+
+## 优化规格与准备检查
+
+`restore/v0.2` 可选包含 `optimization: RestoreOptimization/v1`。精确结构由 [optimization.schema.json](optimization.schema.json)控制，跨引用、覆盖、依赖循环、有限表达式及文件完整性由 `optimization.mjs` 检查。它是合同的一部分；`implementation-brief.md`、生成输入与报告仅为投影。旧合同仍输出 generation v1；启用后输出 [RestoreGenerationInput/v2](generation-input-v2.schema.json)。不把新字段写回已冻结旧 run。
+
+| 命令 | 输入与输出 |
+| --- | --- |
+| `node scripts/restore/cli.mjs init-vnext RUN URL [TIER]` | 创建未完成优化模板；不等于准备就绪 |
+| `node scripts/restore/cli.mjs prepare-check RUN` | 验证规格，输出 ready/limited/blocked、分子分母及问题；结构无效报错。freeze 始终拒绝 blocked |
+| `node scripts/restore/cli.mjs freeze RUN` | 校验准备、原始证据、必需资源覆盖及计划/音频所用缓存字节哈希，冻结整份合同 |
+| `node scripts/restore/cli.mjs generation-input RUN output.json` | 输出白名单 v1/v2；fixture_only 过滤源码证据，不能用规格字段绕过 |
+| `node scripts/restore/cli.mjs implementation-brief RUN [output.md]` | 从冻结优化规格生成可读计划，不另建真相源 |
+| `node scripts/restore/cli.mjs geometry-check RUN capture.json [suite.json]` | capture.json 必须为 run 内路径；校验 candidate、当前产物及合同绑定，输出既有 StaticCheckSuite/v1，再用 static-check-record 归档 |
+
+规格身份：region 用 `(state_id,id)` 唯一标识；同一组件可跨状态复用 ID。计划使用已冻结 state/region/resource/obligation 引用，每个 acceptance 必须属于该任务的 state 与 region 范围，并覆盖所有必需且适用的 obligation。资源 ID 唯一，评测专用或生成白名单外资源不能被实施计划引用。所有 capture state 均须声明 required coverage。必需覆盖未观察、阻塞未知、required 音频 cue 未观察、所用缓存缺失/漂移时拒绝冻结；非阻塞未知可输出 limited，不等于完整网站验收。
+
+behavior 的 logical_states 可独立于 capture states；guard 仅允许 eq/ne/lt/lte/gt/gte/and/or/not，嵌套不超过 8，update 只允许同类型 set 或数值 add。此处是规格校验，不是执行器或玩法正确性证明。track 保存 driver、坐标系和关键帧；观察/推断须显式区分。
+
+布局声明的根和分类路径相对 `restored/`；`.` 表示已有项目根。`resources[].uri` 仍是 run 内不可变缓存路径，与发布目录不同。分类声明不会自动搬文件或修复 loader。continue/refreeze 会继承必需资源覆盖、优化计划及 cue 所用的哈希缓存；缓存不能占用控制器文件、restored 或 snapshots 等托管路径。布局决策唯一指南见 [asset-layout.md](asset-layout.md)。
+
+geometry-check 仅测声明 selector 的可见性与框。位置误差使用中心偏移/参考元素宽高，尺寸误差使用相对参考宽高，并允许冻结的 min_px。容差由每个区域明确声明；5%/10% 是可校准的诊断起点，不是全站“95%还原度”。DOM canvas 的框不代表内部 3D 主体；无映射、不同视口/坐标系及缺失参考保持 unknown。
+
+## 匿名视觉比较
+
+优化合同可选择 `verification.protocol: blind/v1`；旧 `PairwiseRequest/v0.2` 仍可读。新协议按目标 obligation 的 state/criterion 显式选择媒体（C1/C2 使用截图，C3 保留序列及其帧/视频）；完整哨兵状态仍由绝对测量和回归检查负责，不暗中截断超限输入。新请求只含随机 request_id、投影后的目标及 inline 媒体；控制器保留顺序/版本/绑定映射，分别发起 A/B 和 B/A 两次独立调用。sequence 仅发送经同侧证据哈希解析的帧和采样时间，不发送原始捕获 JSON。图片、视频的容器和帧仍可能包含视觉差异，这是判断所需信息。
+
+请求结构见 [BlindPairwiseRequest/v1](blind-request.schema.json)。裁判返回 [BlindPairwiseVerdict/v1](blind-verdict.schema.json)：匹配 request_id，independent assessor、A/B/same/uncertain、reason 与 visible_improvement。控制器补回私有 binding、issue 和映射，写入既有 IterationDecision/v0.2。协议隔离不认证外部裁判身份；宿主须提供真实独立评测能力，实施者不能自称独立。
+
+每次请求最多 24 MiB 原媒体和 100 个媒体项，超限明确失败，不暗中降采样或删状态。视觉盲比明确标为 visual_only；audio 不进入这个裁判。完整路径回归、绝对质量、音频和最终 E2E 不能被一次局部偏好代替。宿主传入 Playwright ESM 入口（例如包的 index.mjs），跨 Node/Python 比较需统一实际 Chromium 版本，不能放宽环境哈希门禁。
