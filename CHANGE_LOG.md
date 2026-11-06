@@ -7,7 +7,7 @@
 - **隔离与判定：** 数据资格与 Loop stop/Final E2E 分轴记录。`source_reuse=allowed` 默认隔离 SFT/Preference，Trajectory 保留为需审阅；完整性篡改失败关闭。缺少原始 `generation-input.json` 时只生成合同投影并明确 `model_input_proof=false`。
 - **文档与网站：** 同步 Skill 入口、中英文 README、架构/文档索引、评测导航及网站 Q&A；唯一后处理接口集中在 `references/data-factory/interfaces.md`，不复制或改变原验收规则。
 - **验证：** 数据工厂定向回归 4/4；统一 local 共 190 项，186 通过、4 项真实浏览器集成因未配置匹配选择器而跳过，32 个 Schema 通过离线元校验。另一次显式启用现有 Node Playwright 后 1 项新增通过、3 项在测试前因该包要求的 Chromium `1252` 未安装而失败；未下载浏览器，不把它记成功能回归。网站成功构建 11 个案例，Skill quick validation、JS 语法、受影响文档本地链接及 diff 检查通过；`skills-ref` 不可用。
-- **发布：** 待提交、推送并创建 PR 后补充 URL 与提交；不在此条预先记为已推送或已合并。
+- **发布：** 实现提交 `00249fa` 已推送 `codex/restore-data-factory`；PR [#9](https://github.com/PlevanTem/ui-reverse-engineer/pull/9) 已创建，base/main 与 head 分支已核对。本条发布记录和文档实现基线另行提交推送；未合并或部署。
 
 ### 2026-11-04 — Restore vNext 版本集成与后续测试交接（PR #8）
 

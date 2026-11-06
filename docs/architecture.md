@@ -1,16 +1,16 @@
 ---
 doc_id: RESTORE-ARCHITECTURE
 doc_version: "1.2.0"
-doc_set: "restore-vnext-codex-2026.11.03"
+doc_set: "restore-vnext-codex-2026.11.06"
 status: current-with-pending-acceptance
 created_at: "2026-11-02"
 updated_at: "2026-11-06"
 evidence_as_of: "2026-11-06"
 timezone: Asia/Shanghai
 owner: project-maintainer
-implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
+implementation_ref: 00249fa777ee79183db67d62e018fbed207fb3d0
 review_baseline: b107ffdea15f503b9d341f54c7d5e9c3fe959475
-iteration_items: [IT-01, IT-02, IT-03, IT-04, IT-05, IT-06]
+iteration_items: [IT-01, IT-02, IT-03, IT-04, IT-05, IT-06, IT-07]
 ---
 
 # Restore vNext 模块与架构
