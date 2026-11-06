@@ -17,6 +17,7 @@ Showcase 与测试样例库中的案例仅供学习、研究与技术评测，�
 | Case 字段 | [`case-schema.json`](case-schema.json) | 评分与运行结果 |
 | 跨 case 报告格式 | [`templates/report.md`](templates/report.md) | 保存原始事实 |
 | 同一 case 多 run 轨迹汇总 | [`../scripts/restore/challenge-report.mjs`](../scripts/restore/challenge-report.mjs) | `RestoreChallengeReport/v2` provenance DAG；只读投影，按合同与 scorer 分组，不产生新评分 |
+| 训练候选后处理 | [`../references/data-factory/interfaces.md`](../references/data-factory/interfaces.md) | 不修改 Restore 验收，不执行训练，不以 Langfuse 或报告替代本地事实 |
 
 ## 目录
 
@@ -82,7 +83,7 @@ node scripts/check.mjs full --plan
 node scripts/check.mjs full
 ```
 
-`local` 运行完整 Restore/trajectory/检查器回归与 Schema 校验；浏览器选择器缺失时回归可以运行，但跳过测试会使总状态为 incomplete。`full` 要求设置 `RESTORE_CAPTURE_PYTHON`、`RESTORE_PLAYWRIGHT_MODULE`、`RESTORE_SCHEMA_PYTHON`，并加入 Case Manager 构建、打包与测试；缺少选择器在启动测试前阻断，已有依赖缺失或命令失败按实际失败记录。它不安装包、读取真实会话、调用模型或上报 Langfuse。Schema Python 必须已有 jsonschema；可用既有虚拟环境或明确的 PYTHONPATH，不写死本机依赖目录。
+`local` 运行完整 Restore/trajectory/evaluation/data-factory/检查器回归与 Schema 校验；浏览器选择器缺失时回归可以运行，但跳过测试会使总状态为 incomplete。`full` 要求设置 `RESTORE_CAPTURE_PYTHON`、`RESTORE_PLAYWRIGHT_MODULE`、`RESTORE_SCHEMA_PYTHON`，并加入 Case Manager 构建、打包与测试；缺少选择器在启动测试前阻断，已有依赖缺失或命令失败按实际失败记录。它不安装包、读取真实会话、调用模型、执行训练或上报 Langfuse。Schema Python 必须已有 jsonschema；可用既有虚拟环境或明确的 PYTHONPATH，不写死本机依赖目录。
 
 默认在新的 `reverse_output/checks/` 子目录保存 plan、逐项日志与 result，`--output NEW_DIRECTORY` 可指定新目录；已有目录不覆盖。failed、blocked、incomplete 都返回非零。passed 仅表示本次定义的工程检查成功；不能替代 skills-ref（可用时单独运行）、文档/展示审阅、真实云端回读、宿主激活、Judge 校准或页面质量/效率验收。
 
@@ -96,6 +97,8 @@ python -X utf8 scripts/validate-schemas.py --instance references/trajectory/view
 ```
 
 该脚本仅加载仓库 Schema 与指定 JSON，拒绝未加载的远程引用；结果不表示语义正确。具体实例路径使用本次案例自己的忽略目录。
+
+数据工厂定向回归使用 `node --test --test-isolation=none scripts/data-factory/*.test.mjs`，覆盖权威事实投影、Langfuse 只读关联、source-reuse 隔离、篡改失败、去重与分组切分。Schema/脚本通过只证明后处理契约工作，不证明样本适合某个模型或训练目标。
 
 报告模板变更须检查桌面及窄屏渲染、资源链接、脚本错误和完整 SHA-256 页脚的换行；表格或证据对比容器内部滚动不等于整页溢出。折叠区尚未请求的 lazy 图片应与加载失败分开记录。以上仅验证报告呈现，不增加被测产物的 E2E 覆盖或质量分。
 

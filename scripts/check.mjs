@@ -11,7 +11,7 @@ const exec=promisify(execFile),sha=s=>createHash('sha256').update(s).digest('hex
 
 export function buildPlan(profile='local',{env=process.env,root=workspace}={}){
  if(!['local','full'].includes(profile))throw new Error('Profile must be local or full');
- const steps=[{id:'regression',command:process.execPath,args:['--test','--test-isolation=none','scripts/check.test.mjs','scripts/restore/tests/*.test.mjs','scripts/trajectory/*.test.mjs','scripts/evaluation/*.test.mjs'],cwd:root},
+ const steps=[{id:'regression',command:process.execPath,args:['--test','--test-isolation=none','scripts/check.test.mjs','scripts/restore/tests/*.test.mjs','scripts/trajectory/*.test.mjs','scripts/evaluation/*.test.mjs','scripts/data-factory/*.test.mjs'],cwd:root},
   {id:'schemas',...(env.RESTORE_SCHEMA_PYTHON?{command:env.RESTORE_SCHEMA_PYTHON,args:['-X','utf8','scripts/validate-schemas.py'],cwd:root}:{unavailable:'RESTORE_SCHEMA_PYTHON not set'})}];
  const blockers=profile==='full'?['RESTORE_CAPTURE_PYTHON','RESTORE_PLAYWRIGHT_MODULE','RESTORE_SCHEMA_PYTHON'].filter(k=>!env[k]).map(k=>k+' required for full checks'):[];
  if(profile==='full'){

@@ -1,5 +1,14 @@
 # 变更日志
 
+### 2026-11-06 — Restore 离线数据工厂与训练候选边界
+
+- **范围：** 新增 `RunDataManifest/v1`、`AgentEpisode/v1`、`AgentStep/v1`、`DatasetSnapshot/v1` 及本地导出脚本，将 Restore 权威账本重建为 Episode/Step 运行包，再执行用途资格、精确去重、同 case/lineage 分组切分和版本化快照。输出 SFT、Preference、Trajectory 中性视图，不执行训练、模型注册或部署。
+- **事实与可观测性：** `contract.json`、`run.json`、`events.jsonl`、observations 与 snapshots 保持事实源；Langfuse 复用既有绑定、回执和恢复机制，只提供可选 trace/质检关联，不新建 telemetry/outbox，也不由远端状态静默改写 run。报告投影不作为数据源，隐藏思维/私有推理字段拒绝导出。
+- **隔离与判定：** 数据资格与 Loop stop/Final E2E 分轴记录。`source_reuse=allowed` 默认隔离 SFT/Preference，Trajectory 保留为需审阅；完整性篡改失败关闭。缺少原始 `generation-input.json` 时只生成合同投影并明确 `model_input_proof=false`。
+- **文档与网站：** 同步 Skill 入口、中英文 README、架构/文档索引、评测导航及网站 Q&A；唯一后处理接口集中在 `references/data-factory/interfaces.md`，不复制或改变原验收规则。
+- **验证：** 数据工厂定向回归 4/4；统一 local 共 190 项，186 通过、4 项真实浏览器集成因未配置匹配选择器而跳过，32 个 Schema 通过离线元校验。另一次显式启用现有 Node Playwright 后 1 项新增通过、3 项在测试前因该包要求的 Chromium `1252` 未安装而失败；未下载浏览器，不把它记成功能回归。网站成功构建 11 个案例，Skill quick validation、JS 语法、受影响文档本地链接及 diff 检查通过；`skills-ref` 不可用。
+- **发布：** 待提交、推送并创建 PR 后补充 URL 与提交；不在此条预先记为已推送或已合并。
+
 ### 2026-11-04 — Restore vNext 版本集成与后续测试交接（PR #8）
 
 - **范围与授权：** 用户确认先将当前版本合入 main，后续通过更多 case 测试推进。集成还原规格/资产、视听交互、任务持久续跑、公开轨迹与四维评估、Codex 检查点闭环及版本化审阅文档；当前范围保持 Codex-only。

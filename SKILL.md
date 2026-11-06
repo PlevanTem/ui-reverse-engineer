@@ -473,6 +473,8 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 若已授权过程观测，开始 Restore 时按[轨迹接口](references/trajectory/interfaces.md#automatic-restore-integration)确认自动配置、当前宿主会话绑定及文件/网络权限，使用 Restore CLI 初始化；收尾检查持久状态而非只看 worker 已启动。四维过程 Judge 按[评估方案](evals/trajectory/README.md)执行；采集缺口、未校准结果和页面 E2E 分开说明。
 
+当用户明确要求把 Restore 运行整理为后续训练候选、SFT/Preference/Trajectory 数据或数据集快照时，再读取[数据工厂接口](references/data-factory/interfaces.md)。先对本地权威账本做完整性检查，再重建 Episode/Step、执行来源隔离、用途资格、去重和同 case/lineage 分组切分；Langfuse 只作为可选 trace/质检关联，不替代本地事实。训练执行、模型注册与部署不在本 Skill 范围内，且不得把 Loop/E2E 通过直接写成“可训练”。
+
 启用 v2 观测并委派子任务时，先按[公开委派规格](references/trajectory/interfaces.md#public-task-specifications-before-delegation)持久化准备发出的公开任务说明，用返回的 handoff message 发起子任务并让子代理读取规格。历史加密正文不能事后猜写；公开规格、实际接收上下文及独立性证明分别记录。
 
 - `case_name` 规则：

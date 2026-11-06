@@ -1,11 +1,11 @@
 ---
 doc_id: RESTORE-ARCHITECTURE
-doc_version: "1.1.0"
+doc_version: "1.2.0"
 doc_set: "restore-vnext-codex-2026.11.03"
 status: current-with-pending-acceptance
 created_at: "2026-11-02"
-updated_at: "2026-11-03"
-evidence_as_of: "2026-11-03"
+updated_at: "2026-11-06"
+evidence_as_of: "2026-11-06"
 timezone: Asia/Shanghai
 owner: project-maintainer
 implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
@@ -27,6 +27,7 @@ iteration_items: [IT-01, IT-02, IT-03, IT-04, IT-05, IT-06]
 | 视觉交互与音频还原 | [geometry.mjs](../scripts/restore/geometry.mjs) 生成静态诊断；[pairwise.mjs](../scripts/restore/pairwise.mjs) 调用 [blind.mjs](../scripts/restore/blind.mjs)；core 归档音频、[report.mjs](../scripts/restore/report.mjs) 播放证据；[reverse-motion-skill](../reverse-motion-skill/SKILL.md) 提供人工/Agent 取证方法 | [Loop Criteria](../references/restore/criteria.md)、[Restore 接口](../references/restore/interfaces.md)、[动效规格](../reverse-motion-skill/references/spec.md) | 几何与匿名偏好不是最终质量；动效/声音规格不是运行引擎或已安装生成工具 |
 | 持久迭代闭环 | [task.mjs](../scripts/restore/task.mjs) 拥有任务状态/预算/交接；[hooks.mjs](../scripts/restore/hooks.mjs) 是宿主适配器；CLI 的 task-* 为显式入口；项目 [hooks 配置](../.codex/hooks.json) 连接宿主事件 | [task Schema](../references/restore/task.schema.json)、[任务接口](../references/restore/interfaces.md#任务连续性)、[激活验收](../evals/vnext-acceptance.md#continuity-activation) | 原 run.complete 语义不变；宿主激活仍 unverified；Skill 只输出提案 |
 | 轨迹可观测与过程评估 | CLI 在 run 命令后调用 [auto.mjs](../scripts/trajectory/auto.mjs)；collector → views → evidence → judge → transport；[langfuse.mjs](../scripts/trajectory/langfuse.mjs) 提供共享协议适配器 | [轨迹接口](../references/trajectory/interfaces.md)、[过程评测](../evals/trajectory/README.md)、[rubric v2 增量](../evals/trajectory/rubrics-v2.json) | 需显式授权/配置/会话绑定；隐藏内容不可恢复；语义校准仍 unmeasured |
+| 离线数据工厂 | [export-run.mjs](../scripts/data-factory/export-run.mjs) 从本地事实重建 Episode/Step；[build-snapshot.mjs](../scripts/data-factory/build-snapshot.mjs) 做资格、精确去重、分组切分与中性导出 | [数据工厂接口](../references/data-factory/interfaces.md)及四个版本化 Schema | 不改变 Loop/E2E；Langfuse 只作可选质检链接；不执行训练、模型注册或部署 |
 
 2026-11-03 当前实施收敛为 [Codex 开发评估闭环](../references/evaluation/interfaces.md)：`scripts/evaluation/` 提供 coordinator/checkpoint/jobs、四种既有 runner 适配、Codex CLI/生命周期桥接和 Langfuse 检查点交付。开发 E2E 与有界轨迹窗口不再必须等 run.complete；完整任务后评估仍沿用原 worker。CLI 信号→后台任务→status 反馈已实测；原生 hook 激活仍 unverified。没有 Claude 适配或独立 SDK 包。
 
@@ -75,6 +76,10 @@ flowchart TD
     P --> X
     X --> L[共享 Langfuse 适配器]
     L --> N[远端轨迹与评分]
+    R --> DF[离线 Data Refinery]
+    O -. 可选 trace 绑定 .-> DF
+    DF --> DS[版本化 Episode / Step 快照]
+    DS --> Z[仓库外训练系统]
 ```
 
 数据流不等于全部同步调用：网站控制器、宿主 hook 和限时观测 worker 是三个入口；task-* 不会自动触发轨迹 worker。直接调用 core/task 模块也不会执行 CLI 的 afterRestoreCommand。脚本集成者必须显式选择相应入口，不能把 import 成功当成自动上报已启用。
@@ -91,6 +96,7 @@ flowchart TD
 | transport / auto | 不可变交付、查询恢复、worker 锁与持久状态 | 不重生成网站，不把 worker 启动或 HTTP 成功当成验收 |
 | langfuse | 配置解析、HTTP、分页、OTLP 封装、字段回读比较 | 不持有案例状态、重试策略或 Judge 调度 |
 | langfuse-pilot | Firewood 历史账本与来源审计适配器；兼容重导出共享函数 | 不作为通用流程的依赖，不冒充宿主轨迹 |
+| data-factory | 本地事实完整性、Episode/Step 投影、用途资格、去重、分组切分与版本化快照 | 不从报告造事实，不读隐藏思维，不把 E2E 结果等同训练资格，不执行训练 |
 
 共享传输已从 Firewood 试点抽出；auto/transport 直接依赖 langfuse，旧试点 import 路径通过重导出保持兼容。资产与页面工程文件、原始运行数据和远端评分仍按各自契约保存，不搬入 SDK 源目录。
 
@@ -105,12 +111,15 @@ import { createViews } from './scripts/trajectory/views.mjs';
 import { buildEvidencePayload } from './scripts/trajectory/evidence.mjs';
 import { configFrom } from './scripts/trajectory/langfuse.mjs';
 import { sendTraces } from './scripts/trajectory/transport.mjs';
+import { exportRun } from './scripts/data-factory/export-run.mjs';
+import { buildSnapshot } from './scripts/data-factory/build-snapshot.mjs';
 ```
 
 - 准备/几何/状态：使用 optimization、geometry、task 的导出函数。写 run 时使用控制器的锁与接口，避免自行替换账本。
 - 离线轨迹：normalizeSession / collectSessions → createViews → buildEvidencePayload；配置与作用域参数见[轨迹接口](../references/trajectory/interfaces.md)。这些步骤不会自动上传或执行 Judge。
 - 自动观测：以 Restore CLI 或 armAutomatic / runWorker 为入口；start:false 只阻止启动进程，仍会写绑定文件。
 - 网络交付：以 sendTraces 为持久化入口；直接 request/postJSON 是低层 HTTP 调用，不提供交付回执或重启幂等保障。
+- 数据后处理：exportRun 只读本地 run 事实并可选链接既有 trajectory binding；buildSnapshot 只消费已通过完整性检查的运行包。资格、切分、文件布局见[数据工厂接口](../references/data-factory/interfaces.md)。
 - 上述库模块 import 无自动上传/模型调用；CLI 文件是可执行入口，不应当作库 import。
 
 运行端沿用 Node 内置模块与现有环境。统一检查器使用 Node 24+；Schema 检查复用已有 Python + jsonschema 环境；Case Manager 使用自己的 package-lock 与本地依赖。浏览器集成需要已安装、版本匹配的 Node/Python Playwright。真实上报需 Langfuse 项目配置；外部 Judge 另需 Codex CLI 与既有登录。没有安装的生成工具保留为路由指南。
@@ -128,6 +137,7 @@ import { sendTraces } from './scripts/trajectory/transport.mjs';
 | 当前只接 Codex、本地文件/ESM 与限时 worker | 适配既有 Skill，复用成熟评分/传输，降低改造成本 | 先证明当前闭环与收益，再依据实际复用需求扩展 |
 | Task、评估 Job、完整过程评分分别拥有状态 | 网站完成、评估执行结束与质量通过不同 | 不因方便显示而合并状态/评分 |
 | 开发反馈与独立最终验收分离 | 防止开发样例、已见结果冒充留出效果 | 具体实验按既有验收协议审阅 |
+| 运行事实、可观测控制面与训练候选分离 | Langfuse/报告便于审阅，但不能替代可重放的本地事实；训练用途有额外泄漏与分组要求 | 只有出现经验证的跨项目需求，才考虑外部存储或训练平台适配 |
 
 原生 hook、真实新增开发 E2E、Judge 校准及项目级提效仍需对应验收，顺序与资源见[当前评测方案](evaluation-plan.md#后续迭代与验收顺序)。设计视角沿用[历史提案中的端口/适配器与持续反馈取舍](evaluation-suite-design.md#1-结论与设计视角)，不因此扩展本版宿主边界。
 
@@ -137,3 +147,4 @@ import { sendTraces } from './scripts/trajectory/transport.mjs';
 | --- | --- | --- | --- |
 | 2026-11-03 | 1.0.0 | IT-01～IT-06 | 首次引入文档版本；补齐 Codex 调度/反馈/交付数据流、状态所有权和待验收边界 |
 | 2026-11-03 | 1.1.0 | IT-06 | 加入 OpenBoard 实施流程与数据映射的静态归档、来源、显示归一化及源文件说明 |
+| 2026-11-06 | 1.2.0 | Data factory | 加入本地运行事实到 Episode/Step 数据包、资格/隔离、分组切分与训练边界；复用既有 Langfuse 交付，不新增服务 |

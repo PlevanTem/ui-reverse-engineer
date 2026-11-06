@@ -25,6 +25,8 @@
 
 当前优先落地 [Codex 开发评估闭环](references/evaluation/interfaces.md)：显式绑定 run/主会话后，Restore CLI 与现有生命周期入口连接检查点、持久 Job、现有评估器、当前版本反馈和可选 Langfuse 交付。开发 E2E 与轨迹窗口可在 run 完成前评估；独立适配器/公开来源缺失时如实保留 unavailable，原生 hook 激活仍需单独验收。本版不包含 Claude 适配。
 
+本项目也可作为后续训练造数据的环境工厂，但 run 产物不能直接视为干净的 SFT/RL 数据。[离线数据工厂](references/data-factory/interfaces.md)从本地权威账本重建 Episode/Step，执行完整性、来源隔离、用途资格、精确去重和同 case/lineage 分组切分，再输出版本化快照及 SFT/Preference/Trajectory 中性视图。Langfuse 只提供可选 trace/质检关联；训练、模型注册和部署不在本项目范围内。
+
 可选[任务连续性](references/restore/interfaces.md#任务连续性)将网站目标与单次 run 分开：持久断点、会话绑定、累计预算和 Stop/压缩/中断 hook 支持有界续跑；开发 E2E 的缺口可形成下一 run 的证据计划。Skill 改进只输出提案。项目 hook 须经宿主信任和真实回调验收；脚本通过不等于已自动运行，文件不会唤醒已停止的应用。
 
 ## 效果展示

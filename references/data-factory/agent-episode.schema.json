@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:AgentEpisode:v1",
+  "title": "Normalized Restore agent episode",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "episode_id", "run_id", "case_id", "lineage_root_run_id", "contract_sha256", "source_policy", "started_at", "completed_at", "task", "outcome", "generation_input", "steps", "eligibility", "quarantine", "observability", "fingerprint"],
+  "properties": {
+    "schema_version": {"const": "AgentEpisode/v1"},
+    "episode_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "case_id": {"type": ["string", "null"]},
+    "lineage_root_run_id": {"type": "string", "minLength": 1},
+    "contract_sha256": {"$ref": "#/$defs/sha256"},
+    "source_policy": {"type": "object"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "task": {"type": "object", "required": ["requested_url", "observed_url", "states"]},
+    "outcome": {"type": "object", "required": ["loop_stop", "best_artifact_sha256", "final_e2e"]},
+    "generation_input": {"type": "object", "required": ["origin", "model_input_proof", "sha256"], "properties": {"origin": {"enum": ["recorded", "contract_projection"]}, "model_input_proof": {"type": "boolean"}, "sha256": {"$ref": "#/$defs/sha256"}}, "additionalProperties": false},
+    "steps": {"type": "array", "minItems": 2, "items": {"type": "string"}, "uniqueItems": true},
+    "eligibility": {"type": "object"},
+    "quarantine": {"type": "boolean"},
+    "observability": {"type": ["object", "null"]},
+    "dataset": {"type": "object"},
+    "fingerprint": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {"sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+}

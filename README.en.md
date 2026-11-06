@@ -24,6 +24,8 @@ The [documentation index](docs/README.md) also preserves the OpenBoard implement
 
 The current implementation focuses on the [Codex development evaluation loop](references/evaluation/interfaces.md): explicit run/main-session binding connects Restore CLI and existing lifecycle entry points to checkpoints, durable jobs, existing evaluators, current-target feedback and optional Langfuse delivery. Development E2E and trajectory windows can run before run completion; missing independent adapters or public sources stay unavailable. Native hook activation requires separate acceptance. Claude integration is outside this release.
 
+The project can also act as an environment factory for later training-data work, but run artifacts are not assumed to be clean SFT/RL data. The [offline data factory](references/data-factory/interfaces.md) reconstructs Episode/Step records from authoritative local ledgers, then applies integrity checks, source-boundary quarantine, purpose-specific eligibility, exact deduplication, and case/lineage-grouped splits. It emits versioned snapshots plus neutral SFT, preference, and trajectory views. Langfuse remains an optional trace/QA link; training, model registration, and deployment are out of scope.
+
 Optional [task continuity](references/restore/interfaces.md#任务连续性) separates a website objective from an individual run: durable recovery, explicit session binding, shared budgets, and Stop/compaction/interrupt hooks support bounded continuation. Development E2E gaps can inform an evidence-bound linked run; Skill changes remain proposals. Hooks require host trust and a real callback acceptance check. Passing scripts does not prove automatic execution, and files cannot wake a stopped app.
 
 ## Showcase

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:RunDataManifest:v1",
+  "title": "Immutable Restore run data package manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "created_at", "run", "package", "integrity", "source_policy", "eligibility", "quarantine_reasons", "files"],
+  "properties": {
+    "schema_version": {"const": "RunDataManifest/v1"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "run": {"type": "object", "required": ["run_id", "source", "path_redacted"], "properties": {"run_id": {"type": "string", "minLength": 1}, "source": {"const": "local_restore_run"}, "path_redacted": {"const": true}}, "additionalProperties": false},
+    "package": {"type": "object", "required": ["episode_id"], "properties": {"episode_id": {"type": "string", "minLength": 1}}, "additionalProperties": false},
+    "integrity": {"type": "object", "required": ["status", "checked_artifacts"], "properties": {"status": {"const": "valid"}, "checked_artifacts": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "source_policy": {"$ref": "#/$defs/sourcePolicy"},
+    "eligibility": {"$ref": "#/$defs/eligibility"},
+    "quarantine_reasons": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "files": {"type": "object", "required": ["episode", "steps", "artifacts", "episode_sha256", "steps_sha256", "artifacts_sha256"], "properties": {"episode": {"const": "episode.json"}, "steps": {"const": "steps.jsonl"}, "artifacts": {"const": "artifacts.index.jsonl"}, "episode_sha256": {"$ref": "#/$defs/sha256"}, "steps_sha256": {"$ref": "#/$defs/sha256"}, "artifacts_sha256": {"$ref": "#/$defs/sha256"}}, "additionalProperties": false}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "sourcePolicy": {"type": "object", "required": ["mode", "case_metadata_visibility", "source_reuse"], "properties": {"mode": {"enum": ["fixture_only", "source_assisted"]}, "case_metadata_visibility": {"const": "id_only"}, "source_reuse": {"enum": ["forbidden", "allowed"]}}, "additionalProperties": false},
+    "eligibilityItem": {"type": "object", "required": ["eligible", "reasons"], "properties": {"eligible": {"type": "boolean"}, "reasons": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}}, "additionalProperties": false},
+    "eligibility": {"type": "object", "required": ["sft", "preference", "trajectory"], "properties": {"sft": {"$ref": "#/$defs/eligibilityItem"}, "preference": {"$ref": "#/$defs/eligibilityItem"}, "trajectory": {"$ref": "#/$defs/eligibilityItem"}}, "additionalProperties": false}
+  }
+}

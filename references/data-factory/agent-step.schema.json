@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:AgentStep:v1",
+  "title": "Public action-observation-state step",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "episode_id", "step_id", "index", "kind", "at", "action", "observation", "state", "decision", "evidence", "fingerprint"],
+  "properties": {
+    "schema_version": {"const": "AgentStep/v1"},
+    "episode_id": {"type": "string", "minLength": 1},
+    "step_id": {"type": "string", "minLength": 1},
+    "index": {"type": "integer", "minimum": 0},
+    "kind": {"enum": ["baseline", "iteration", "stop"]},
+    "at": {"type": ["string", "null"]},
+    "action": {"type": "object"},
+    "observation": {"type": "object"},
+    "state": {"type": "object"},
+    "decision": {"type": ["object", "null"]},
+    "evidence": {"type": "array", "items": {"type": "object"}},
+    "fingerprint": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {"sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+}

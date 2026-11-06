@@ -1,10 +1,10 @@
 ---
 doc_id: RESTORE-DOCS
-doc_version: "1.1.0"
+doc_version: "1.2.0"
 doc_set: "restore-vnext-codex-2026.11.03"
 status: current
 created_at: "2026-11-03"
-updated_at: "2026-11-03"
+updated_at: "2026-11-06"
 timezone: Asia/Shanghai
 owner: project-maintainer
 implementation_ref: d6e3b03202c66069cd0ff33fa0d58d0d3fef468c
@@ -25,6 +25,7 @@ review_baseline: b107ffdea15f503b9d341f54c7d5e9c3fe959475
 | 启用与调用闭环 | [Codex 评估接口](../references/evaluation/interfaces.md) | 唯一执行接口；字段以其链接的 Schema 为准 |
 | 查看页面评分定义 | [最终 E2E](../evals/restore.md)、[Loop Criteria](../references/restore/criteria.md) | 分别控制最终评分、局部判断 |
 | 查看过程评分定义 | [轨迹评测](../evals/trajectory/README.md)及其 rubric | D/I/F/T、可评性、覆盖与校准 |
+| 整理训练候选数据 | [离线数据工厂](../references/data-factory/interfaces.md) | 本地事实到 Episode/Step、来源隔离、用途资格、去重与分组切分；不执行训练 |
 | 查看升级对比协议 | [验收与比较](../evals/vnext-acceptance.md) | 公平配对、质量/成本及原生激活验收 |
 | 查看历史设计 | [原总体提案](evaluation-suite-design.md) | 2026-11-02 历史背景，不作当前功能清单 |
 | 追踪变更与发布 | [CHANGE_LOG](../CHANGE_LOG.md) | 实际迭代、验证、提交与推送记录 |
@@ -41,6 +42,7 @@ review_baseline: b107ffdea15f503b9d341f54c7d5e9c3fe959475
 | IT-04 | 公开轨迹与四维评估 | 采集、v2 角色/上下文、外部 Judge 和上报已实现；校准 unmeasured |
 | IT-05 | Codex 开发评估闭环 | Checkpoint/Job/额度/反馈/交付已实现；真实新增开发 E2E 与窗口 Judge 验收待补 |
 | IT-06 | 长期审阅文档 | 首次建立文档集版本、元信息、当前方案与历史状态区分 |
+| IT-07 | 离线数据工厂 | 运行包、Episode/Step、用途资格与快照脚本已实现；训练、模型注册和部署不在范围 |
 
 后续验收顺序与资源依赖统一见[当前评测方案](evaluation-plan.md#后续迭代与验收顺序)，本表不另设门禁。
 
@@ -58,3 +60,4 @@ implementation_ref 指说明所依据的代码提交，review_baseline 指本次
 | --- | --- | --- | --- |
 | 2026-11-03 | 1.0.0 | IT-06，关联 IT-01～IT-05 | 建立审阅入口、元信息与版本；按当前 Codex 范围整理架构及评测 |
 | 2026-11-03 | 1.1.0 | IT-06 | 保存 OpenBoard 双图、可编辑图形快照与哈希清单，接入架构/评测正文 |
+| 2026-11-06 | 1.2.0 | IT-07 | 增加 Restore 运行事实到版本化训练候选快照的离线接口，并明确 Langfuse 与训练边界 |
