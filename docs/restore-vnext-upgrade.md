@@ -2,7 +2,7 @@
 
 状态：首批代码及后续增量在 [PR #8](https://github.com/PlevanTem/ui-reverse-engineer/pull/8) 集中审阅，实际集成状态见 PR 和 [CHANGE_LOG](../CHANGE_LOG.md)。这份文件记录首批落地边界，不把设计提案当成运行成果。唯一 SOP、接口、Loop Criteria 和最终评测仍沿用原控制文件。大版本采用向后兼容的增量，先打通证据→规格→实施→校验→回放，再按真实缺口增加工具。
 
-本版现按四个优化项组织：还原准备与资产规范、视觉交互与音频、持久迭代闭环、轨迹可观测与过程评估。下表记录首批网站侧增量；后续轨迹/评估模块、依赖、接口复用及未激活能力统一见[整体架构](architecture.md)，工程验证入口见[检查流程](../evals/README.md#统一工程检查)。
+本版现按四个优化项组织：还原准备与资产规范、视觉交互与音频、Harbor multi-step 迭代、ATIF 过程评估。下表保留领域能力，运行编排以[整体架构](architecture.md)为准，工程验证入口见[检查流程](../evals/README.md)。
 
 | 优化项 | 本版落地 | 仍需验证/后续 |
 | --- | --- | --- |
@@ -26,11 +26,11 @@
 | U18 音频验收 | 正式音频证据类型、可播放报告 | 调用日志不等于听感验证 |
 | U19 最终 E2E | 原五维与红线不变 | 不用局部偏好填造最终分 |
 | U20 Schema/所有权 | optimization v1、generation v2、严格投影 | 保留个人离线 Skill 定位 |
-| U21 继承 | continue/refreeze 复制哈希验证的规格资产缓存 | 不改写父账本 |
-| U22 恢复/进度 | 任务级持久游标、会话绑定、累计预算、分阶段恢复、幂等子 run 交接；项目生命周期 hook | 适配器可测；宿主信任与回调→续跑→进展仍须实测；不增加常驻服务 |
+| U21 继承 | 新 Harbor trial 显式引用父 task/trial、合同与 artifact hash，并重新测量 baseline | 不改写父 trial 或继承评分 |
+| U22 恢复/进度 | Harbor multi-step、`--resume-trajectory`、artifact 持久化与 early stopping | resume / transfer 已通过 POLA URL 实跑；early stopping 尚未实跑 |
 | U23 报告/回放 | 优化规格投影、原始轨迹与 audio 播放 | 新页仍需桌面/窄屏实测 |
-| U24 离线迭代 | RED→GREEN 回归、Firewood 原始失败记录、证据绑定的 Skill 改进提案 | 不自动修改 Skill，不接入留出反馈，不把单案例当泛化或训练效果 |
-| U25 兼容迁移 | 基线 checkpoint、独立分支与验收协议 | 集成状态见 PR/CHANGE_LOG；质量与效率效果待配对实验 |
+| U24 离线迭代 | RED→GREEN 回归、原始失败记录、证据绑定的 Skill 改进提案 | 不自动修改 Skill，不把单案例当泛化或训练效果 |
+| U25 Harbor 迁移 | 固定依赖、ATIF、task lint、Trial Package 与独立分支 | 真实 trial 状态见 CHANGE_LOG；质量与效率效果待配对实验 |
 
 本次经典问题是“带证据的规格驱动重建”和“有混杂因素的配对评估”：记录变多只提高可检查性，不能自行证明还原质量。验收方法与对比资格由 [vnext-acceptance](../evals/vnext-acceptance.md)控制。
 

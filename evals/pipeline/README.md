@@ -1,6 +1,6 @@
 # E2E Grader
 
-本目录只包含 Restore 最终五维 E2E 的确定性封装。评测方案见 [`../restore.md`](../restore.md)；单次运行控制、报告和审批见 [`../../references/restore/interfaces.md`](../../references/restore/interfaces.md)。
+本目录只包含 Restore 最终五维 E2E 的确定性封装。评测方案见 [`../restore.md`](../restore.md)；Harbor step 使用的低层输入与报告工具见 [`../../references/restore/interfaces.md`](../../references/restore/interfaces.md)。
 
 `grader.mjs` 从标准输入接收 [`FinalEvalRequest/v0.2`](../../references/restore/final-eval-request.schema.json)，调用独立 Judge adapter，并输出 `E2EResultRef/v0.2`。它负责：
 
@@ -13,7 +13,9 @@
 它不采集页面、不修复页面、不从截图自动判断语义，也不生成报告。
 
 ```powershell
-node scripts/restore/cli.mjs eval <run-directory> evals/pipeline/grader.mjs <judge-adapter.mjs>
+Get-Content final-eval-request.json -Raw | node evals/pipeline/grader.mjs judge-adapter.mjs
 ```
+
+Harbor 的最后实际执行 step 调用该 grader，并把完整结果写入 `/workspace/restore-run/evaluations/<step>.json`；separate verifier 再校验绑定和 reward。grader 不拥有 task/trial 生命周期。
 
 Rubric v1.2-draft 的 request 必须包含完整红线 profile。历史结果保留原版本，不由当前 grader 静默重评分。

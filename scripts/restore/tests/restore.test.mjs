@@ -9,6 +9,8 @@ import { scoreFinal } from '../../../evals/pipeline/grader.mjs';
 import { report } from '../report.mjs';
 import { normalizeChoice, compare } from '../pairwise.mjs';
 import { invoke } from '../adapter.mjs';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64');
 test('report footer allows unbroken integrity hashes to wrap on narrow screens',async()=>{
@@ -348,6 +350,27 @@ test('generation input excludes evaluation-only source and stack evidence',async
   assert.ok(!JSON.stringify(input).includes('secret source note'));
   assert.ok(!JSON.stringify(input).includes('source-eval'));
   assert.ok(!('case_source' in input));
+});
+test('frozen task narrative is reused by generation input and the generated brief',async t=>{
+  const {root,c}=await workspace(t);
+  c.task_description={title:'Restore the story page',scenario:'Observed editorial landing page',user_intent:{text:'Read the story',basis:'inferred'},description:'Reproduce the observed layout and declared states.',evidence_refs:['ref']};
+  await core.writeJSON(join(root,'contract.json'),c);await act(root,'freeze',r=>core.freeze(root,r));
+  assert.deepEqual((await core.generationInput(root,await core.readJSON(join(root,'run.json')))).task_description,c.task_description);
+  const base=await assessment(root,await core.readJSON(join(root,'run.json')),[2,2]);await act(root,'baseline',r=>core.baseline(root,r,base));
+  await report(root,await core.readJSON(join(root,'run.json')));
+  assert.match(await readFile(join(root,'design_brief.md'),'utf8'),/Restore the story page/);
+  assert.match(await readFile(join(root,'design_brief.md'),'utf8'),/inferred/);
+});
+test('Harbor prepare sealing writes task artifacts without mutating local loop state',async t=>{
+  const {root,c}=await workspace(t),before=await readFile(join(root,'run.json'),'utf8');
+  c.task_description={title:'Observed page',scenario:'Landing page',user_intent:null,description:'Reproduce observed states.',evidence_refs:['ref']};await core.writeJSON(join(root,'contract.json'),c);
+  const command=fileURLToPath(new URL('../seal-prepare.mjs',import.meta.url));
+  await promisify(execFile)(process.execPath,[command,root]);
+  assert.equal(await readFile(join(root,'run.json'),'utf8'),before);
+  assert.equal(JSON.parse(await readFile(join(root,'evaluations/prepare.json'),'utf8')).continue_gate,1);
+  assert.deepEqual(JSON.parse(await readFile(join(root,'generation-input.json'),'utf8')).task_description,c.task_description);
+  c.task_description.title='Changed frozen task';await core.writeJSON(join(root,'contract.json'),c);
+  await assert.rejects(()=>promisify(execFile)(process.execPath,[command,root]),/Frozen contract changed/);
 });
 test('static check suites are normalized, bound to a version, and rendered in the trajectory report',async t=>{
   const {root,c}=await workspace(t);

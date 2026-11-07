@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:RestoreTaskDescription:v1",
+  "title": "Narrative field of the Restore contract, not a separate task artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "scenario", "user_intent", "description", "evidence_refs"],
+  "properties": {
+    "title": {"type": "string", "minLength": 1},
+    "scenario": {"type": "string", "minLength": 1},
+    "user_intent": {"oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["text", "basis"], "properties": {"text": {"type": "string", "minLength": 1}, "basis": {"enum": ["observed", "inferred"]}}}]},
+    "description": {"type": "string", "minLength": 1},
+    "evidence_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+  }
+}

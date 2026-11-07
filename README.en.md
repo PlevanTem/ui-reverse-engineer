@@ -6,9 +6,13 @@
 
 # UI Reverse Engineer
 
+Restore accepts a website directly: `node scripts/harbor/restore.mjs --url https://example.com`. The Agent observes it and derives the task in one contract; the design brief is generated from that contract, and native ATIF is automatically packaged for Data Factory. Manually frozen test cases use `--case READY_CASE_ID`. See the [automatic entry point](references/harbor/automation.md).
+
+The live POLA URL run completed Restore iterations, ATIF export and a Snapshot. Independent visual acceptance remains incomplete, so training candidates are closed. See the [runtime evidence and limits](references/harbor/automation.md).
+
 **Turn websites, screenshots and recordings into actionable requirements, reusable design rules and runnable reconstructions.**
 
-[Website](https://plevantem.github.io/ui-reverse-engineer/) · [Get started](#how-to-start) · [Cases](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [Architecture & evaluation plan](docs/README.md) · [Execution & evaluation](evals/README.md) · [中文](README.md)
+[Website](https://plevantem.github.io/ui-reverse-engineer/) · [Get started](#how-to-start) · [Cases](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [Execution & evaluation](evals/README.md) · [中文](README.md)
 
 Review results per case and input policy; a source-assisted showcase is not a clean-room benchmark or proof of full E2E success.
 
@@ -16,15 +20,18 @@ Review results per case and input policy; a source-assisted showcase is not a cl
 
 Optional preparation gates, durable section specifications, design tokens/region boxes, behavior/motion/audio cues, flexible asset layouts, anonymous visual comparison and audio evidence playback are available. Legacy contracts remain readable; the runtime adds no dependency or service. Geometry diagnostics and local pairwise preference do not establish full E2E acceptance.
 
-[Interfaces](references/restore/interfaces.md#优化规格与准备检查) · [Asset layout](references/restore/asset-layout.md) · [Upgrade scope](docs/restore-vnext-upgrade.md) · [Acceptance](evals/vnext-acceptance.md)
+[Interfaces](references/restore/interfaces.md) · [Asset layout](references/restore/asset-layout.md) · [Upgrade scope](docs/restore-vnext-upgrade.md) · [Acceptance](evals/vnext-acceptance.md)
 
 The [architecture and module reuse guide](docs/architecture.md) maps the four improvements, dependencies and capability boundaries. [Consolidated engineering checks](evals/README.md#统一工程检查) provide a previewable local runner with durable receipts. Existing ESM interfaces can be reused directly; no separate SDK package is published.
 
 The [documentation index](docs/README.md) also preserves the OpenBoard implementation and system dataflow diagrams as PNG/SVG, editable source data and a versioned hash manifest for offline review and iteration.
 
-The current implementation focuses on the [Codex development evaluation loop](references/evaluation/interfaces.md): explicit run/main-session binding connects Restore CLI and existing lifecycle entry points to checkpoints, durable jobs, existing evaluators, current-target feedback and optional Langfuse delivery. Development E2E and trajectory windows can run before run completion; missing independent adapters or public sources stay unavailable. Native hook activation requires separate acceptance. Claude integration is outside this release.
+The current execution architecture uses [Harbor 0.25.0](docs/architecture.md) as the only harness. Harbor owns tasks, trials, multi-step execution, stopping, separate verifiers, rewards, ATIF, datasets, and regrade. Restore keeps only domain tools for contracts, capture, comparison, scoring, reports, and archive audits. A direct URL creates an exploratory task; only a `ready` case can compile into the formal dataset. Missing URLs stop the route and require user input.
 
-Optional [task continuity](references/restore/interfaces.md#任务连续性) separates a website objective from an individual run: durable recovery, explicit session binding, shared budgets, and Stop/compaction/interrupt hooks support bounded continuation. Development E2E gaps can inform an evidence-bound linked run; Skill changes remain proposals. Hooks require host trust and a real callback acceptance check. Passing scripts does not prove automatic execution, and files cannot wake a stopped app.
+The project can act as an environment factory for later training-data work, but Harbor trial artifacts are not assumed to be clean SFT/RL data. The [Harbor Trial Data Factory](references/data-factory/interfaces.md) treats native ATIF-v1.7/v1.8 as primary trajectory data, adds governance sidecars, applies purpose-specific eligibility, quarantine, exact deduplication, and case/task-grouped splits, and emits neutral versioned views. Training, model registration, and deployment remain out of scope.
+
+The POLA exploratory URL run verified execution and data export. Independent visual quality, ready-case acceptance and early stopping remain separate limits; see [runtime acceptance](references/harbor/automation.md).
+
 
 ## Showcase
 
@@ -250,9 +257,6 @@ This is a test oracle problem: define what counts as a correct result and how th
 - [Loop Criteria](references/restore/criteria.md): local visual assessment and candidate decisions.
 - [Restore interfaces](references/restore/interfaces.md): commands, capture, evidence, and reports.
 - [Restore final E2E](evals/restore.md): final acceptance, scoring, and redlines.
-- [Firewood Langfuse pilot](evals/langfuse-firewood-pilot.md): actual control-event import, source checks, and observation/score readback without inventing missing Agent traces.
-- [Agent trajectories and four-dimensional evaluation](evals/trajectory/README.md): host records for the main agent and subagents, public reasoning summaries, Skill reads and tool feedback; optional automatic Restore CLI binding, batched delivery, external Codex judges and native Langfuse score readback. See the [interface](references/trajectory/interfaces.md) for configuration/recovery and the [Firewood protocol](evals/trajectory/firewood.md) for case acceptance. Hidden reasoning, missing context and uncalibrated results are never invented.
-  - [v2 iteration steps](evals/trajectory/iteration-plan.md): attributed message roles and deduplication, public instruction candidates, pre-delegation task specs, claim/evidence pairing and per-unit findings; new bindings use v2, old captures remain unchanged, and calibration is reported separately from coverage.
 - [Interactive scene reconstruction](references/restore/interactive-scenes.md): persistent interactions, 3D, and motion.
 - [Reconstruction brief template](references/restore-brief-template.md): scope, implementation, and evidence.
 - [DESIGN.md template](references/design-md-template.md): design asset structure.

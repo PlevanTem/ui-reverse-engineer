@@ -30,6 +30,7 @@
     },
     "requested_url": {"type": "string", "minLength": 1},
     "observed_url": {"type": "string", "minLength": 1},
+    "task_description": {"$ref": "task-description.schema.json"},
     "states": {"type": "array", "minItems": 1, "items": {"type": "object"}},
     "obligations": {"type": "array", "minItems": 1, "items": {"type": "object"}},
     "interactive_scene": {"type": ["object", "null"]},

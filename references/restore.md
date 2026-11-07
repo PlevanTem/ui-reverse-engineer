@@ -1,6 +1,8 @@
 # Restore 执行流程
 
-本文件是 `--restore` 的唯一执行 SOP。它说明做事顺序和停止条件；精确命令、文件字段和 Schema 见 [`restore/interfaces.md`](restore/interfaces.md)，运行中的三类视觉评分见 [`restore/criteria.md`](restore/criteria.md)，最终交付验收见 [`../evals/restore.md`](../evals/restore.md)。
+直接 URL 的自动推导、合同冻结、brief 投影与已授权登录统一见 [Harbor 自动入口](harbor/automation.md)。叙述事实只存 contract.task_description；brief 与 Data Factory task 均从合同生成。
+
+本文件是 `--restore` 的领域执行 SOP。Harbor 0.25.0 负责 task、trial、multi-step、停止、独立 verifier、ATIF 与 regrade；本文件只定义 Restore 的取证、实现、比较和验收语义。低层命令见 [`restore/interfaces.md`](restore/interfaces.md)，运行中的三类视觉评分见 [`restore/criteria.md`](restore/criteria.md)，最终交付验收见 [`../evals/restore.md`](../evals/restore.md)。
 
 ## 目标与边界
 
@@ -19,7 +21,7 @@
 
 分别确认宿主浏览器、Node/Python Playwright、公开源码/资源读取、文件证据保存、Loop 诊断/成对复核和最终独立 E2E 的可用性。按已暴露工具选择路径，不绑定固定工具名或本机包；Node 缺包后检查其他已提供能力。没有 adapter 文件不等于没有独立 evaluator，独立评分结果可按接口录入；实现者不得将自己标为独立评委。
 
-已授权过程观测时，按[轨迹接口](trajectory/interfaces.md#automatic-restore-integration)确认本项目自动配置与当前会话身份，使用 CLI 初始化并检查绑定返回。它补充宿主轨迹与四维过程评估，不改变本节的页面验收职责。
+过程记录只接受 Harbor agent 生成且由官方 validator 通过的原生 ATIF-v1.7/v1.8。保留 producer 实际版本，不改标签伪升级。ATIF 缺失或非法时保留 artifacts，但不得从 Restore ledger 补造轨迹。四维过程评估只读取 ATIF 与 Harbor artifacts，不改变本节的页面验收职责。
 
 实现、评测和报告是三个职责边界：实现者只消费生成白名单并修改 `restored/`；评测器读取冻结参考和候选产物，生成测量、Diff 与判定；报告器只校验并汇总已有事实源。即使三个职责在同一宿主执行，也不能让实现上下文读取评测集的源码证据或让实现者自称独立评委。
 
@@ -43,7 +45,7 @@
 
 使用 [接口](restore/interfaces.md#优化规格与准备检查)的 `init-vnext` 建立优化合同。先 inspect，再写入可持续使用的规格，最后实现；初始模板有意不完整，不能直接冻结。旧合同保持原样，不在原 run 中补写新版字段。
 
-已授权开发内评估时，按 [Codex 闭环接口](evaluation/interfaces.md)绑定 run/主会话与 suite；阶段完成或检查点后执行 status，读取当前产物的结果再继续。网站持续目标仍由原 task 接口控制，检查点通过不能替代最终验收。
+Harbor `prepare` step 完成本节的检查和合同冻结；后续 step 只读取冻结合同与允许的生成输入。阶段结果写入 `/home/pwuser/restore-run` 并由 separate verifier 独立读取；格式通过不能替代最终验收。
 
 1. 用视觉、真实输入、可用时的公开源码/样式/资源互相验证。覆盖必需状态和关键路径，记录已观察、推断和未知；阻塞未知不能以“后续再补”绕过准备门禁。先验证实际导航 URL；位于子路径的参考可使用相对路径 `.`，不能默认 `/` 仍指向当前页面。
 2. 把设计 token、逐状态区域、参考框/坐标系、资源映射、任务依赖和验收引用写入合同的优化规格。优先做不可运行、主体缺失和核心路径问题，再修视觉影响大且成本低的偏差；优先级是工程判断，不是假装精确的收益预测。
@@ -92,23 +94,9 @@
 
 预算和轮数是上限，不是必须耗尽的配额。提前停止需要可核查原因：达到目标须满足 Criteria；阻塞须保存实际证据、尝试过的可用路径或不可用原因、剩余工作的处理结果，并通过 `RestoreBlocker/v1` 记录。冻结前无法取得必要参考时保留探索证据和未完成说明，不强行冻结。
 
-用户在 run 停止或预算耗尽后明确要求继续时，不得重写原 run 的开始时间、停止原因、契约或事件账本。使用接口定义的 `continue OLD_RUN NEW_RUN [TIER]` 创建关联 run：原样继承冻结契约、参考证据、生成策略和当前 `restored/` 工作树，但把继承产物作为新 `v0` 重新测量。父 run 若仍有未验证候选，lineage 必须将其标为 `working_tree_unverified`；不得继承父评分或把候选冒充 `best`。父轨迹留在父报告，子报告只保留哈希化 lineage 和父报告链接。
+Harbor trial 停止后不得通过 Restore CLI 重开同一 loop 或改写开始时间、停止原因、合同、ATIF 和 artifacts。用户要求继续时创建新的 Harbor task/trial，显式引用父 trial/task/contract/artifact hash，并把继承产物作为待重新测量的 baseline；不得继承父评分或把未验证候选冒充最佳版。
 
 最终 E2E Judge 缺失只影响最终验收，不能单独停止可继续的 Restore 工作。若 Loop 的 measure/verify 本身缺少独立评委，可继续采集、程序检查和修复可观察缺陷；自查标 implementer，不能填造独立评分或 keep。真正无法继续复核时以对应 Loop 阶段的证据停止，候选保留作未验证版本，最佳版不被未经复核的候选替换。
-
-### 可选的任务连续性
-
-用户授权持续完成网站任务时，在单个 run 外启用[任务连续性接口](restore/interfaces.md#任务连续性)。任务控制器将“run 已关闭”与“网站已验收”分开；绑定具体会话后，可信 Stop hook 请求下一次有界执行。每次恢复先用 `task-status` 重算，不用助手的结束语、旧待办或报告生成判断成功。
-
-按返回 action 执行：`prepare` 完成取证与冻结；`baseline_measure` 测继承或初始 v0；`measure_verify` 完成当前候选采集、独立测量与验证；`loop_next` 调用原 `next` 后执行其返回动作；`final_e2e` 完成独立开发 E2E；`repair_evaluation` 先修配置、证据或独立评委缺口，通过原 post-run review 记录补测，冻结目标改变则准备显式 refreeze 来源；`learn_plan` 从开发 E2E 的已观察缺口写一个证据支持的下一轮假设，通过 `task-plan` 记录；`handoff` 调用 `task-handoff`，在新 run 重新测 v0。不得改写父 run，也不能把同一个已失败的策略换名后反复执行。预算是上限，收益不明或资源确实不可用时用 `task-wait` 记录原因，完成不受影响的工作后如实交付。
-
-任务预算从创建时开始，跨 run、换会话、恢复均不重置。接入已有 run 不补造历史耗时，旧成本仍留在旧记录。Interrupt 留下暂停标记；恢复须有用户继续意图并执行 `task-resume`。压缩只重建已有阶段，不重新生成 v0。复制中崩溃的目录与未知持有者的锁都保留，核查后恢复，不能自动删除。
-
-pending 候选若与修复前产物相同，`build_candidate` 先完成原假设的实现；已有改动才进入 `measure_verify`；原 run 的修复时限已过则 `abort_candidate` 调用原 abort，恢复最佳版后进入后续阶段。不能把登记修复视为已经完成构建。
-
-开发 E2E 可以指导该任务的下一轮，留出评测不接入此驱动器。原样本被用于调优后作为开发案例。Skill 学习只用 `task-propose` 留证据、假设与回归建议，不能自动修改 Skill。任务 `accepted` 沿用既有独立 E2E 规则并保留 provisional 标记；它不是跨案例版本验收。
-
-项目 hook 须经宿主审阅信任；未信任、宿主未触发或应用已停止时，文件本身不会唤醒 Agent。无绑定会话和 fork/subagent 不接入。真实激活要另验收回调 → 续跑 → 实际进展，不能用 stdin 模拟冒充。全局调度不属于此增量。
 
 ### 过程沟通
 
@@ -118,7 +106,7 @@ pending 候选若与修复前产物相同，`build_candidate` 先完成原假设
 
 ### 5. 最终验收与报告
 
-Loop 结束后，由独立 evaluator 对最终产物执行五维 E2E 和六类红线检查。Loop 分数不换算为 E2E 分数，E2E 发现问题也不会重写或重开已停止的 run。已授权的任务连续性控制器可以在累计上限内，通过证据绑定计划创建新的关联 run；未启用时仍须用户明确要求继续。
+Loop 结束后，由独立 evaluator 对最终产物执行五维 E2E 和六类红线检查。Loop 分数不换算为 E2E 分数，E2E 发现问题也不会重写或重开已停止的 trial。继续工作需要新的 Harbor task/trial，并显式绑定父 trial 与证据。
 
 最终报告从冻结契约、运行状态、事件账本、所有版本快照、Diff、自动检查、观察记录和最终评测生成。`report.json` 与 HTML 必须呈现 `v0 → vN` 的完整版本轨迹及每轮改善/回退依据；不能只展示首版和最佳版。人工审批单独保存并绑定报告与模板哈希。
 
@@ -130,6 +118,6 @@ Loop 结束后，由独立 evaluator 对最终产物执行五维 E2E 和六类�
 - 关键资源与字体已核对，控制台和加载失败未被忽略；
 - 全部生成版本、文件/评分 Diff、自动检查和 keep/revert/inconclusive 依据可追溯；
 - 最终五维 E2E、红线、限制和校准状态已记录；
-- 已启用轨迹观测时，按[轨迹接口](trajectory/interfaces.md)核对自动状态、真实上报/评分回读与采集缺口；worker 启动和 HTTP 成功均不替代完成证据；
-- 根据 [Restore 接口的归档与临时文件清单](restore/interfaces.md#证据不可变性与历史报告重放)检查本 run 的过程产物，记录扫描缺口与保留项；
+- 每个已执行 step 的 ATIF 已通过官方 validator；缺失或非法时明确关闭轨迹与训练候选资格，不从 Restore 记录补造；
+- 使用 Restore archive/scratch audit 检查本 trial artifact 中的过程产物，记录扫描缺口与保留项；
 - 未把推断、占位内容或未检查项写成事实。

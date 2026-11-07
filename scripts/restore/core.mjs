@@ -4,6 +4,7 @@ import { resolve, relative, sep, join, isAbsolute, dirname } from 'node:path';
 import { validateRedlineProfile, validateRedlineAssessments } from '../../evals/pipeline/redline-contract.mjs';
 import { validateCaptureStep, validateCaptureReadiness } from './capture-actions.mjs';
 import { checkPreparation, projectOptimization, copyOptimizationResources, generationResources } from './optimization.mjs';
+import { validateTaskDescription } from './task-description.mjs';
 
 export const VERSION = 'restore/v0.2';
 export const TIERS = Object.freeze({ ordinary: { minutes:30, rounds:3, reserve:3 }, refined: { minutes:60, rounds:6, reserve:6 }, complex: { minutes:120, rounds:9, reserve:12 } });
@@ -83,6 +84,7 @@ export async function verifyEvidence(root,items,{artifact_sha256=null}={}) {
 export function references(ids,list,label) { assert(Array.isArray(list)&&list.length>0&&list.every(x=>ids.has(x)),`Missing/unknown evidence: ${label}`); }
 function unique(items,key,label) { assert(Array.isArray(items)&&items.length>0,`${label} required`); assert(new Set(items.map(x=>x[key])).size===items.length,`Duplicate ${label}`); }
 export async function validateContract(root,c) {
+  validateTaskDescription(c);
   assert(c.schema_version===VERSION,'Contract version must be restore/v0.2');
   assert(text(c.requested_url)&&text(c.observed_url)&&text(c.start_command),'URLs and start command required');
   assert(c.environment && ['browser','os','dpr','locale'].every(k=>c.environment[k]!=null),'Capture environment required');
@@ -356,7 +358,7 @@ export async function generationInput(root,run) {
     rendering:c.interactive_scene.rendering.map(item=>({...item,evidence:item.evidence.filter(id=>allowedIds.has(id))}))
   }:null;
   const resources=generationResources(c);
-  return {schema_version:c.optimization?'RestoreGenerationInput/v2':'RestoreGenerationInput/v1',...(c.optimization?{optimization:projectOptimization(c)}:{}),run_id:run.run_id,case_id:c.case_source?.case_id??null,generation_policy:c.generation_policy,binding:{contract_sha256:run.contract_sha256,reference_sha256:digest(referenceEvidence)},requested_url:c.requested_url,observed_url:c.observed_url,states:c.states,obligations,interactive_scene:scene,reference_evidence:referenceEvidence,resources,unknowns:c.unknowns??[],output:{project_path:'restored/',start_command:c.start_command}};
+  return {schema_version:c.optimization?'RestoreGenerationInput/v2':'RestoreGenerationInput/v1',...(c.optimization?{optimization:projectOptimization(c)}:{}),run_id:run.run_id,case_id:c.case_source?.case_id??null,generation_policy:c.generation_policy,binding:{contract_sha256:run.contract_sha256,reference_sha256:digest(referenceEvidence)},requested_url:c.requested_url,observed_url:c.observed_url,...(c.task_description?{task_description:validateTaskDescription(c)}:{}),states:c.states,obligations,interactive_scene:scene,reference_evidence:referenceEvidence,resources,unknowns:c.unknowns??[],output:{project_path:'restored/',start_command:c.start_command}};
 }
 export function summarizeStaticChecks(checks) {
   const count=status=>checks.filter(check=>check.status===status).length,total=checks.length,skipped=count('skipped'),applicable=total-skipped,assessed=count('pass')+count('fail');

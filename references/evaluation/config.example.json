@@ -1,8 +1,0 @@
-{
-  "schema_version": "CodexEvaluationConfig/v1",
-  "suites": [
-    {"id": "engineering", "runner": "engineering", "profile": "local", "triggers": ["checkpoint", "record", "Stop"], "feedback": "developer"},
-    {"id": "preparation", "runner": "preparation", "triggers": ["checkpoint", "prepare-check", "freeze"], "feedback": "developer"}
-  ],
-  "budget": {"max_jobs": 8, "max_wall_ms": 3600000, "max_job_ms": 240000, "max_judge_calls": 4}
-}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:DatasetSnapshot:v2",
+  "title": "Versioned ATIF-first offline dataset snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "dataset_id", "created_at", "source_packages", "counts", "split_policy", "duplicates", "files"],
+  "properties": {
+    "schema_version": {"const": "DatasetSnapshot/v2"},
+    "dataset_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "source_packages": {"type": "array", "items": {"type": "object", "required": ["episode_id", "manifest_sha256"]}},
+    "counts": {"type": "object", "required": ["episodes", "steps", "duplicates", "quarantine", "trajectory", "sft", "preference", "rl"]},
+    "split_policy": {"type": "object"},
+    "duplicates": {"type": "array", "items": {"type": "string"}},
+    "files": {"type": "object", "required": ["episodes_sha256", "steps_sha256", "quarantine_sha256", "trajectory_sha256", "sft_sha256", "preference_sha256", "rl_sha256"]}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": "ATIF-v1.8",
+  "session_id": "session-continuation",
+  "trajectory_id": "trajectory-continuation-2",
+  "agent": {"name": "fixture-agent", "version": "1.0"},
+  "steps": [
+    {"step_id": 1, "source": "user", "message": "Prepare the task.", "is_copied_context": true, "extra": {"copied_context": {"source_trajectory_id": "trajectory-continuation-1", "source_step_id": 1, "source_sha256": "sha256:7f2861e66644beccadadf8143ec879752165d98c77e14447785925f89452c605"}}},
+    {"step_id": 2, "source": "agent", "message": "Continued from the frozen state.", "llm_call_count": 1}
+  ]
+}
