@@ -6,7 +6,7 @@
 
 # UI Reverse Engineer
 
-Restore accepts a website directly: `node scripts/harbor/restore.mjs --url https://example.com`. The Agent observes it and derives the task in one contract; the design brief is generated from that contract, and native ATIF is automatically packaged for Data Factory. Manually frozen test cases use `--case READY_CASE_ID`. See the [automatic entry point](references/harbor/automation.md).
+Restore accepts a website directly: `node scripts/harbor/restore.mjs --url https://example.com`. The Agent observes it and derives the task in one contract; the design brief is generated from that contract, and native ATIF is automatically packaged for Data Factory. Each trial keeps one latest export package; see the [automatic entry point](references/harbor/automation.md) for updates and failure recovery. Manually frozen test cases use `--case READY_CASE_ID`.
 
 The live POLA URL run completed Restore iterations, ATIF export and a Snapshot. Independent visual acceptance remains incomplete, so training candidates are closed. See the [runtime evidence and limits](references/harbor/automation.md).
 

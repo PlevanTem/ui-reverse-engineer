@@ -1,5 +1,12 @@
 # 变更日志
 
+### 2026-11-07 — 每个 trial 保留一个最新导出包
+
+- **范围：** 自动采集改用固定 `packages/<trial-name>/`；先临时导出并校验，再替换，失败保留或回退原包。导出器版本保存在 manifest；同源同版复用，不同 trial 拒绝覆盖。同步中英文 README、自动入口和评测说明。
+- **本地清理：** 对本次 POLA 重评的两份包逐文件核对，356 文件仅 episode/manifest 不同。最新版迁入固定目录且全部字节保持不变，旧副本 17,450,178 字节已删除，三份本地报告/索引链接已修正；原运行、轨迹、评估和 Snapshot 保留，Snapshot 来源 manifest 摘要不变。运行产物不纳入提交。
+- **验证：** 最新 main 的隔离 worktree 中 Harbor profile 四项全部通过：21/21 回归、task lint/官方 ATIF validator/Pydantic round-trip、全部 Schema 和活动代码遗留扫描。本轮不重新运行 Agent 或评分。
+- **发布：** 已推送独立分支 `codex/single-trial-export` 并创建 [PR #12](https://github.com/PlevanTem/ui-reverse-engineer/pull/12)；最终合入状态与提交以该 PR 的 GitHub 记录为准。原工作区其他未提交改动保留。
+
 ### 2026-11-07 — Harbor-native harness 全量迁移
 
 - **范围：** 固定 `harbor==0.25.0`、ATIF-v1.8 与独立 `uv` lock；新增 URL exploratory task、`ready` case compiler、schema 1.4 multi-step task、separate verifier、七维 Final E2E reward、ATIF 过程 Judge、Harbor Trial Package 与 `DatasetSnapshot/v2`。ordinary/refined/complex 继续使用 3/6/9 轮和原六种停止原因。

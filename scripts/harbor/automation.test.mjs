@@ -17,7 +17,20 @@ test('setup failure automatically produces one audit episode with missing ATIF',
  assert.deepEqual((JSON.parse(await readFile(join(results[0].package,'trajectories/index.json'),'utf8'))).trajectories,[]);
  assert.deepEqual(await collectJob(job,join(root,'packages'),{validator:async()=>{throw Error('should reuse existing package');}}),results);
  manifest.package.exporter_sha256='older-exporter';await json(join(results[0].package,'manifest.json'),manifest);
- const updated=await collectJob(job,join(root,'packages'),{validator:async()=>{}});assert.notEqual(updated[0].package,results[0].package);assert.ok(updated[0].package.includes('--'));
+ const updated=await collectJob(job,join(root,'packages'),{validator:async()=>{}});assert.equal(updated[0].package,results[0].package);
+ const latest=await readFile(join(updated[0].package,'manifest.json'),'utf8');assert.notEqual(JSON.parse(latest).package.exporter_sha256,'older-exporter');
+ assert.deepEqual(await readdir(join(root,'packages')),['trial']);
+ // A failed refresh must leave the previous package byte-for-byte intact.
+ const changed={id:'setup-failure',task_name:'test/setup',step_results:[],exception_info:{exception_type:'ChangedSetupError'}};
+ await json(join(trial,'result.json'),changed);await rm(join(trial,'lock.json'));
+ const failed=await collectJob(job,join(root,'packages'),{validator:async()=>{}});assert.equal(failed[0].status,'export_failed');
+ assert.equal(await readFile(join(updated[0].package,'manifest.json'),'utf8'),latest);assert.deepEqual(await readdir(join(root,'packages')),['trial']);
+ await json(join(trial,'lock.json'),{});
+ const refreshed=await collectJob(job,join(root,'packages'),{validator:async()=>{}});assert.equal(refreshed[0].package,results[0].package);
+ const refreshedManifest=await readFile(join(updated[0].package,'manifest.json'),'utf8');assert.notEqual(JSON.parse(refreshedManifest).harbor.trial_result_sha256,manifest.harbor.trial_result_sha256);
+ assert.deepEqual(await readdir(join(root,'packages')),['trial']);
+ await json(join(trial,'result.json'),{...changed,id:'different-trial'});
+ const collision=await collectJob(job,join(root,'packages'));assert.match(collision[0].error,/different trial/);assert.equal(await readFile(join(updated[0].package,'manifest.json'),'utf8'),refreshedManifest);
 });
 test('runtime Skill excludes case metadata and dependency environments',async t=>{
  const root=await mkdtemp(join(tmpdir(),'restore-skill-'));t.after(()=>rm(root,{recursive:true,force:true}));
