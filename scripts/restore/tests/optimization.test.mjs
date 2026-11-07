@@ -66,6 +66,7 @@ test('core freeze enforces preparation and projects the versioned extension',asy
  const core=await import('../core.mjs');const {mkdtemp,mkdir,writeFile,rm}=await import('node:fs/promises');const {tmpdir}=await import('node:os');const {join}=await import('node:path');
  const root=await mkdtemp(join(tmpdir(),'restore-opt-'));t.after(()=>rm(root,{recursive:true,force:true}));await core.init(root,'https://example.com');
  const c={...await core.readJSON(join(root,'contract.json')),...fixture(),schema_version:'restore/v0.2',requested_url:'https://example.com',observed_url:'https://example.com',start_command:'open index.html',environment:{browser:'test',os:'test',dpr:1,locale:'en-US'},generation_policy:{mode:'source_assisted',source_reuse:'allowed',case_metadata_visibility:'id_only'}};
+ c.task_description={title:'Observed optimized task',scenario:'Interactive scene',user_intent:null,description:'Restore the observed scene within the frozen state scope.',evidence_refs:['frame']};
  c.states[0]={...c.states[0],page_id:'home',viewport_id:'desktop',path:'/',viewport:{width:800,height:600},ready_selector:'body',steps:[],sentinel:true};
  c.obligations=['C1','C2','C3'].map((criterion_id,i)=>({id:i===0?'layout':criterion_id,criterion_id,state_id:'ready',region_id:'scene',expected:'Synthetic fixture',method:'synthetic',importance:'obvious',required:true,target:3,applicability:'applicable',reference_evidence:[i===2?'motion':'frame']}));
  c.optimization.plan[0].acceptance_refs=c.obligations.map(o=>o.id);
@@ -73,6 +74,6 @@ test('core freeze enforces preparation and projects the versioned extension',asy
  for(const e of c.reference_evidence){e.uri='evidence/'+e.id+'.json';e.sha256=core.sha('{}');await writeFile(join(root,e.uri),'{}');}
  c.optimization.preparation.coverage[0].status='unknown';await assert.rejects(()=>core.validateContract(root,c),/preparation|scope|ready/i);
  c.optimization.preparation.coverage[0].status='observed';await core.writeJSON(join(root,'contract.json'),c);await core.locked(root,'freeze',r=>core.freeze(root,r));
- const input=await core.generationInput(root,await core.readJSON(join(root,'run.json')));assert.equal(input.schema_version,'RestoreGenerationInput/v2');assert.equal(input.optimization.plan[0].id,'scene-build');
+ const input=await core.generationInput(root,await core.readJSON(join(root,'run.json')));assert.equal(input.schema_version,'RestoreGenerationInput/v2');assert.equal(input.optimization.plan[0].id,'scene-build');assert.deepEqual(input.task_description,c.task_description);
  await writeFile(join(root,'assets-cached','wood.glb'),'changed');await assert.rejects(async()=>core.generationInput(root,await core.readJSON(join(root,'run.json'))),/resource|hash|preparation/i);
 });

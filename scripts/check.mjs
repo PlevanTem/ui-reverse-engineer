@@ -30,7 +30,7 @@ export function buildPlan(profile='local',{env=process.env,root=workspace}={}){
    {id:'case-manager-package',command:process.execPath,args:['scripts/prepare-sites-build.mjs'],cwd},
    {id:'case-manager-tests',command:process.execPath,args:['--test','tests/sites-worker.test.mjs'],cwd});
  }
- return {schema_version:'RestoreCheckPlan/v1',profile,blockers,steps,scope:'local engineering only; no model calls, uploads, Docker, cloud sandbox or real Harbor trial',additional_acceptance:'See evals/README.md and evals/vnext-acceptance.md; Harbor runtime acceptance remains not_run'};
+ return {schema_version:'RestoreCheckPlan/v1',profile,blockers,steps,scope:'local engineering only; no model calls, uploads, Docker, cloud sandbox or real Harbor trial',additional_acceptance:'See evals/README.md and evals/vnext-acceptance.md; static receipts do not establish runtime acceptance; see references/harbor/automation.md'};
 }
 
 async function execute(step){

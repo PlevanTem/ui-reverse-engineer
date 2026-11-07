@@ -16,7 +16,7 @@
     "completed_at": {"type": ["string", "null"]},
     "task": {"type": "object"},
     "outcome": {"type": "object", "required": ["stop_reason", "formal_rewards", "data_status"]},
-    "steps": {"type": "array", "minItems": 1, "items": {"type": "string"}, "uniqueItems": true},
+    "steps": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
     "eligibility": {"$ref": "#/$defs/eligibility"},
     "quarantine": {"type": "boolean"},
     "provenance": {"type": "object", "required": ["harbor_version", "atif_version", "trajectory_index"]},

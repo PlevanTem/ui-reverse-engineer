@@ -10,7 +10,7 @@ owner: project-maintainer
 
 # 项目架构与评测入口
 
-当前版本把 task、trial、multi-step、停止控制、verifier、reward、ATIF、dataset 和 regrade 迁移到 Harbor 0.25.0。Restore 只保留可复用领域工具。当前没有 Docker、云 sandbox 或 ready case，运行验收为 `not_run`。
+当前版本把 task、trial、multi-step、停止控制、verifier、reward、ATIF、dataset 和 regrade 迁移到 Harbor 0.25.0。Restore 只保留可复用领域工具。POLA 直接 URL 已实跑验证执行与数据链路，独立视觉质量仍 incomplete。真实验收范围、ATIF 版本与剩余限制统一见 [自动入口](../references/harbor/automation.md)。正式 ready-case 和提前停止仍未实跑。
 
 ## 阅读路径
 
@@ -36,9 +36,10 @@ owner: project-maintainer
 | 项目 | 状态 |
 | --- | --- |
 | 固定 Harbor 0.25.0 独立 `uv` 环境 | implemented / locally installed |
-| schema 1.4 multi-step task 生成 | implemented / synthetic only |
-| ATIF-v1.8 validator 与 round-trip | implemented / fixture verified |
-| separate verifier、resume、artifact transfer、early stop | `not_run` |
+| schema 1.4 multi-step task 生成 | implemented / live URL verified; see runtime acceptance |
+| 原生 ATIF-v1.7/v1.8 validator 与 round-trip | implemented / fixture verified |
+| separate verifier、resume、artifact transfer、regrade | POLA live URL verified |
+| early stopping | `not_run` |
 | ready case 真正 trial | `not_run`；当前全部 case 为 draft |
-| Trial Package 与 DatasetSnapshot/v2 | implemented / synthetic only |
+| Trial Package 与 DatasetSnapshot/v2 | implemented / live URL verified; see runtime acceptance |
 | SFT/RL 执行 | out of scope |

@@ -27,7 +27,7 @@
 | U19 最终 E2E | 原五维与红线不变 | 不用局部偏好填造最终分 |
 | U20 Schema/所有权 | optimization v1、generation v2、严格投影 | 保留个人离线 Skill 定位 |
 | U21 继承 | 新 Harbor trial 显式引用父 task/trial、合同与 artifact hash，并重新测量 baseline | 不改写父 trial 或继承评分 |
-| U22 恢复/进度 | Harbor multi-step、`--resume-trajectory`、artifact 持久化与 early stopping | 真实 resume、transfer 和 stopping 均为 `not_run` |
+| U22 恢复/进度 | Harbor multi-step、`--resume-trajectory`、artifact 持久化与 early stopping | resume / transfer 已通过 POLA URL 实跑；early stopping 尚未实跑 |
 | U23 报告/回放 | 优化规格投影、原始轨迹与 audio 播放 | 新页仍需桌面/窄屏实测 |
 | U24 离线迭代 | RED→GREEN 回归、原始失败记录、证据绑定的 Skill 改进提案 | 不自动修改 Skill，不把单案例当泛化或训练效果 |
 | U25 Harbor 迁移 | 固定依赖、ATIF、task lint、Trial Package 与独立分支 | 真实 trial 状态见 CHANGE_LOG；质量与效率效果待配对实验 |

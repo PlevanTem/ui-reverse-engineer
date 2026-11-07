@@ -1,5 +1,7 @@
 # Restore 执行流程
 
+直接 URL 的自动推导、合同冻结、brief 投影与已授权登录统一见 [Harbor 自动入口](harbor/automation.md)。叙述事实只存 contract.task_description；brief 与 Data Factory task 均从合同生成。
+
 本文件是 `--restore` 的领域执行 SOP。Harbor 0.25.0 负责 task、trial、multi-step、停止、独立 verifier、ATIF 与 regrade；本文件只定义 Restore 的取证、实现、比较和验收语义。低层命令见 [`restore/interfaces.md`](restore/interfaces.md)，运行中的三类视觉评分见 [`restore/criteria.md`](restore/criteria.md)，最终交付验收见 [`../evals/restore.md`](../evals/restore.md)。
 
 ## 目标与边界
@@ -19,7 +21,7 @@
 
 分别确认宿主浏览器、Node/Python Playwright、公开源码/资源读取、文件证据保存、Loop 诊断/成对复核和最终独立 E2E 的可用性。按已暴露工具选择路径，不绑定固定工具名或本机包；Node 缺包后检查其他已提供能力。没有 adapter 文件不等于没有独立 evaluator，独立评分结果可按接口录入；实现者不得将自己标为独立评委。
 
-过程记录只接受 Harbor agent 生成且由官方 validator 通过的 ATIF-v1.8。ATIF 缺失或非法时保留 artifacts，但不得从 Restore ledger 补造轨迹。四维过程评估只读取 ATIF 与 Harbor artifacts，不改变本节的页面验收职责。
+过程记录只接受 Harbor agent 生成且由官方 validator 通过的原生 ATIF-v1.7/v1.8。保留 producer 实际版本，不改标签伪升级。ATIF 缺失或非法时保留 artifacts，但不得从 Restore ledger 补造轨迹。四维过程评估只读取 ATIF 与 Harbor artifacts，不改变本节的页面验收职责。
 
 实现、评测和报告是三个职责边界：实现者只消费生成白名单并修改 `restored/`；评测器读取冻结参考和候选产物，生成测量、Diff 与判定；报告器只校验并汇总已有事实源。即使三个职责在同一宿主执行，也不能让实现上下文读取评测集的源码证据或让实现者自称独立评委。
 
@@ -43,7 +45,7 @@
 
 使用 [接口](restore/interfaces.md#优化规格与准备检查)的 `init-vnext` 建立优化合同。先 inspect，再写入可持续使用的规格，最后实现；初始模板有意不完整，不能直接冻结。旧合同保持原样，不在原 run 中补写新版字段。
 
-Harbor `prepare` step 完成本节的检查和合同冻结；后续 step 只读取冻结合同与允许的生成输入。阶段结果写入 `/workspace/restore-run` 并由 separate verifier 独立读取；格式通过不能替代最终验收。
+Harbor `prepare` step 完成本节的检查和合同冻结；后续 step 只读取冻结合同与允许的生成输入。阶段结果写入 `/home/pwuser/restore-run` 并由 separate verifier 独立读取；格式通过不能替代最终验收。
 
 1. 用视觉、真实输入、可用时的公开源码/样式/资源互相验证。覆盖必需状态和关键路径，记录已观察、推断和未知；阻塞未知不能以“后续再补”绕过准备门禁。先验证实际导航 URL；位于子路径的参考可使用相对路径 `.`，不能默认 `/` 仍指向当前页面。
 2. 把设计 token、逐状态区域、参考框/坐标系、资源映射、任务依赖和验收引用写入合同的优化规格。优先做不可运行、主体缺失和核心路径问题，再修视觉影响大且成本低的偏差；优先级是工程判断，不是假装精确的收益预测。

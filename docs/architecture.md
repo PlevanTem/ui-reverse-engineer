@@ -12,7 +12,7 @@ flowchart LR
   F --> G[separate verifier]
   G -->|continue_gate| F
   G -->|stop| H[Final E2E + sealed artifacts]
-  C --> I[ATIF-v1.8 per step]
+  C --> I[Native ATIF per step]
   H --> J[Trial Package]
   I --> J
   J --> K[DatasetSnapshot/v2]
@@ -53,4 +53,4 @@ no URL     → 停止并要求 URL
 
 ## Runtime boundary
 
-已完成的是固定依赖、task 生成、合成 task lint、ATIF validator、Pydantic round-trip、导出和资格测试。当前没有 Docker、云 sandbox 或 ready case，因此真实 trial、浏览器、resume trajectory、separate verifier、artifact transfer、early stopping 与 regrade 均是 `not_run`，不能写成 fully operational。
+POLA 直接 URL 已实跑验证执行与数据链路，独立视觉质量仍 incomplete。真实验收范围、ATIF 版本与剩余限制统一见 [自动入口](../references/harbor/automation.md)。正式 ready-case 和提前停止仍未实跑。

@@ -8,6 +8,8 @@ import {fileURLToPath} from 'node:url';
 import {compileCases,createTask,DEFAULT_IMAGE} from './task-builder.mjs';
 import {sha} from '../restore/core.mjs';
 const exec=promisify(execFile),workspace=fileURLToPath(new URL('../../',import.meta.url));
+process.env.PYTHONUTF8='1';
+process.env.PYTHONIOENCODING='utf-8';
 const windows=process.platform==='win32',bin=name=>join(workspace,'tools/harbor/.venv',windows?'Scripts':'bin',windows?name+'.exe':name);
 const root=await mkdtemp(join(tmpdir(),'restore-harbor-static-'));
 try{

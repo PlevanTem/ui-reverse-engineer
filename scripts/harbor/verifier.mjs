@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {dirname,join} from 'node:path';
+import {validateTaskDescription} from '../restore/task-description.mjs';
 
 export const STOP_REASONS=Object.freeze(['target_reached','plateau','cycle_detected','budget_exhausted','blocked','failed']);
 export const QUALITY_REWARDS=Object.freeze(['restore_layout','restore_style','restore_content','restore_interaction','restore_robustness','restore_total','restore_redline_pass']);
@@ -29,10 +30,14 @@ export function verifyStepEvaluation(value,expectedStep){
   return {rewards,record:{schema_version:'RestoreVerifierRecord/v1',step:expectedStep,status:value.status,continue_gate:value.continue_gate,stop_reason:value.stop_reason,formal_quality_reward:formal,quality_reward_keys:formal?[...QUALITY_REWARDS]:[],limitations:Array.isArray(value.limitations)?value.limitations:[]}};
 }
 
-export async function runVerifier({step=process.env.RESTORE_STEP,runRoot=process.env.RESTORE_RUN_ROOT??'/workspace/restore-run',logsRoot=process.env.RESTORE_VERIFIER_LOGS??'/logs/verifier'}={}){
+export async function runVerifier({step=process.env.RESTORE_STEP,runRoot=process.env.RESTORE_RUN_ROOT??'/home/pwuser/restore-run',logsRoot=process.env.RESTORE_VERIFIER_LOGS??'/logs/verifier'}={}){
   if(!step)fail('RESTORE_STEP is required');
   const input=join(runRoot,'evaluations',`${step}.json`),value=JSON.parse(await readFile(input,'utf8'));
   const result=verifyStepEvaluation(value,step);
+  if(step==='prepare'&&value.continue_gate===1&&process.env.RESTORE_INPUT_ROUTE==='direct_url'){
+    const contract=JSON.parse(await readFile(join(runRoot,'contract.json'),'utf8'));
+    validateTaskDescription(contract,{required:true});
+  }
   await mkdir(logsRoot,{recursive:true});
   await writeFile(join(logsRoot,'reward.json'),JSON.stringify(result.rewards,null,2)+'\n');
   await writeFile(join(logsRoot,'restore-evaluation.json'),JSON.stringify(result.record,null,2)+'\n');

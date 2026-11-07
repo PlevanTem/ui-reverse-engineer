@@ -6,12 +6,15 @@
 
 # UI Reverse Engineer
 
+Restore 支持直接输入网站：`node scripts/harbor/restore.mjs --url https://example.com`。Agent 自动观察并推导任务，合同只存一份事实，design brief 自动投影；任务结束自动采集 ATIF 与 Data Factory 包。人工冻结测试集单独使用 `--case READY_CASE_ID`。见 [自动入口](references/harbor/automation.md)。
+
+POLA URL 已实跑完成 Restore 迭代、ATIF 导出与 Snapshot；独立视觉质量仍未验收，训练候选关闭。[实跑范围与限制](references/harbor/automation.md)。
+
 **把网页、截图和录屏，转成可执行需求、可复用设计规范与可运行的还原项目。**
 
-[项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [快速上手](#如何开始) · [案例库](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [架构与评测方案](docs/README.md) · [执行与评测](evals/README.md) · [English](README.en.md)
+[项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [快速上手](#如何开始) · [案例库](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [执行与评测](evals/README.md) · [English](README.en.md)
 
 还原结果按案例与输入策略审阅；源码辅助展示不等于 clean-room 基准或完整 E2E 通过。
-
 
 ## Restore vNext（兼容增量）
 
@@ -25,9 +28,10 @@
 
 当前执行架构以 [Harbor 0.25.0](docs/architecture.md) 为唯一 harness：Harbor 管理 task、trial、multi-step、停止、独立 verifier、reward、ATIF、dataset 与 regrade；Restore 只保留合同、取证、比较、评分、报告和归档审计等领域工具。直接 URL 创建一次性 exploratory task，`ready` case 才能编译进入正式 dataset；没有 URL 时停止并要求用户提供。
 
-本项目可作为后续训练造数据的环境工厂，但 Harbor trial 产物不能直接视为干净的 SFT/RL 数据。[Harbor Trial Data Factory](references/data-factory/interfaces.md)以 ATIF-v1.8 为轨迹主数据，生成治理 sidecar、用途资格、隔离、精确去重和同 case/task 分组切分，再输出版本化中性视图。训练、模型注册和部署不在本项目范围内。
+本项目可作为后续训练造数据的环境工厂，但 Harbor trial 产物不能直接视为干净的 SFT/RL 数据。[Harbor Trial Data Factory](references/data-factory/interfaces.md)以 native ATIF-v1.7/v1.8 为轨迹主数据，生成治理 sidecar、用途资格、隔离、精确去重和同 case/task 分组切分，再输出版本化中性视图。训练、模型注册和部署不在本项目范围内。
 
-当前没有 Docker、云 sandbox 或 `ready` case；合成 task lint、ATIF validator 和数据导出只证明静态结构。真实浏览器 trial、会话续接、separate verifier、artifact transfer、early stopping 与 regrade 均保持 `not_run`。
+实跑范围与限制以 [Harbor 自动入口](references/harbor/automation.md) 的记录为准。
+
 
 ## 效果展示
 
@@ -253,9 +257,6 @@ obligation 把“页面要还原得像”转化为可观察、可比较、可追
 - [Loop Criteria](references/restore/criteria.md)：局部视觉评估与候选决策。
 - [Restore 接口](references/restore/interfaces.md)：命令、采集、证据与报告。
 - [Restore 最终 E2E](evals/restore.md)：最终验收、评分与红线。
-- [Harbor-native architecture](docs/architecture.md)：task/trial 所有权、multi-step、独立 verifier、ATIF 与数据工厂边界。
-- [ATIF 轨迹与四维评估](evals/trajectory/README.md)：只读取官方校验通过的 ATIF 与 Harbor artifacts；复制上下文和私有推理不进入训练候选，未校准指标不补造。
-- [Harbor Trial Data Factory](references/data-factory/interfaces.md)：Trial Package、Episode/Step sidecar、用途资格、隔离、去重和分组切分。
 - [交互场景还原](references/restore/interactive-scenes.md)：持续交互、3D 与动态场景。
 - [还原 brief 模板](references/restore-brief-template.md)：记录范围、实现与证据。
 - [DESIGN.md 资产模板](references/design-md-template.md)：设计资产结构。

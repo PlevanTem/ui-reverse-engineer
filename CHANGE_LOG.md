@@ -690,3 +690,30 @@
 - **范围：** 为运行后补充复评增加 `PostRunE2EReview/v1` Schema、`run.json` 独立引用和最终质量展示；新增评委/判官模型可用性、评测时间及时区、评分版本、校准状态、产物绑定和局限字段。同步中英文 README、E2E 目录说明、跨 case 报告模板与 Restore 接口文档。
 - **原因：** UIR-0007 原运行 E2E 为 `incomplete`，补充评测不能覆盖既有运行状态或混淆停止时间；报告需能展示可追溯的后续复评。
 - **验证：** UIR-0007 原运行 E2E 记录仍为 `incomplete`；独立 subagent 于 2026-10-15 04:43:40–04:49:53 UTC 复评，Judge 精确模型 ID 未暴露，六维复评因样式/交互/稳健性证据未知而保持 `incomplete`、不生成总分。复评通过官方 `score-final.mjs` 评分后，经新 CLI 命令写入哈希侧车和 `events.jsonl`；报告、T4、brief 已重生。报告通过 4175 的浏览器可访问性树检查，候选站 4188 返回 HTTP 200；Python Playwright 子进程因沙箱 WinError 5 无法启动，未取得新截图。未运行测试套件。
+
+# 2026-11-07 — Automatic Restore trial packaging
+
+- URL/task simplification: --url uses a reusable observation-to-task prompt and contract.task_description; brief/report/Data Factory consume deterministic projections. --case now requires a manually prepared ready fixture; draft fallback was removed following the clarified routing requirement. Historical run records remain unchanged.
+- URL/task validation: joint suite 77 passed / 4 skipped before the final projection integration test; final targeted suite 56 passed. Official Harbor lint found zero issues; URL-only POLA --plan passed. No new model trial was run for the revised prompt, so generation quality remains unverified.
+
+- Added the Harbor launch/export adapter to the current worktree; preserved existing unrelated edits.
+- Fixed missing working directory, explicit Codex auth-file selection, install/model network hosts, UTF-8 output, bounded prepare allocation and minimal runtime Skill injection.
+- Accept native ATIF-v1.7/v1.8 with official validation and media preservation; failed/empty trials retain audit packages and close training eligibility.
+- POLA timeout trial is retained for real-data regression. Full successful restoration/resume/visual Judge acceptance remains unproven. Not committed or pushed.
+- Validation: 73 passed / 4 browser integrations skipped / 0 failed; official Harbor static checks passed. Fresh automatic POLA run completed failure handling without manual export: 33-step native v1.7 trajectory valid, training eligibility closed after 300-second prepare timeout. Older real trial also exported through official media validation into a snapshot (1 episode / 1 trajectory / 0 SFT, preference or RL).
+
+### 2026-11-07 — POLA live URL: Restore through ATIF and Data Factory
+
+- **Runtime fixes:** bundled pinned Playwright Core; added rendered-page observation and existing-contract scaffolding/sealing; removed the capture tool's dependency on old run.json for Harbor work. Kept a minimal injected worker Skill. Fixed Harbor multi-step root-owned agent logs through a narrow subclass of the official Codex adapter; native sessions and conversion remain official. Stale per-step trajectories now fail coverage checks.
+- **Data integrity:** retained native ATIF-v1.7 rather than relabeling it v1.8. Canonical copies mark exact resumed prefixes with resolvable source/hash provenance, preserve media and pass official validation. Export recovery keeps versioned packages. Snapshot checks canonical/media hashes, filters copied context and rejects conflicting versions of one episode. Launcher distinguishes runtime failure from incomplete training qualification and records the adapter digest for future launches.
+- **Actual run:** POLA URL exploratory trial `542f5c8d-66cc-412d-8966-b61ba3fd9c47` completed prepare, baseline and six repair rounds in 24m52s, zero exceptions. Same-session resume, separate verifier and artifact transfer worked. All six repair decisions remain inconclusive; stopped at the existing round budget. Independent Final E2E and formal rewards remain incomplete/null; POLA stays draft.
+- **Actual exports:** initial automatic package preserved; after exporter fixes, --recover produced the new version without running the Agent again. Sixteen native/canonical files passed official validation and model round-trip; 435 copied context steps filtered, 107 unique ATIF steps retained. Snapshot: 1 episode, 8 trajectories, 0 SFT/Preference/RL. Verified 1,349 artifact hashes, 80 reference checks and 280 candidate evidence checks. Artifacts remain under ignored reverse_output/pola-url-e2e-v5-20261107.
+- **Regrade:** eight verifier steps rerun, zero exceptions and zero reward changes; original Agent execution intervals and eight native trajectory hashes unchanged. Early stopping and a ready-case trial remain not_run. This is execution/data acceptance, not full visual acceptance.
+- **Checks and docs:** 84 tests passed, 4 browser integrations skipped, zero failures; official static lint/model checks passed; four Data Factory schemas validated 11 real documents. Synced README translations, Skill entry, website Q&A and interface docs. Scratch absent; content-addressed archive absent, so archive audit remains incomplete; no cleanup performed. Existing unrelated edits preserved. Not committed or pushed.
+
+### 2026-11-07 — Harbor 发布分支整合与文档同步
+
+- **范围：** 在 origin/main 的最新基线上整合已有 Harbor-native 迁移及 POLA 实跑修复，保留 vNext 优化、音频和几何诊断。同步中英文 README、SKILL、架构/评测入口、Data Factory 接口及网站实际 FAQ；补充本地 Viewer 使用方法。只公开案例文字状态，保留人工 draft 生命周期。
+- **产物边界：** 原工作区与迁移草稿先作本地补丁/哈希快照；不提交 reverse_output、真实轨迹、凭据、案例截图、生成的测试过程文件或 README 作者预览文件。旧 PR #9 的导出接口不作为现行入口。
+- **验证：** 合并后 Node 回归 110 通过、4 既有浏览器集成跳过；Harbor 静态 task lint/ATIF/model、Schema 与无遗留路由检查通过；网站构建 11 case / 0 ready，Case Manager 构建及 4 项 Sites 测试通过。POLA 的真实运行结论沿用哈希化核查，不宣称独立视觉通过或重跑了发布分支的 Agent。
+- **发布：** 准备新建 PR 并按用户授权合入；实际 PR 与合并状态以 GitHub 记录为准。

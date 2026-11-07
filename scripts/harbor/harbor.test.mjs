@@ -15,6 +15,9 @@ test('direct URL creates a Harbor 1.4 multi-step task with existing tier rounds'
   assert.equal((await lstat(join(output,'environment'))).isDirectory(),true);
   assert.match(toml,/schema_version = "1\.4"/);assert.match(toml,/multi_step_reward_strategy = "final"/);assert.match(toml,/environment_mode = "separate"/);assert.match(toml,/min_reward = \{ continue_gate = 1 \}/);assert.match(toml,/runtime_acceptance = "not_run"/);assert.doesNotMatch(toml,/LANGFUSE|OTLP/i);
   for(const name of ['prepare','baseline','iteration-1','iteration-2','iteration-3'])assert.match(toml,new RegExp(`name = "${name}"`));
+  const prepare=await readFile(join(output,'steps/prepare/instruction.md'),'utf8');
+  assert.match(prepare,/contract.json.task_description/);assert.match(prepare,/inferred/);assert.match(prepare,/Do not create task-description.json/);
+  assert.match(await readFile(join(output,'steps/prepare/tests/test.sh'),'utf8'),/RESTORE_INPUT_ROUTE="direct_url"/);
 });
 
 test('verifier keeps continue_gate out of quality and never zero-fills incomplete E2E',()=>{

@@ -1,4 +1,4 @@
-"""Validate ATIF-v1.8 fixtures or trial trajectories with Harbor's Pydantic model."""
+"""Validate native ATIF fixtures or trial trajectories with Harbor's Pydantic model."""
 import argparse
 import json
 from pathlib import Path
@@ -27,8 +27,8 @@ def assert_preserved(source, round_trip, path="$root") -> None:
 def validate(path: Path) -> tuple[dict, dict]:
     source = json.loads(path.read_text(encoding="utf-8-sig"))
     model = Trajectory.model_validate(source)
-    if model.schema_version != "ATIF-v1.8":
-        raise ValueError(f"{path}: expected ATIF-v1.8")
+    if model.schema_version not in ("ATIF-v1.7", "ATIF-v1.8"):
+        raise ValueError(f"{path}: expected native ATIF-v1.7 or ATIF-v1.8")
     round_trip = model.to_json_dict(exclude_none=True)
     Trajectory.model_validate(round_trip)
     assert_preserved(source, round_trip)
@@ -40,19 +40,20 @@ def main() -> int:
     parser.add_argument("paths", nargs="+", type=Path)
     args = parser.parse_args()
     records = []
-    by_name = {}
+    by_path = {}
     for path in args.paths:
         source, round_trip = validate(path)
-        by_name[path.name] = source
+        by_path[path.resolve()] = source
         records.append({"path": str(path), "steps": len(round_trip["steps"]), "trajectory_id": round_trip.get("trajectory_id")})
-    for name, value in by_name.items():
+    for path, value in by_path.items():
         ref = value.get("continued_trajectory_ref")
         if ref:
-            if ref not in by_name:
-                raise ValueError(f"{name}: missing continuation {ref}")
-            if by_name[ref].get("session_id") != value.get("session_id"):
-                raise ValueError(f"{name}: continuation session_id mismatch")
-    print(json.dumps({"status": "passed", "atif_version": "ATIF-v1.8", "files": records}, ensure_ascii=False))
+            target = (path.parent / ref).resolve()
+            if target not in by_path:
+                raise ValueError(f"{path}: missing continuation {ref}")
+            if by_path[target].get("session_id") != value.get("session_id"):
+                raise ValueError(f"{path}: continuation session_id mismatch")
+    print(json.dumps({"status": "passed", "atif_versions": sorted({value["schema_version"] for value in by_path.values()}), "files": records}, ensure_ascii=False))
     return 0
 
 

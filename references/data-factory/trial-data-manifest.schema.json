@@ -15,7 +15,7 @@
     "eligibility": {"type": "object"},
     "quarantine_reasons": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
     "privacy": {"type": "object", "required": ["private_fields_removed", "redactions", "copied_context_steps"]},
-    "runtime_acceptance": {"enum": ["recorded", "not_run"]},
+    "runtime_acceptance": {"enum": ["recorded", "not_run", "failed", "incomplete", "accepted"]},
     "files": {"type": "object", "required": ["episode", "steps", "trajectories", "artifacts", "rewards", "episode_sha256", "steps_sha256", "trajectories_sha256", "artifacts_sha256"]}
   }
 }

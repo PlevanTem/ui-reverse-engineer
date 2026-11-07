@@ -6,7 +6,7 @@ import {TIERS,sha,treeHash} from '../restore/core.mjs';
 import {STOP_REASONS} from './verifier.mjs';
 
 export const HARBOR_VERSION='0.25.0';
-export const ATIF_VERSION='ATIF-v1.8';
+export const ATIF_VERSION='ATIF-v1.7';
 export const TASK_SCHEMA_VERSION='1.4';
 export const DEFAULT_IMAGE='mcr.microsoft.com/playwright:v1.58.0-noble@sha256:35c7d48b4ccaf3aca5018f5f1bf7f50c7da7d61d176c530741f4f2e9ca336c34';
 export const TIER_ROUNDS=Object.freeze(Object.fromEntries(Object.entries(TIERS).map(([name,value])=>[name,value.rounds])));
@@ -47,11 +47,11 @@ export async function validateFixtureManifest(fixtureRoot,expectedCaseId=null){
   return manifest;
 }
 
-function instructions({url,tier,caseId,sourcePolicy,steps}){
-  const common=`Target: ${url}\nTier: ${tier} (${TIER_ROUNDS[tier]} repair rounds maximum)\nCase: ${caseId??'exploratory'}\nSource policy: ${sourcePolicy}\n\nHarbor owns the trial and step lifecycle. Use the injected ui-reverse-engineer Skill and only its low-level Restore tools. Write durable work under /workspace/restore-run. Never create or run a second loop/coordinator. Do not expose private reasoning, credentials, evaluator-only fixtures, or hidden analysis. Preserve one trial session_id across steps and link each ATIF file to the next with continued_trajectory_ref. Any repeated step must set is_copied_context=true and extra.copied_context with its exact earlier trajectory_id, step_id and sha256. Every step must write /workspace/restore-run/evaluations/<step>.json as RestoreStepEvaluation/v1. continue_gate controls only whether Harbor proceeds; it is not a quality score. If continue_gate is 0, use exactly one allowed stop_reason (${STOP_REASONS.join(', ')}) and complete Final E2E plus report sealing in the same step. Unknown or missing evidence makes final_e2e.status incomplete; never replace unknown with zero.`;
+function instructions({url,tier,caseId,sourcePolicy,steps,inputRoute,urlTaskPrompt}){
+  const common=`Target: ${url}\nTier: ${tier} (${TIER_ROUNDS[tier]} repair rounds maximum)\nCase: ${caseId??'exploratory'}\nSource policy: ${sourcePolicy}\n\nHarbor owns the trial and step lifecycle. Use the injected ui-reverse-engineer Skill and only its low-level Restore tools. Write durable work under /home/pwuser/restore-run. Never create or run a second loop/coordinator. Do not expose private reasoning, credentials, evaluator-only fixtures, or hidden analysis. Harbor owns native sessions and ATIF export. Do not author trajectory.json, search session files, or edit copied-context metadata yourself. Use Playwright from /ms-playwright or install the Python playwright adapter if needed. The runtime Skill contains no eval case metadata. Read references/harbor/restore-step-evaluation.schema.json from the injected Skill. The contract schema_version is restore/v0.2; use the field definitions in references/restore/interfaces.md, not an invented schema. A continuing evaluation example is {\"schema_version\":\"RestoreStepEvaluation/v1\",\"step\":\"prepare\",\"status\":\"complete\",\"continue_gate\":1,\"stop_reason\":null,\"limitations\":[]}; use the current step name. Every step must write /home/pwuser/restore-run/evaluations/<step>.json as RestoreStepEvaluation/v1. continue_gate controls only whether Harbor proceeds; it is not a quality score. If continue_gate is 0, use exactly one allowed stop_reason (${STOP_REASONS.join(', ')}) and complete Final E2E plus report sealing in the same step. Unknown or missing evidence makes final_e2e.status incomplete; never replace unknown with zero.`;
   return Object.fromEntries(steps.map((step,index)=>{
     let task;
-    if(step==='prepare')task=`Observe the target URL within the frozen network and source policy. Record requested/observed URL, redirects, states, viewports, allowed resources, evidence hashes, source policy, unknowns, and an immutable contract. Do not generate the restored page yet. Freeze the contract before this step ends.`;
+    if(step==='prepare')task=inputRoute==='ready_case'?`Use the manually frozen case contract and generation-allowed fixtures. Do not rediscover the live website or infer new requirements. Preserve the authored task description if present; generate design_brief.md only as a projection of that contract. If the frozen generation input is unavailable, record incomplete/blocked instead of replacing the fixture with a live URL. Write evaluations/prepare.json before the deadline.`:urlTaskPrompt;
     else if(step==='baseline')task=`Read only the frozen contract and allowed generation inputs from prepare. Generate the initial runnable restored project. Capture and measure the declared states with the existing Loop Criteria. If the target is already reached, finalize now; otherwise publish the highest-priority evidenced gap.`;
     else task=`Continue from the persistent filesystem. Repair one evidenced highest-priority gap, measure the same bound states, compare against the previous accepted artifact, and keep, revert, or mark inconclusive. Do not count a round as improvement without independent evidence. ${index===steps.length-1?'This is the maximum declared iteration: finalize the result and use budget_exhausted if no earlier stop condition applies.':'Finalize in this step whenever an existing stop condition applies.'}`;
     return [step,`# Restore ${step}\n\n${common}\n\n## This step\n\n${task}\n`];
@@ -59,10 +59,10 @@ function instructions({url,tier,caseId,sourcePolicy,steps}){
 }
 
 function taskToml({taskName,tier,caseId,inputRoute,sourcePolicy,image,allowedHosts,steps}){
-  const lines=[`schema_version = ${q(TASK_SCHEMA_VERSION)}`,`multi_step_reward_strategy = "final"`,`artifacts = [{ source = "/workspace/restore-run", destination = "restore-run" }]`,'',`[task]`,`name = ${q(taskName)}`,`version = "1.0.0"`,`description = ${q('Harbor-native bounded UI restoration task')}`,`authors = []`,`keywords = ["ui-restore", "atif", "multi-step"]`,'',`[metadata]`,`harbor_version = ${q(HARBOR_VERSION)}`,`atif_version = ${q(ATIF_VERSION)}`,`restore_tier = ${q(tier)}`,`restore_rounds = ${TIER_ROUNDS[tier]}`,`input_route = ${q(inputRoute)}`,`source_policy = ${q(sourcePolicy)}`,`case_id = ${q(caseId??'')}`,`runtime_acceptance = "not_run"`,'',`[verifier]`,`timeout_sec = 900`,`environment_mode = "separate"`,`network_mode = "no-network"`,'',`[agent]`,`timeout_sec = ${TIERS[tier].minutes*60}`,`user = "pwuser"`,`network_mode = "allowlist"`,`allowed_hosts = [${allowedHosts.map(q).join(', ')}]`,'',`[environment]`,`docker_image = ${q(image)}`,`network_mode = "allowlist"`,`allowed_hosts = [${allowedHosts.map(q).join(', ')}]`,`workdir = "/workspace"`,''];
+  const lines=[`schema_version = ${q(TASK_SCHEMA_VERSION)}`,`multi_step_reward_strategy = "final"`,`artifacts = [{ source = "/home/pwuser/restore-run", destination = "restore-run" }]`,'',`[task]`,`name = ${q(taskName)}`,`version = "1.0.0"`,`description = ${q('Harbor-native bounded UI restoration task')}`,`authors = []`,`keywords = ["ui-restore", "atif", "multi-step"]`,'',`[metadata]`,`harbor_version = ${q(HARBOR_VERSION)}`,`atif_version = ${q(ATIF_VERSION)}`,`restore_tier = ${q(tier)}`,`restore_rounds = ${TIER_ROUNDS[tier]}`,`input_route = ${q(inputRoute)}`,`source_policy = ${q(sourcePolicy)}`,`case_id = ${q(caseId??'')}`,`runtime_acceptance = "not_run"`,'',`[verifier]`,`timeout_sec = 900`,`environment_mode = "separate"`,`network_mode = "no-network"`,'',`[agent]`,`timeout_sec = ${TIERS[tier].minutes*60}`,`user = "pwuser"`,`network_mode = "allowlist"`,`allowed_hosts = [${allowedHosts.map(q).join(', ')}]`,'',`[environment]`,`docker_image = ${q(image)}`,`network_mode = "allowlist"`,`allowed_hosts = [${allowedHosts.map(q).join(', ')}]`,`workdir = "/home/pwuser"`,''];
   for(const [index,step] of steps.entries()){
     lines.push('[[steps]]',`name = ${q(step)}`);if(index<steps.length-1)lines.push('min_reward = { continue_gate = 1 }');
-    lines.push('',`[steps.agent]`,`timeout_sec = ${Math.max(300,Math.floor(TIERS[tier].minutes*60/steps.length))}`,`user = "pwuser"`,'',`[steps.verifier]`,`timeout_sec = 300`,`environment_mode = "separate"`,`network_mode = "no-network"`,'');
+    lines.push('',`[steps.agent]`,`timeout_sec = ${(step==='prepare'?TIERS[tier].minutes*10:Math.floor((TIERS[tier].minutes*50)/(steps.length-1)))}`,`user = "pwuser"`,'',`[steps.verifier]`,`timeout_sec = 300`,`environment_mode = "separate"`,`network_mode = "no-network"`,'');
   }
   return lines.join('\n')+'\n';
 }
@@ -76,11 +76,14 @@ export async function createTask(output,{url,tier='ordinary',caseId=null,taskNam
   const name=taskName??`ui-reverse-engineer/${slug(caseId??host)}`;
   await writeFile(join(output,'task.toml'),taskToml({taskName:name,tier,caseId,inputRoute,sourcePolicy,image,allowedHosts,steps}));
   await mkdir(join(output,'environment'),{recursive:true});
-  await mkdir(join(output,'tests'),{recursive:true});await cp(join(workspace,'scripts/harbor/verifier.mjs'),join(output,'tests','verify-step.mjs'));
-  const perStep=instructions({url,tier,caseId,sourcePolicy,steps});
+  await mkdir(join(output,'tests'),{recursive:true});
+  await writeFile(join(output,'tests','verify-step.mjs'),(await readFile(join(workspace,'scripts/harbor/verifier.mjs'),'utf8')).replace("'../restore/task-description.mjs'","'./task-description.mjs'"));
+  await cp(join(workspace,'scripts/restore/task-description.mjs'),join(output,'tests','task-description.mjs'));
+  const urlTaskPrompt=await readFile(join(workspace,'references/restore/url-task-prompt.md'),'utf8');
+  const perStep=instructions({url,tier,caseId,sourcePolicy,steps,inputRoute,urlTaskPrompt});
   for(const step of steps){
     const dir=join(output,'steps',step);await mkdir(join(dir,'tests'),{recursive:true});await writeFile(join(dir,'instruction.md'),perStep[step]);
-    await writeFile(join(dir,'tests','test.sh'),`#!/bin/bash\nset -euo pipefail\nRESTORE_STEP=${q(step)} node /tests/verify-step.mjs\n`);
+    await writeFile(join(dir,'tests','test.sh'),`#!/bin/bash\nset -euo pipefail\nRESTORE_INPUT_ROUTE=${q(inputRoute)} RESTORE_STEP=${q(step)} node /tests/verify-step.mjs\n`);
   }
   if(fixtureRoot){await cp(resolve(fixtureRoot),join(output,'tests','fixture'),{recursive:true});}
   const sourceReuse=sourcePolicy==='source_assisted'?'allowed':'forbidden';

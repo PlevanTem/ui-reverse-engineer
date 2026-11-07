@@ -21,6 +21,7 @@
     "optimization"
   ],
   "properties": {
+    "task_description": {"$ref": "task-description.schema.json"},
     "schema_version": {
       "const": "RestoreGenerationInput/v2"
     },

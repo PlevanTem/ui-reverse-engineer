@@ -53,7 +53,7 @@ uv run --project tools/harbor harbor run `
   --resume-trajectory
 ```
 
-必须先跑一个新建、授权且 `ready` 的 case，再验收浏览器环境、会话连续性、separate verifier、artifact transfer、early stopping 和 regrade。此前这些状态一律为 `not_run`。
+POLA exploratory URL 的实跑已验证浏览器、续接、separate verifier、产物传递和 regrade。正式 ready-case 与提前停止尚未实跑；独立视觉质量未通过。详见 [实跑范围](../references/harbor/automation.md)。
 
 ## Acceptance rules
 

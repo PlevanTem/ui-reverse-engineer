@@ -1,6 +1,6 @@
 # ATIF-based D/I/F/T process evaluation
 
-本评测审阅 Agent 如何完成 Restore，不替代 Loop Criteria、Final E2E 或人工审批。唯一轨迹输入是 Harbor agent 生成且由官方 validator 通过的 ATIF-v1.8；附加证据只来自 Harbor artifacts。
+本评测审阅 Agent 如何完成 Restore，不替代 Loop Criteria、Final E2E 或人工审批。唯一轨迹输入是 Harbor agent 生成且由官方 validator 通过的 原生 ATIF-v1.7/v1.8；附加证据只来自 Harbor artifacts。
 
 ## Rubric
 

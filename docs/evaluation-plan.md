@@ -31,4 +31,4 @@
 
 ## Acceptance boundary
 
-`node scripts/check.mjs harbor` 验证格式、Schema、task lint、ATIF fixture、round-trip、遗留实现清理和合成数据导出。它不启动 Docker、浏览器、模型或真实 trial。运行验收必须等待一个新建且已授权的 ready case；此前状态保持 `not_run`。
+`node scripts/check.mjs harbor` 验证格式、Schema、task lint、ATIF fixture、round-trip、遗留实现清理和合成数据导出。它不启动 Docker、浏览器、模型或真实 trial。POLA 直接 URL 已实跑验证执行与数据链路，独立视觉质量仍 incomplete。真实验收范围、ATIF 版本与剩余限制统一见 [自动入口](../references/harbor/automation.md)。正式 ready-case 和提前停止仍未实跑。

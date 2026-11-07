@@ -469,11 +469,12 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 采集文件、评测请求和其他过程产物放在对应案例目录或系统临时目录；Restore 的临时文件和归档约定见 [Restore 接口](references/restore/interfaces.md#证据不可变性与历史报告重放)。
 
-Restore 必须先取得目标 URL。输入为 `ready` case 时按 Harbor task compiler 验证 fixture、冻结证据、视口/状态、资源哈希与镜像 digest；直接 URL 创建一次性 exploratory task，并在 `prepare` step 冻结合同，不自动写入 `cases.yaml`。没有 URL 时停止并要求用户提供。完整 loop 由 Harbor multi-step 驱动，不使用 Restore CLI 手工初始化或续跑。
+宿主收到 `--restore URL` 或 `--restore eval/cases CASE` 时，调用 `node scripts/harbor/restore.mjs --url URL --model MODEL` 或 `--case CASE`。模型沿用用户当前选择，或读取 `RESTORE_MODEL`。入口自动同步隔离依赖、精简 Skill、预检、启动 Harbor，并在失败/超时后自动导出 Data Factory 包。使用已授权的本机 Codex 登录，凭据只传路径。
 
-四维过程 Judge 按[ATIF 评估方案](evals/trajectory/README.md)执行，只读取官方校验通过的 ATIF-v1.8 与 Harbor artifacts。ATIF 缺失或非法时不得从 Restore 账本合成轨迹；复制上下文、隐藏推理、密文和凭据不得进入训练候选。
+已在 Harbor 容器内时，只执行当前 step 和低层取证/比较/报告工具，不调用启动入口或旧 CLI 的 init/next/continue/stop 生命周期命令。`--case` 只接受人工准备的 ready 测试集；`--url` 根据 [URL 任务提示词](references/restore/url-task-prompt.md)观察并推导任务，写入唯一 `contract.task_description`，brief 由程序生成，不另写一份任务说明。每个 trial 对应一个 Episode，多 step 对应多份原生 ATIF。启动前失败可能没有 ATIF，必须记录缺失。接口见 [自动 Restore](references/harbor/automation.md)。
 
-当用户明确要求把 Harbor trial 整理为后续训练候选、SFT/Preference/Trajectory 数据或数据集快照时，再读取[数据工厂接口](references/data-factory/interfaces.md)。先导出 Trial Package，再执行用途资格、来源隔离、精确去重和同 case/task 分组切分。训练执行、模型注册与部署不在本 Skill 范围内，且不得把 Loop/E2E 通过直接写成“可训练”。
+运行时使用精简的 [Harbor worker](references/harbor/runtime-skill.md)，包含已有浏览器观察、合同冻结和声明状态采集工具；执行与数据链路的真实验收状态统一见自动入口，不把静态通过或可审计轨迹当成视觉验收与训练资格。
+
 
 - `case_name` 规则：
   1. URL 域名主体（如 `notion`、`linear`、`stripe`）
