@@ -41,6 +41,8 @@ node scripts/check.mjs harbor --plan
 node scripts/check.mjs harbor
 ```
 
+`scripts/harbor/automation.test.mjs` 覆盖固定包路径、导出器与 result 更新、失败保留原包、不同 trial 防覆盖和临时目录收尾；导出更新流程见 [自动入口](../references/harbor/automation.md)。
+
 `harbor` profile 执行：Harbor/Data Factory 回归、合成 multi-step task 的 `harbor lint --json --extend-select ALL`、dataset/ATIF Pydantic round-trip、官方 ATIF validator、Codex Agent 的 ATIF/resume/Skill capability preflight、全部 JSON Schema 语法检查，以及活动代码/现行文档的遗留 harness 扫描。它不启动 Docker、模型、浏览器、云 sandbox 或真实 trial。
 
 真实 Restore 使用自动入口；它同时配置精简 Skill、认证路径、Codex 续接权限修复与任务结束导出：

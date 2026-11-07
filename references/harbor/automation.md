@@ -28,13 +28,15 @@ node scripts/harbor/restore.mjs --recover reverse_output/restore-RUN
 
 URL prepare 按唯一 [提示词](../restore/url-task-prompt.md)观察网站，自动推导场景、用户目标与还原描述，保存为 `contract.task_description`。状态、验收、资源、未知项各用合同原字段；brief 与 Data Factory task 字段均为投影，不新增第二份任务事实。推断标为 inferred，不能扩展实作范围。Harbor task.toml 在观察前只定义执行框架；网站专属任务在 prepare 后才形成，不把模板当成已经完成的分析。
 
-模型默认依次读取显式 --model、RESTORE_MODEL、本机 Codex config.toml 的 model。恢复只补采集，不重新执行 Agent；相同 trial result 和 exporter 哈希复用已有包。导出器变化时生成带摘要后缀的新包，保留旧包；同版导出器遇到 trial result 变化则报错，不覆盖历史。
+模型默认依次读取显式 --model、RESTORE_MODEL、本机 Codex config.toml 的 model。恢复只补采集，不重新执行 Agent；相同 trial result 和 exporter 哈希复用已有包。
+
+每个 trial 固定使用 `packages/<trial-name>/`，导出器版本保存在 manifest，不再生成摘要后缀目录。需要更新时，先在同一文件系统的临时目录导出并完成原有校验，再核对源 result 未变化，最后替换唯一包并删除旧副本。导出失败保留原包；替换失败回退原包。不同 trial ID 或没有 manifest 的既有目录拒绝自动覆盖。原始 job、ATIF、独立评估和已生成的 DatasetSnapshot 保留；包是可重新生成的最新投影，Snapshot 仍按其 manifest 固定版本。强制结束发生在目录替换期间时，先检查 `.export-*/previous` 恢复目录，再 recover。
 
 顺序：依赖同步 → 精简 Skill（不含案例元数据、历史产物、.git、.venv）→ capability/lint/dry-run → Harbor trial → 自动 export-trial。Harbor 控制 step 和停止。运行时仅加载 Harbor worker 入口，按需读领域参考。固定 Playwright Core 1.58.0 随 Skill 注入，与固定镜像浏览器配套；prepare 观察与合同冻结使用领域工具，后续采集读取 contract-lock.json，无需启动旧本地 loop。
 
 Windows 自动补充 Docker Desktop CLI 路径、启用 UTF-8；Codex 固定 0.153.0，认证优先 CODEX_AUTH_JSON_PATH，其次本机 .codex/auth.json。`RestoreCodex` 继承 Harbor 官方 Codex，仅在每步启动前恢复专用 `/logs/agent` 目录为 agent 用户所有，修复多步 staging 后日志不可写的问题；会话恢复和 ATIF 转换仍使用官方实现，不另造轨迹。
 
-运行记录在 `reverse_output/restore-*/launch.json`，关联 task、Skill digest、adapter 摘要、case、模型、job exit code、运行验收状态与 packages。每个 trial 对应一个 Episode，导出器修订可保留多个版本的包。正常退出、Agent 失败/超时均自动导出；宿主被强制结束/断电无法保证 finally 执行，可用 `--recover` 补采集。未产生 trial 的启动失败只有 launch 记录，不合成 ATIF。退出码区分执行/导出失败与质量未验收；训练用途查看包内 eligibility，不能从退出码推断。
+运行记录在 `reverse_output/restore-*/launch.json`，关联 task、Skill digest、adapter 摘要、case、模型、job exit code、运行验收状态与 packages。每个 trial 对应一个 Episode 和一个最新导出包。正常退出、Agent 失败/超时均自动导出；宿主被强制结束/断电无法保证 finally 执行，可用 `--recover` 补采集。未产生 trial 的启动失败只有 launch 记录，不合成 ATIF。退出码区分执行/导出失败与质量未验收；训练用途查看包内 eligibility，不能从退出码推断。
 
 Harbor 0.25.0 Codex producer 输出 ATIF-v1.7；模型与 validator 支持 v1.8。保留真实 schema_version 并官方校验，禁止改标签伪升级。canonical ATIF 保留媒体附件；失败/缺 verifier 的 trial 不进入 SFT/Preference/RL。
 

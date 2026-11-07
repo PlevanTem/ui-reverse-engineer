@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Launch adapter only: Harbor owns all step, retry and stopping decisions.
 import {spawn} from 'node:child_process';
-import {access,cp,mkdir,readFile,readdir,writeFile} from 'node:fs/promises';
+import {access,cp,mkdir,mkdtemp,readFile,readdir,rename,rm,writeFile} from 'node:fs/promises';
 import {homedir} from 'node:os';
 import {join,resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -18,15 +18,26 @@ export async function collectJob(job,output,{validator=null}={}){
   for(const entry of await readdir(job,{withFileTypes:true})){
     if(!entry.isDirectory())continue;
     const trial=join(job,entry.name);if(!await exists(join(trial,'result.json')))continue;
-    let packagePath=join(output,entry.name),manifestPath=join(packagePath,'manifest.json');
-    if(await exists(manifestPath)){const prior=JSON.parse(await readFile(manifestPath,'utf8'));if(prior.package?.exporter_sha256!==exporterDigest){packagePath=join(output,`${entry.name}--${exporterDigest.slice(0,12)}`);manifestPath=join(packagePath,'manifest.json');}}
-    if(await exists(manifestPath)){
-      const manifest=JSON.parse(await readFile(manifestPath,'utf8'));
-      if(manifest.harbor.trial_result_sha256===sha(await readFile(join(trial,'result.json')))){records.push({trial:entry.name,package:packagePath,runtime_acceptance:manifest.runtime_acceptance,eligibility:manifest.eligibility});continue;}
-      records.push({trial:entry.name,status:'export_failed',error:'Existing package does not match current trial result; preserve it and choose a new package directory'});continue;
+    const packagePath=resolve(output,entry.name),manifestPath=join(packagePath,'manifest.json');
+    let staging=null,displaced=false,published=false;
+    try{
+      const resultBytes=await readFile(join(trial,'result.json')),result=JSON.parse(resultBytes),resultDigest=sha(resultBytes);
+      if(await exists(manifestPath)){
+        const manifest=JSON.parse(await readFile(manifestPath,'utf8'));
+        if(manifest.harbor?.trial_id!==String(result.id??result.trial_name))throw Error('Existing package belongs to a different trial; choose a separate output directory');
+        if(manifest.integrity?.status==='valid'&&manifest.harbor.trial_result_sha256===resultDigest&&manifest.package?.exporter_sha256===exporterDigest){records.push({trial:entry.name,package:packagePath,runtime_acceptance:manifest.runtime_acceptance,eligibility:manifest.eligibility});continue;}
+      }else if(await exists(packagePath))throw Error('Existing package has no manifest; inspect it before replacing');
+      // Export and validate beside the destination before moving the old package.
+      staging=await mkdtemp(join(resolve(output),'.export-'));
+      const r=await exportTrial(trial,join(staging,'package'),{validator});
+      if(r.manifest.integrity?.status!=='valid'||r.manifest.package?.exporter_sha256!==exporterDigest||r.manifest.harbor.trial_result_sha256!==resultDigest||sha(await readFile(join(trial,'result.json')))!==resultDigest)throw Error('Trial changed during export or package validation failed; previous package retained');
+      if(await exists(packagePath)){await rename(packagePath,join(staging,'previous'));displaced=true;}
+      try{await rename(r.output,packagePath);published=true;}
+      catch(error){if(displaced){await rename(join(staging,'previous'),packagePath);displaced=false;}throw error;}
+      records.push({trial:entry.name,package:packagePath,runtime_acceptance:r.manifest.runtime_acceptance,eligibility:r.manifest.eligibility});
     }
-    try{const r=await exportTrial(trial,packagePath,{validator});records.push({trial:entry.name,package:r.output,runtime_acceptance:r.manifest.runtime_acceptance,eligibility:r.manifest.eligibility});}
-    catch(error){records.push({trial:entry.name,status:'export_failed',error:error.message});}
+    catch(error){records.push({trial:entry.name,status:'export_failed',error:error.message+(displaced&&!published?`; previous package retained at ${join(staging,'previous')}`:'')});}
+    finally{if(staging&&(!displaced||published))await rm(staging,{recursive:true,force:true});}
   }
   return records;
 }

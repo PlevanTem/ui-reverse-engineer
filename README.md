@@ -6,7 +6,7 @@
 
 # UI Reverse Engineer
 
-Restore 支持直接输入网站：`node scripts/harbor/restore.mjs --url https://example.com`。Agent 自动观察并推导任务，合同只存一份事实，design brief 自动投影；任务结束自动采集 ATIF 与 Data Factory 包。人工冻结测试集单独使用 `--case READY_CASE_ID`。见 [自动入口](references/harbor/automation.md)。
+Restore 支持直接输入网站：`node scripts/harbor/restore.mjs --url https://example.com`。Agent 自动观察并推导任务，合同只存一份事实，design brief 自动投影；任务结束自动采集 ATIF 与 Data Factory 包。每个 trial 只保留一个最新导出包，更新与失败恢复规则见 [自动入口](references/harbor/automation.md)。人工冻结测试集单独使用 `--case READY_CASE_ID`。
 
 POLA URL 已实跑完成 Restore 迭代、ATIF 导出与 Snapshot；独立视觉质量仍未验收，训练候选关闭。[实跑范围与限制](references/harbor/automation.md)。
 
