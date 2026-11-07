@@ -12,6 +12,10 @@ Yes: `node scripts/harbor/restore.mjs --url URL`. During prepare, the Agent foll
 
 Yes. The POLA URL trial completed task inference, a generated brief, baseline and repair steps, native ATIF export, a Data Factory Snapshot and verifier-only regrade. Independent visual quality remains incomplete; this episode is auditable, with SFT/Preference/RL candidates closed. The [runtime acceptance record](../references/harbor/automation.md) is the single source for evidence, versions and remaining limits.
 
+## Q&A: What is merged, and what comes next?
+
+[PR #10](https://github.com/PlevanTem/ui-reverse-engineer/pull/10) merged the Harbor migration and POLA runtime fixes into main. The older Data Factory PR #9 is superseded. Next is the [independent evaluation execution chain](../docs/evaluation-plan.md#下一阶段harbor-接评估执行链); a separate verifier container currently validates structure but does not itself run a visual Judge. The plan reuses existing criteria and graders without introducing another harness.
+
 Local static website for the project. Design authority: [../DESIGN.md](../DESIGN.md). Component specimen: `design-system.html`.
 
 ## Build and preview

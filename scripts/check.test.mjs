@@ -16,7 +16,7 @@ test('local plan does not install packages, upload traces or invoke a model',()=
 
 test('harbor plan is pinned, local-only and keeps runtime acceptance out of static checks',()=>{
  const p=buildPlan('harbor',{env:{}});assert.equal(p.profile,'harbor');
- assert.ok(p.steps.some(x=>x.id==='harbor-static'));assert.ok(p.steps.some(x=>x.id==='legacy-scan'));assert.match(p.scope,/no model calls.*Docker.*real Harbor trial/i);assert.match(p.additional_acceptance,/not_run/);
+ assert.ok(p.steps.some(x=>x.id==='harbor-static'));assert.ok(p.steps.some(x=>x.id==='legacy-scan'));assert.match(p.scope,/no model calls.*Docker.*real Harbor trial/i);assert.match(p.additional_acceptance,/static receipts do not establish runtime acceptance/i);
  for(const step of p.steps)assert.ok(!(step.args??[]).includes('run'),'static Harbor profile must not execute a trial');
 });
 
