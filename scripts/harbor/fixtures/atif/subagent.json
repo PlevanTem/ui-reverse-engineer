@@ -1,0 +1,22 @@
+{
+  "schema_version": "ATIF-v1.8",
+  "session_id": "session-subagent",
+  "trajectory_id": "trajectory-parent",
+  "agent": {"name": "fixture-parent", "version": "1.0"},
+  "steps": [
+    {"step_id": 1, "source": "user", "message": "Inspect one bounded artifact."},
+    {"step_id": 2, "source": "agent", "message": "Delegating inspection.", "tool_calls": [{"tool_call_id": "spawn-1", "function_name": "spawn_agent", "arguments": {"task": "inspect"}}], "observation": {"results": [{"source_call_id": "spawn-1", "content": "inspection complete", "subagent_trajectory_ref": [{"trajectory_id": "trajectory-child", "session_id": "session-subagent"}]}]}, "llm_call_count": 1}
+  ],
+  "subagent_trajectories": [
+    {
+      "schema_version": "ATIF-v1.8",
+      "session_id": "session-subagent",
+      "trajectory_id": "trajectory-child",
+      "agent": {"name": "fixture-child", "version": "1.0"},
+      "steps": [
+        {"step_id": 1, "source": "user", "message": "Inspect the artifact."},
+        {"step_id": 2, "source": "agent", "message": "Artifact is present.", "llm_call_count": 1}
+      ]
+    }
+  ]
+}

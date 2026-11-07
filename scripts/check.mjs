@@ -3,6 +3,7 @@
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {mkdir,writeFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {resolve,join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID,createHash} from 'node:crypto';
@@ -10,17 +11,26 @@ const workspace=fileURLToPath(new URL('../',import.meta.url));
 const exec=promisify(execFile),sha=s=>createHash('sha256').update(s).digest('hex');
 
 export function buildPlan(profile='local',{env=process.env,root=workspace}={}){
- if(!['local','full'].includes(profile))throw new Error('Profile must be local or full');
- const steps=[{id:'regression',command:process.execPath,args:['--test','--test-isolation=none','scripts/check.test.mjs','scripts/restore/tests/*.test.mjs','scripts/trajectory/*.test.mjs','scripts/evaluation/*.test.mjs'],cwd:root},
+ if(!['local','full','harbor'].includes(profile))throw new Error('Profile must be local, full, or harbor');
+ const steps=[{id:'regression',command:process.execPath,args:['--test','--test-isolation=none','scripts/check.test.mjs','scripts/restore/tests/*.test.mjs','scripts/harbor/*.test.mjs','scripts/data-factory/*.test.mjs'],cwd:root},
   {id:'schemas',...(env.RESTORE_SCHEMA_PYTHON?{command:env.RESTORE_SCHEMA_PYTHON,args:['-X','utf8','scripts/validate-schemas.py'],cwd:root}:{unavailable:'RESTORE_SCHEMA_PYTHON not set'})}];
- const blockers=profile==='full'?['RESTORE_CAPTURE_PYTHON','RESTORE_PLAYWRIGHT_MODULE','RESTORE_SCHEMA_PYTHON'].filter(k=>!env[k]).map(k=>k+' required for full checks'):[];
+ const harborPython=join(root,'tools/harbor/.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python'),harborBin=join(root,'tools/harbor/.venv',process.platform==='win32'?'Scripts/harbor.exe':'bin/harbor');
+ const blockers=profile==='full'?['RESTORE_CAPTURE_PYTHON','RESTORE_PLAYWRIGHT_MODULE','RESTORE_SCHEMA_PYTHON'].filter(k=>!env[k]).map(k=>k+' required for full checks'):profile==='harbor'?[harborPython,harborBin].filter(path=>!existsSync(path)).map(path=>path+' missing; run uv sync --project tools/harbor --locked'):[];
+ if(profile==='harbor'){
+  steps.length=0;steps.push(
+   {id:'harbor-regression',command:process.execPath,args:['--test','--test-isolation=none','scripts/harbor/*.test.mjs','scripts/data-factory/*.test.mjs'],cwd:root},
+   {id:'harbor-static',command:process.execPath,args:['scripts/harbor/static-check.mjs'],cwd:root},
+   {id:'schemas',command:harborPython,args:['-X','utf8','scripts/validate-schemas.py'],cwd:root},
+   {id:'legacy-scan',command:process.execPath,args:['scripts/harbor/no-legacy.mjs'],cwd:root}
+  );
+ }
  if(profile==='full'){
   const cwd=join(root,'evals/case-manager');
   steps.push({id:'case-manager-build',command:process.execPath,args:['node_modules/vite/bin/vite.js','build'],cwd},
    {id:'case-manager-package',command:process.execPath,args:['scripts/prepare-sites-build.mjs'],cwd},
    {id:'case-manager-tests',command:process.execPath,args:['--test','tests/sites-worker.test.mjs'],cwd});
  }
- return {schema_version:'RestoreCheckPlan/v1',profile,blockers,steps,scope:'local engineering only; no model calls, uploads or dependency installation',additional_acceptance:'See evals/README.md and evals/vnext-acceptance.md'};
+ return {schema_version:'RestoreCheckPlan/v1',profile,blockers,steps,scope:'local engineering only; no model calls, uploads, Docker, cloud sandbox or real Harbor trial',additional_acceptance:'See evals/README.md and evals/vnext-acceptance.md; Harbor runtime acceptance remains not_run'};
 }
 
 async function execute(step){
@@ -46,7 +56,7 @@ export async function runChecks(plan,{execute:run=execute,onRecord=async()=>{}}=
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
-  if(process.argv.includes('--help')){console.log('node scripts/check.mjs [local|full] [--plan] [--output NEW_DIRECTORY]\nNode 24+. See evals/README.md#统一工程检查. No network/model execution.');}
+   if(process.argv.includes('--help')){console.log('node scripts/check.mjs [local|full|harbor] [--plan] [--output NEW_DIRECTORY]\nNode 24+. See evals/README.md#统一工程检查. Harbor checks require the locked tools/harbor environment; no Docker/model execution.');}
   else{
    if(Number(process.versions.node.split('.')[0])<24)throw new Error('The consolidated test runner requires Node 24+; runtime modules retain their existing requirements');
    const args=process.argv.slice(2),profile=args[0]&&!args[0].startsWith('--')?args.shift():'local';let output=null,preview=false;

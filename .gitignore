@@ -3,6 +3,7 @@
 /output/
 /.playwright-cli/
 /node_modules/
+/tools/harbor/.venv/
 __pycache__/
 *.pyc
 /evals/case-manager/node_modules/

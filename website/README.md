@@ -25,6 +25,7 @@ Serve the generated `dist/`, not the source directory: `cases-data.js` and the d
 - Presentation generation state is controlled by `generatedCaseIds` in `content.js`: General Intuition, Tiny Skies, and the local Firewood run are generated. Cards and filters use 已生成/待生成; evaluation status remains in case details. ASCII motion has pause/play, reduced-motion default, visibility gating and offscreen pause.
 - Video/poster are official GitHub Release URLs, loaded remotely without mirroring binary files. Internet/account access may affect them; source links and an error fallback remain available. No autoplay.
 - No full run artifact, implementation source, personal input or secret is copied into this site. Case evidence contains public catalogue descriptions and reference links.
+- The FAQ states that Harbor ATIF and verifier artifacts are raw auditable experience, not ready-to-train SFT/RL data. The Harbor Trial Data Factory validates ATIF, removes copied context from training views, applies source quarantine and purpose-specific eligibility, and emits grouped snapshots. The project does not execute training.
 
 ## Manual verification
 

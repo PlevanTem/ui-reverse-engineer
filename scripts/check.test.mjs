@@ -14,6 +14,12 @@ test('local plan does not install packages, upload traces or invoke a model',()=
  assert.ok(p.steps.every(x=>!(x.args??[]).some(a=>/\b(?:npm install|judge|sendPilot|worker)\b/.test(a))));
 });
 
+test('harbor plan is pinned, local-only and keeps runtime acceptance out of static checks',()=>{
+ const p=buildPlan('harbor',{env:{}});assert.equal(p.profile,'harbor');
+ assert.ok(p.steps.some(x=>x.id==='harbor-static'));assert.ok(p.steps.some(x=>x.id==='legacy-scan'));assert.match(p.scope,/no model calls.*Docker.*real Harbor trial/i);assert.match(p.additional_acceptance,/not_run/);
+ for(const step of p.steps)assert.ok(!(step.args??[]).includes('run'),'static Harbor profile must not execute a trial');
+});
+
 test('blocked full checks execute nothing and failures remain failures',async()=>{
  let calls=0;const execute=async()=>{calls++;return {exit_code:0,stdout:'',stderr:''};};
  const blocked=await runChecks(buildPlan('full',{env:{}}),{execute});assert.equal(blocked.status,'blocked');assert.equal(calls,0);

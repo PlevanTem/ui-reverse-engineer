@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:RestoreStepEvaluation:v1",
+  "title": "Harbor step verifier input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "step", "status", "continue_gate", "stop_reason", "limitations"],
+  "properties": {
+    "schema_version": {"const": "RestoreStepEvaluation/v1"},
+    "step": {"type": "string", "minLength": 1},
+    "status": {"enum": ["complete", "incomplete"]},
+    "continue_gate": {"enum": [0, 1]},
+    "stop_reason": {"type": ["string", "null"], "enum": [null, "target_reached", "plateau", "cycle_detected", "budget_exhausted", "blocked", "failed"]},
+    "decision": {"type": ["string", "null"], "enum": [null, "keep", "revert", "inconclusive"]},
+    "evidence": {"type": "array", "items": {"type": "object"}},
+    "final_e2e": {
+      "type": ["object", "null"],
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["complete", "incomplete"]},
+        "rewards": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["restore_layout", "restore_style", "restore_content", "restore_interaction", "restore_robustness", "restore_total", "restore_redline_pass"],
+          "properties": {
+            "restore_layout": {"type": "number", "minimum": 0, "maximum": 1},
+            "restore_style": {"type": "number", "minimum": 0, "maximum": 1},
+            "restore_content": {"type": "number", "minimum": 0, "maximum": 1},
+            "restore_interaction": {"type": "number", "minimum": 0, "maximum": 1},
+            "restore_robustness": {"type": "number", "minimum": 0, "maximum": 1},
+            "restore_total": {"type": "number", "minimum": 0, "maximum": 1},
+            "restore_redline_pass": {"type": "number", "minimum": 0, "maximum": 1}
+          }
+        }
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "allOf": [
+    {"if": {"properties": {"continue_gate": {"const": 1}}}, "then": {"properties": {"stop_reason": {"const": null}}}},
+    {"if": {"properties": {"continue_gate": {"const": 0}}}, "then": {"properties": {"stop_reason": {"type": "string"}}}}
+  ]
+}

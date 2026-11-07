@@ -374,15 +374,13 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 - 交付可运行项目，包含必要的页面、代码、资源、依赖与启动方式；简单页面可使用单个 HTML 文件
 - 在浏览器中按目标视口与状态对照参考，修正主要差异并说明剩余限制
 
-具体取证、实现及完成检查见 [Restore 执行流程](references/restore.md)。新任务可启用其“准备与分块规格”流程；数据仍归冻结合同所有，资源目录按 [资产布局](references/restore/asset-layout.md)适配已有项目。
-
-用户授权持续完成网站目标时，可启用其[任务连续性](references/restore.md#可选的任务连续性)；绑定任务会话后按持久状态续跑。Skill 学习仅输出提案，留出评测不进入开发反馈。
+具体取证、实现及完成检查见 [Restore 执行流程](references/restore.md)。Harbor 的 `prepare` step 完成观察、source policy 与合同冻结；数据仍归冻结合同所有，资源目录按 [资产布局](references/restore/asset-layout.md)适配已有项目。
 
 遇到交互玩法、3D、动态几何或显著动画时，读取 [交互场景实现参考](references/restore/interactive-scenes.md)。工具能力排查、提前停止证据和用户可见的逐阶段进度统一按 Restore 执行流程执行。
 
-还原时按 [Restore 执行流程](references/restore.md) 有界迭代：按页面复杂度分档并冻结参考与视觉 QA，从白名单 `RestoreGenerationInput/v1`（旧合同）或 `v2`（启用优化规格） 生成 `v0`，再围绕构图、外观、动态三类 [0–4 Criteria](references/restore/criteria.md)执行 Generate → Measure → Diff → Repair → Verify。每轮保留候选快照、证据、规范化自动检查、文件与评分 Diff、假设及 keep/revert/inconclusive；报告呈现包括回退候选在内的完整版本轨迹，而不是只展示首版和最佳版。多 run 复盘由 `scripts/restore/challenge-report.mjs` 只读生成 `RestoreChallengeReport/v2` provenance DAG，通过哈希和来源链接连接 run、版本、候选与各类评测，不复制大证据或产生新评分。有效执行时间、轮次或停滞触发退出，交付最佳版本。额度限制等外部暂停须有宿主起止证据才可扣除，并同时报告墙钟与有效耗时。若宿主或模型 API 提供可归属的 token 用量，按来源、Agent、阶段及覆盖状态登记，报告展示已观察总量；缺失时标未知，部分来源不得冒充完整成本。运行接口与可复用脚本见 [Restore 接口](references/restore/interfaces.md)。最终五维 E2E 按 [Restore 评测方案](evals/restore.md)由独立评分器执行；Loop 停止原因、E2E 结果和人工审批分别记录。缺少可用浏览器或独立评委时，继续完成可观察部分，并将未完成评分标为 `incomplete`，不得填造通过结果。
+还原时由 Harbor 按 [Restore 执行流程](references/restore.md) 有界迭代：档位 `ordinary/refined/complex` 分别声明 3/6/9 个 iteration step，从冻结白名单生成 baseline，再围绕构图、外观、动态三类 [0–4 Criteria](references/restore/criteria.md)执行 Generate → Measure → Diff → Repair → Verify。每轮保留候选快照、证据、自动检查、文件与评分 Diff、假设及 keep/revert/inconclusive；最后实际执行 step 完成 Final E2E 和结果固化。`continue_gate` 只控制下一 step，不进入质量聚合；停止原因仅使用既有六种值。低层复用接口见 [Restore 接口](references/restore/interfaces.md)。缺少可用浏览器或独立评委时继续完成可观察部分，并将评测标为 `incomplete`，不得填造 reward 或通过结果。
 
-冻结后发现关键路径或契约漏项时，不得改写原 run 或用 `continue` 沿用旧合同；按 [Restore 接口](references/restore/interfaces.md#最短运行链) 的 `refreeze` 命令从显式新合同及其证据建立关联 run，只继承父 `best` 产物并重新测量。
+冻结后发现关键路径或合同漏项时，不得改写原 trial；创建新 Harbor task/trial，显式绑定新的合同和父 trial/artifact hash，重新测量 baseline。
 
 ### design_brief 模板
 
@@ -471,9 +469,11 @@ id,name,source,date,genre,mood,primary_color,color_scheme,typography_style,layou
 
 采集文件、评测请求和其他过程产物放在对应案例目录或系统临时目录；Restore 的临时文件和归档约定见 [Restore 接口](references/restore/interfaces.md#证据不可变性与历史报告重放)。
 
-若已授权过程观测，开始 Restore 时按[轨迹接口](references/trajectory/interfaces.md#automatic-restore-integration)确认自动配置、当前宿主会话绑定及文件/网络权限，使用 Restore CLI 初始化；收尾检查持久状态而非只看 worker 已启动。四维过程 Judge 按[评估方案](evals/trajectory/README.md)执行；采集缺口、未校准结果和页面 E2E 分开说明。
+Restore 必须先取得目标 URL。输入为 `ready` case 时按 Harbor task compiler 验证 fixture、冻结证据、视口/状态、资源哈希与镜像 digest；直接 URL 创建一次性 exploratory task，并在 `prepare` step 冻结合同，不自动写入 `cases.yaml`。没有 URL 时停止并要求用户提供。完整 loop 由 Harbor multi-step 驱动，不使用 Restore CLI 手工初始化或续跑。
 
-启用 v2 观测并委派子任务时，先按[公开委派规格](references/trajectory/interfaces.md#public-task-specifications-before-delegation)持久化准备发出的公开任务说明，用返回的 handoff message 发起子任务并让子代理读取规格。历史加密正文不能事后猜写；公开规格、实际接收上下文及独立性证明分别记录。
+四维过程 Judge 按[ATIF 评估方案](evals/trajectory/README.md)执行，只读取官方校验通过的 ATIF-v1.8 与 Harbor artifacts。ATIF 缺失或非法时不得从 Restore 账本合成轨迹；复制上下文、隐藏推理、密文和凭据不得进入训练候选。
+
+当用户明确要求把 Harbor trial 整理为后续训练候选、SFT/Preference/Trajectory 数据或数据集快照时，再读取[数据工厂接口](references/data-factory/interfaces.md)。先导出 Trial Package，再执行用途资格、来源隔离、精确去重和同 case/task 分组切分。训练执行、模型注册与部署不在本 Skill 范围内，且不得把 Loop/E2E 通过直接写成“可训练”。
 
 - `case_name` 规则：
   1. URL 域名主体（如 `notion`、`linear`、`stripe`）

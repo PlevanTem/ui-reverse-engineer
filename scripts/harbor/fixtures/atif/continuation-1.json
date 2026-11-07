@@ -1,0 +1,11 @@
+{
+  "schema_version": "ATIF-v1.8",
+  "session_id": "session-continuation",
+  "trajectory_id": "trajectory-continuation-1",
+  "continued_trajectory_ref": "continuation-2.json",
+  "agent": {"name": "fixture-agent", "version": "1.0"},
+  "steps": [
+    {"step_id": 1, "source": "user", "message": "Prepare the task."},
+    {"step_id": 2, "source": "agent", "message": "Prepared.", "llm_call_count": 1}
+  ]
+}

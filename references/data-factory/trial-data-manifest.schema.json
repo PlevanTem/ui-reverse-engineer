@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ui-reverse-engineer:TrialDataManifest:v1",
+  "title": "Immutable Harbor trial package manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "created_at", "harbor", "package", "integrity", "source_policy", "eligibility", "quarantine_reasons", "privacy", "runtime_acceptance", "files"],
+  "properties": {
+    "schema_version": {"const": "TrialDataManifest/v1"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "harbor": {"type": "object", "required": ["trial_id", "trial_name", "task_name", "task_digest"], "properties": {"trial_id": {"type": "string"}, "trial_name": {"type": "string"}, "task_name": {"type": "string"}, "task_digest": {"type": "string"}, "job_id": {"type": ["string", "null"]}}},
+    "package": {"type": "object", "required": ["episode_id"]},
+    "integrity": {"type": "object", "required": ["status", "checked_artifacts", "atif_valid"], "properties": {"status": {"const": "valid"}, "checked_artifacts": {"type": "integer", "minimum": 0}, "atif_valid": {"type": "boolean"}}},
+    "source_policy": {"type": ["object", "null"]},
+    "eligibility": {"type": "object"},
+    "quarantine_reasons": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "privacy": {"type": "object", "required": ["private_fields_removed", "redactions", "copied_context_steps"]},
+    "runtime_acceptance": {"enum": ["recorded", "not_run"]},
+    "files": {"type": "object", "required": ["episode", "steps", "trajectories", "artifacts", "rewards", "episode_sha256", "steps_sha256", "trajectories_sha256", "artifacts_sha256"]}
+  }
+}

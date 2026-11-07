@@ -1,5 +1,23 @@
 # 变更日志
 
+### 2026-11-07 — Harbor-native harness 全量迁移
+
+- **范围：** 固定 `harbor==0.25.0`、ATIF-v1.8 与独立 `uv` lock；新增 URL exploratory task、`ready` case compiler、schema 1.4 multi-step task、separate verifier、七维 Final E2E reward、ATIF 过程 Judge、Harbor Trial Package 与 `DatasetSnapshot/v2`。ordinary/refined/complex 继续使用 3/6/9 轮和原六种停止原因。
+- **所有权迁移：** Harbor 成为 task、trial、multi-step、停止、verifier、reward、ATIF、dataset 和 regrade 的唯一 harness。删除活动的旧可观测交付、远程传输、本地 evaluation coordinator、自动 trajectory worker、任务连续性 hook 与完整 loop CLI；Restore 只保留合同/fixture 校验、取证、hash/diff、assessment、pairwise verify、Final E2E、report 与 archive/scratch audit。
+- **数据边界：** ATIF 是轨迹主数据，Episode/Step 是治理 sidecar。缺失/非法 ATIF 不补造；续接要求同一 `session_id` 与 `continued_trajectory_ref`，复制上下文要求精确前序 trajectory/step/hash 并从训练视图过滤。`source_reuse=allowed`、私有推理或凭据遮蔽关闭训练候选；unknown/N/A 不补零，`continue_gate` 不进入质量均值。
+- **文档：** 同步中英文 README、Skill、Restore SOP/接口、架构、评测、D/I/F/T、Data Factory 与网站 Q&A。历史事实仅保留在本日志，不提供旧 harness 兼容映射。
+- **验证与边界：** `uv sync --locked` 安装 Harbor 0.25.0；Harbor profile 四段全部通过，含 Codex ATIF/resume/Skill capability preflight、2 个合成 task 的 0 lint finding、dataset 与 4 个 ATIF fixture 的 Pydantic round-trip、官方 validator、25 个 Schema 及遗留扫描。完整 Node 回归 100 项：96 通过、4 个真实浏览器集成因本轮未启用真实浏览器而跳过；website 锁定依赖安装后构建 11 个案例、0 ready。没有安装 Docker、配置云 sandbox 或提升任何 draft case。真实 Harbor trial、浏览器、resume trajectory、separate verifier、artifact transfer、early stopping 和 regrade 保持 `not_run`；不得标记 fully operational。
+- **发布：** 当前为隔离工作树实现，尚未提交、推送、合并或部署。
+
+### 2026-11-06 — Restore 离线数据工厂与训练候选边界
+
+- **范围：** 新增 `RunDataManifest/v1`、`AgentEpisode/v1`、`AgentStep/v1`、`DatasetSnapshot/v1` 及本地导出脚本，将 Restore 权威账本重建为 Episode/Step 运行包，再执行用途资格、精确去重、同 case/lineage 分组切分和版本化快照。输出 SFT、Preference、Trajectory 中性视图，不执行训练、模型注册或部署。
+- **事实与可观测性：** `contract.json`、`run.json`、`events.jsonl`、observations 与 snapshots 保持事实源；Langfuse 复用既有绑定、回执和恢复机制，只提供可选 trace/质检关联，不新建 telemetry/outbox，也不由远端状态静默改写 run。报告投影不作为数据源，隐藏思维/私有推理字段拒绝导出。
+- **隔离与判定：** 数据资格与 Loop stop/Final E2E 分轴记录。`source_reuse=allowed` 默认隔离 SFT/Preference，Trajectory 保留为需审阅；完整性篡改失败关闭。缺少原始 `generation-input.json` 时只生成合同投影并明确 `model_input_proof=false`。
+- **文档与网站：** 同步 Skill 入口、中英文 README、架构/文档索引、评测导航及网站 Q&A；唯一后处理接口集中在 `references/data-factory/interfaces.md`，不复制或改变原验收规则。
+- **验证：** 数据工厂定向回归 4/4；统一 local 共 190 项，186 通过、4 项真实浏览器集成因未配置匹配选择器而跳过，32 个 Schema 通过离线元校验。另一次显式启用现有 Node Playwright 后 1 项新增通过、3 项在测试前因该包要求的 Chromium `1252` 未安装而失败；未下载浏览器，不把它记成功能回归。网站成功构建 11 个案例，Skill quick validation、JS 语法、受影响文档本地链接及 diff 检查通过；`skills-ref` 不可用。
+- **发布：** 实现提交 `00249fa` 已推送 `codex/restore-data-factory`；PR [#9](https://github.com/PlevanTem/ui-reverse-engineer/pull/9) 已创建，base/main 与 head 分支已核对。本条发布记录和文档实现基线另行提交推送；未合并或部署。
+
 ### 2026-11-04 — Restore vNext 版本集成与后续测试交接（PR #8）
 
 - **范围与授权：** 用户确认先将当前版本合入 main，后续通过更多 case 测试推进。集成还原规格/资产、视听交互、任务持久续跑、公开轨迹与四维评估、Codex 检查点闭环及版本化审阅文档；当前范围保持 Codex-only。
