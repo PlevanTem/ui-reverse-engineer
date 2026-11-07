@@ -1,5 +1,7 @@
 # 自动 Restore → Data Factory
 
+前置条件：Node.js 24+、uv、可用的 Python 3.12/3.13，以及已启动 Linux engine 的 Docker Desktop 或已配置 sandbox。`docker version` 应能显示 Server。入口不会安装 Docker，也不会创建模型订阅。使用已授权的本机 Codex 登录文件或显式配置的模型认证；不要把凭据写入仓库。该环境仍只有 exploratory URL 实跑证据，正式 case 的状态由人工维护。
+
 ```powershell
 node scripts/harbor/restore.mjs --case READY_CASE_ID
 node scripts/harbor/restore.mjs --url https://example.com

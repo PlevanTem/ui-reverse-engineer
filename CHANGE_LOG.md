@@ -716,4 +716,4 @@
 - **范围：** 在 origin/main 的最新基线上整合已有 Harbor-native 迁移及 POLA 实跑修复，保留 vNext 优化、音频和几何诊断。同步中英文 README、SKILL、架构/评测入口、Data Factory 接口及网站实际 FAQ；补充本地 Viewer 使用方法。只公开案例文字状态，保留人工 draft 生命周期。
 - **产物边界：** 原工作区与迁移草稿先作本地补丁/哈希快照；不提交 reverse_output、真实轨迹、凭据、案例截图、生成的测试过程文件或 README 作者预览文件。旧 PR #9 的导出接口不作为现行入口。
 - **验证：** 合并后 Node 回归 110 通过、4 既有浏览器集成跳过；Harbor 静态 task lint/ATIF/model、Schema 与无遗留路由检查通过；网站构建 11 case / 0 ready，Case Manager 构建及 4 项 Sites 测试通过。POLA 的真实运行结论沿用哈希化核查，不宣称独立视觉通过或重跑了发布分支的 Agent。
-- **发布：** 准备新建 PR 并按用户授权合入；实际 PR 与合并状态以 GitHub 记录为准。
+- **发布：** 已推送 `codex/harbor-restore-release`，由 PR [#10](https://github.com/PlevanTem/ui-reverse-engineer/pull/10) 记录本轮发布；按用户授权合入，实际合并状态与提交以 GitHub 记录为准。
