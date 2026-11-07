@@ -10,6 +10,8 @@ Restore accepts a website directly: `node scripts/harbor/restore.mjs --url https
 
 The live POLA URL run completed Restore iterations, ATIF export and a Snapshot. Independent visual acceptance remains incomplete, so training candidates are closed. See the [runtime evidence and limits](references/harbor/automation.md).
 
+The Harbor migration and runtime fixes were merged into main through [PR #10](https://github.com/PlevanTem/ui-reverse-engineer/pull/10). Next is the [Harbor evaluation execution chain](docs/evaluation-plan.md#下一阶段harbor-接评估执行链): the separate verifier currently validates structure and does not automatically execute an independent visual Judge. Pinned versions, locks and optional tooling are listed in the [dependency boundaries](references/harbor/automation.md#依赖与安装边界).
+
 **Turn websites, screenshots and recordings into actionable requirements, reusable design rules and runnable reconstructions.**
 
 [Website](https://plevantem.github.io/ui-reverse-engineer/) · [Get started](#how-to-start) · [Cases](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [Execution & evaluation](evals/README.md) · [中文](README.md)

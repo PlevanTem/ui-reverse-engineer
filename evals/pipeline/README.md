@@ -16,6 +16,6 @@
 Get-Content final-eval-request.json -Raw | node evals/pipeline/grader.mjs judge-adapter.mjs
 ```
 
-Harbor 的最后实际执行 step 调用该 grader，并把完整结果写入 `/workspace/restore-run/evaluations/<step>.json`；separate verifier 再校验绑定和 reward。grader 不拥有 task/trial 生命周期。
+当前 Harbor worker 尚未自动调用该 grader；separate verifier 只读取 step evaluation 做结构校验。目标接线是在最后实际执行 step 的独立评估路径调用 grader，完整结果作为 `/home/pwuser/restore-run` 下的绑定产物保存，再投影到 `evaluations/<step>.json` 的既有结构。执行方式与验收见 [下一阶段计划](../../docs/evaluation-plan.md#下一阶段harbor-接评估执行链)。不得把完整 E2EResultRef 直接当成 RestoreStepEvaluation。grader 不拥有 task/trial 生命周期。
 
 Rubric v1.2-draft 的 request 必须包含完整红线 profile。历史结果保留原版本，不由当前 grader 静默重评分。

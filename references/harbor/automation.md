@@ -1,6 +1,22 @@
 # 自动 Restore → Data Factory
 
-前置条件：Node.js 24+、uv、可用的 Python 3.12/3.13，以及已启动 Linux engine 的 Docker Desktop 或已配置 sandbox。`docker version` 应能显示 Server。入口不会安装 Docker，也不会创建模型订阅。使用已授权的本机 Codex 登录文件或显式配置的模型认证；不要把凭据写入仓库。该环境仍只有 exploratory URL 实跑证据，正式 case 的状态由人工维护。
+当前自动入口使用本地 Docker：Node.js 24+、uv、Python 3.12/3.13，以及已启动 Linux engine 的 Docker Desktop。`docker version` 应能显示 Server。入口未提供云 sandbox 选择参数，不会安装 Docker或创建模型订阅。使用已授权的本机 Codex 登录文件或显式配置的模型认证；不要把凭据写入仓库。该环境仍只有 exploratory URL 实跑证据，正式 case 的状态由人工维护。
+
+## 依赖与安装边界
+
+| 用途 | 固定版本与事实源 | 安装/使用边界 |
+| --- | --- | --- |
+| 宿主工程脚本 | Node.js 24+；统一 check runner 校验主版本 | 与 Harbor 容器内官方 Codex 安装脚本使用的 Node 分开，不替换用户系统环境 |
+| Harbor 执行、Viewer、validator、regrade | Python 3.12/3.13、harbor==0.25.0；[pyproject.toml](../../tools/harbor/pyproject.toml) / [uv.lock](../../tools/harbor/uv.lock) | `uv sync --project tools/harbor --locked`；独立 .venv，不写 requirements-dev.txt |
+| Harbor 浏览器 SDK | playwright-core 1.58.0；[package.json](../../tools/browser/package.json) / [package-lock.json](../../tools/browser/package-lock.json) | `npm ci --prefix tools/browser --ignore-scripts --no-audit --no-fund`；由 launcher 执行，随 runtime Skill 注入 |
+| 浏览器与系统镜像 | digest 固定在 [task-builder.mjs](../../scripts/harbor/task-builder.mjs) | 镜像自带匹配的浏览器；安装 SDK 不等于安装 Docker 或宿主浏览器 |
+| Restore Agent | Codex CLI 0.153.0；[restore.mjs](../../scripts/harbor/restore.mjs) 与 [RestoreCodex](../../tools/harbor/restore_codex.py) | 在 Harbor 环境内安装；认证由文件路径传递，密钥值不写入仓库或日志 |
+| 可选宿主 Python capture | playwright==1.58.0；[requirements-dev.txt](../../requirements-dev.txt) | 仅独立使用 capture.py 时需要，不是默认 Harbor 入口的安装步骤 |
+| 独立视觉评估执行器 | 尚未接入；[下一阶段](../../docs/evaluation-plan.md#下一阶段harbor-接评估执行链) | 不新增未验证的 SDK、模型网络或训练包；先落实 adapter、隔离与认证通路 |
+
+本轮沿用固定版本，不做无关升级。`uv.lock`、SDK lock 和镜像 digest 的升级须与对应兼容检查一起提交。
+
+## 自动执行
 
 ```powershell
 node scripts/harbor/restore.mjs --case READY_CASE_ID

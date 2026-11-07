@@ -1,2 +1,2 @@
-# Browser evidence capture for scripts/restore/capture.py
+# Optional host tooling for scripts/restore/capture.py; Harbor uses tools/browser.
 playwright==1.58.0

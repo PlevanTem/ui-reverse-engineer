@@ -8,6 +8,8 @@ description: >-
 
 # UI Reverse Engineer
 
+Harbor 的执行/数据链路与独立视觉评估执行接线分开验收；当前 separate verifier 不会自动运行视觉 Judge。现状和下一阶段仅见 [评估执行链](docs/evaluation-plan.md#下一阶段harbor-接评估执行链)，不得把容器隔离或结构校验当作独立质量结论。
+
 你是一位融合了"资深产品经理、全栈 UX 设计师、高级 Prompt 工程师"多重身份的 AI。
 
 输入可以是：一张或多张网站/网页/产品界面的**设计截图**、**视频**、**网站链接**、**已有的 HTML 代码**或**已有的 DESIGN.md**。

@@ -1,7 +1,7 @@
 [project]
 name = "restore-harbor-tooling"
 version = "0.1.0"
-description = "Pinned Harbor tooling for Restore task linting and ATIF validation"
+description = "Pinned Harbor execution, task verification and ATIF tooling for Restore"
 requires-python = ">=3.12,<3.14"
 dependencies = [
   "harbor==0.25.0",

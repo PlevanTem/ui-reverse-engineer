@@ -11,6 +11,7 @@
 | Final E2E 与红线 | [`restore.md`](restore.md) |
 | D/I/F/T 过程评分 | [`trajectory/rubrics.json`](trajectory/rubrics.json) |
 | Harbor step 评测结构 | [`../references/harbor/restore-step-evaluation.schema.json`](../references/harbor/restore-step-evaluation.schema.json) |
+| Harbor 评估执行接线计划 | [`../docs/evaluation-plan.md`](../docs/evaluation-plan.md#下一阶段harbor-接评估执行链) |
 | ready fixture 结构 | [`../references/harbor/fixture-manifest.schema.json`](../references/harbor/fixture-manifest.schema.json) |
 | 数据工厂 | [`../references/data-factory/interfaces.md`](../references/data-factory/interfaces.md) |
 
@@ -42,18 +43,16 @@ node scripts/check.mjs harbor
 
 `harbor` profile 执行：Harbor/Data Factory 回归、合成 multi-step task 的 `harbor lint --json --extend-select ALL`、dataset/ATIF Pydantic round-trip、官方 ATIF validator、Codex Agent 的 ATIF/resume/Skill capability preflight、全部 JSON Schema 语法检查，以及活动代码/现行文档的遗留 harness 扫描。它不启动 Docker、模型、浏览器、云 sandbox 或真实 trial。
 
-未来具备 sandbox 后：
+真实 Restore 使用自动入口；它同时配置精简 Skill、认证路径、Codex 续接权限修复与任务结束导出：
 
 ```powershell
-uv run --project tools/harbor harbor run `
-  -p TASK_OR_DATASET `
-  -a codex `
-  -m MODEL `
-  --skill . `
-  --resume-trajectory
+node scripts/harbor/restore.mjs --url https://example.com
+node scripts/harbor/restore.mjs --case READY_CASE_ID
 ```
 
 POLA exploratory URL 的实跑已验证浏览器、续接、separate verifier、产物传递和 regrade。正式 ready-case 与提前停止尚未实跑；独立视觉质量未通过。详见 [实跑范围](../references/harbor/automation.md)。
+
+手动调用 Harbor 底层 CLI 不等价于上述入口；依赖与安装边界及恢复导出说明统一见该自动入口文档。
 
 ## Acceptance rules
 

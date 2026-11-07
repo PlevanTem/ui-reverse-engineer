@@ -10,6 +10,8 @@ Restore 支持直接输入网站：`node scripts/harbor/restore.mjs --url https:
 
 POLA URL 已实跑完成 Restore 迭代、ATIF 导出与 Snapshot；独立视觉质量仍未验收，训练候选关闭。[实跑范围与限制](references/harbor/automation.md)。
 
+Harbor 迁移与本轮运行修复已由 [PR #10](https://github.com/PlevanTem/ui-reverse-engineer/pull/10) 合入 main。下一阶段是 [Harbor 接评估执行链](docs/evaluation-plan.md#下一阶段harbor-接评估执行链)：现有 separate verifier 校验结构，尚未自动执行独立视觉 Judge。[依赖与安装边界](references/harbor/automation.md#依赖与安装边界)统一记录固定版本、lock 与可选工具。
+
 **把网页、截图和录屏，转成可执行需求、可复用设计规范与可运行的还原项目。**
 
 [项目网站](https://plevantem.github.io/ui-reverse-engineer/) · [快速上手](#如何开始) · [案例库](https://plevantem.github.io/ui-reverse-engineer/cases.html) · [执行与评测](evals/README.md) · [English](README.en.md)
