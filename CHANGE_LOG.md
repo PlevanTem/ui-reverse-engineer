@@ -725,4 +725,4 @@
 - **依赖：** 在隔离 main 分支重新验证 uv locked sync 与 SDK npm ci；保持 Harbor 0.25.0、Playwright 1.58.0、固定镜像及 Codex 0.153.0，不升级 lock。修订工具描述和可选 Python capture 注释，集中列明宿主、容器、认证与 Judge 的安装边界。
 - **下一阶段：** 评估执行链计划统一放在 `docs/evaluation-plan.md`：冻结请求、独立执行、现有 Loop/Final grader、可信结果投影、D/I/F/T 与真实 regrade。保留既有停止/评分规则；模型网络与认证接线尚未变更，独立视觉执行仍 planned。
 - **验证：** 修复 main 遗留测试对 not_run 文案的过时断言，保留静态检查不构成运行验收的测试。综合回归 110 通过、4 既有浏览器集成跳过；Harbor 四项工程检查通过（含 21 项领域回归、官方 lint/ATIF/model、26 Schema 和旧路线扫描）；157 个本地链接通过。未重新调用模型或运行新 trial，未升级任何 case。
-- **范围与发布：** 原始脏工作区、旧分支和本地证据保留；本次只发布说明、依赖元数据与上述测试修正，不包含凭据、运行包或用户图片。收口分支为 `codex/harbor-evaluation-handoff`，按本轮明确授权推送并通过 PR 合入；实际状态以该 PR 和远端 main 为准。
+- **范围与发布：** 原始脏工作区、旧分支和本地证据保留；本次只发布说明、依赖元数据与上述测试修正，不包含凭据、运行包或用户图片。收口分支 `codex/harbor-evaluation-handoff` 已推送，PR [#11](https://github.com/PlevanTem/ui-reverse-engineer/pull/11) 记录本轮整合；用户已明确授权合入，实际状态以该 PR 和远端 main 为准。
